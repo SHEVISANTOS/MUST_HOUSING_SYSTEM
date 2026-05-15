@@ -1,0 +1,562 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - MUST Housing</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        
+        /* Top Header */
+        .top-header {
+            background: linear-gradient(135deg, #00a86b 0%, #00c77b 100%);
+            color: white;
+            padding: 0 20px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 8px;
+            padding: 3px;
+            object-fit: contain;
+        }
+        .header-title h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .header-title h2 {
+            font-size: 0.95rem;
+            font-weight: 400;
+            opacity: 0.95;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .header-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+        }
+        .logout-btn {
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* Layout */
+        .layout {
+            display: flex;
+            margin-top: 70px;
+            min-height: calc(100vh - 70px);
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            position: fixed;
+            top: 70px;
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            z-index: 999;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 10px 0;
+        }
+        .sidebar-item {
+            margin: 2px 0;
+        }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: #555;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-link:hover {
+            background: #f8f9fa;
+            color: #00a86b;
+        }
+        .sidebar-link.active {
+            background: #e8f5e9;
+            color: #00a86b;
+            border-left-color: #00a86b;
+            font-weight: 600;
+        }
+        .sidebar-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 20px;
+        }
+        
+        /* Breadcrumb */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .breadcrumb a {
+            color: #00a86b;
+            text-decoration: none;
+        }
+        
+        /* Profile Container */
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        /* Profile Card */
+        .profile-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .card-header-custom {
+            background: linear-gradient(135deg, #00a86b 0%, #00c77b 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .card-body-custom {
+            padding: 30px;
+        }
+        
+        /* Profile Info Table */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-table tr {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .info-table tr:last-child {
+            border-bottom: none;
+        }
+        .info-table td {
+            padding: 15px 10px;
+        }
+        .info-table .label {
+            width: 35%;
+            color: #666;
+            font-weight: 500;
+        }
+        .info-table .value {
+            width: 65%;
+            font-weight: 600;
+            color: #333;
+        }
+        .info-table .value.pending {
+            color: #e74c3c;
+        }
+        .info-table .value.verified {
+            color: #27ae60;
+        }
+        
+        /* Form Styling */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #00a86b;
+        }
+        .form-group input[readonly] {
+            background: #f8f9fa;
+            cursor: not-allowed;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00a86b 0%, #00c77b 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 168, 107, 0.4);
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-left: 10px;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        /* Alert Messages */
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        /* Footer */
+        .footer {
+            background: white;
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 20px;
+        }
+        .footer a {
+            color: #00a86b;
+            text-decoration: none;
+        }
+        
+        /* Mobile Toggle */
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .mobile-toggle {
+                display: block;
+            }
+            .info-table td {
+                display: block;
+                width: 100% !important;
+            }
+            .info-table .label {
+                background: #f8f9fa;
+                padding: 10px;
+                border-bottom: none;
+            }
+            .info-table .value {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Header -->
+    <div class="top-header">
+        <div class="header-left">
+            <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+            <img src="{% static 'images/must-logo.png' %}" alt="MUST" class="logo"
+                 onerror="this.src='https://via.placeholder.com/50x50/ffffff/00a86b?text=MUST'">
+            <div class="header-title">
+                <h1>MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</h1>
+                <h2>HOUSING MANAGEMENT SYSTEM</h2>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="user-menu">
+                <div class="user-avatar">{{ user.username|first|upper }}</div>
+                <span>{{ user.username }}</span>
+            </div>
+            <button class="header-btn" title="Notifications">🔔</button>
+            <a href="{% url 'users:logout' %}" class="logout-btn">🚪 Log out</a>
+        </div>
+    </div>
+    
+    <!-- Layout -->
+    <div class="layout">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <ul class="sidebar-menu">
+                <li class="sidebar-item">
+                    <a href="{% url 'core:dashboard' %}" class="sidebar-link">
+                        <span class="sidebar-icon">📊</span>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                {% if user.role == 'TENANT' %}
+                <li class="sidebar-item">
+                    <a href="{% url 'properties:list' %}" class="sidebar-link">
+                        <span class="sidebar-icon">🏠</span>
+                        <span>Search Houses</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'bookings:my_bookings' %}" class="sidebar-link">
+                        <span class="sidebar-icon">📅</span>
+                        <span>My Bookings</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'payments:my_payments' %}" class="sidebar-link">
+                        <span class="sidebar-icon">💳</span>
+                        <span>Payments</span>
+                    </a>
+                </li>
+                {% elif user.role == 'LANDLORD' %}
+                <li class="sidebar-item">
+                    <a href="{% url 'properties:create' %}" class="sidebar-link">
+                        <span class="sidebar-icon">➕</span>
+                        <span>Add Property</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'properties:list' %}" class="sidebar-link">
+                        <span class="sidebar-icon">🏘️</span>
+                        <span>My Properties</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'bookings:landlord_bookings' %}" class="sidebar-link">
+                        <span class="sidebar-icon">📋</span>
+                        <span>Manage Bookings</span>
+                    </a>
+                </li>
+                {% endif %}
+                <li class="sidebar-item">
+                    <a href="{% url 'core:profile' %}" class="sidebar-link active">
+                        <span class="sidebar-icon">👤</span>
+                        <span>My Profile</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'users:logout' %}" class="sidebar-link">
+                        <span class="sidebar-icon">🚪</span>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="{% url 'core:dashboard' %}">Home</a> / 
+                <span>Profile</span>
+            </div>
+            
+            <!-- Success Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+            
+            <!-- Profile Container -->
+            <div class="profile-container">
+                <!-- Account Information Card -->
+                <div class="profile-card">
+                    <div class="card-header-custom">📋 Account Information</div>
+                    <div class="card-body-custom">
+                        <form method="post">
+                            {% csrf_token %}
+                            
+                            <table class="info-table">
+                                <tr>
+                                    <td class="label">Username:</td>
+                                    <td class="value" style="font-size: 1.1rem;">{{ user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Email:</td>
+                                    <td class="value">
+                                        <input type="email" name="email" value="{{ user.email }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Role:</td>
+                                    <td class="value">{{ user.role }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Phone:</td>
+                                    <td class="value">
+                                        <input type="tel" name="phone" value="{{ user.phone|default:'' }}" placeholder="Enter phone number" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Verified:</td>
+                                    <td class="value {% if user.is_verified %}verified{% else %}pending{% endif %}">
+                                        {% if user.is_verified %}
+                                            ✅ Verified
+                                        {% else %}
+                                            ❌ Pending
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="label">Member Since:</td>
+                                    <td class="value">{{ user.date_joined|date:"d-m-Y" }}</td>
+                                </tr>
+                            </table>
+                            
+                            <div style="margin-top: 25px; text-align: right;">
+                                <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                                <a href="{% url 'core:dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Additional Info Card -->
+                <div class="profile-card">
+                    <div class="card-header-custom">ℹ️ Additional Information</div>
+                    <div class="card-body-custom">
+                        <table class="info-table">
+                            <tr>
+                                <td class="label">Last Login:</td>
+                                <td class="value">{{ user.last_login|date:"d-m-Y H:i"|default:"Never" }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Account Status:</td>
+                                <td class="value {% if user.is_active %}verified{% else %}pending{% endif %}">
+                                    {% if user.is_active %}
+                                        ✅ Active
+                                    {% else %}
+                                        ❌ Inactive
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if user.role == 'LANDLORD' %}
+                            <tr>
+                                <td class="label">Total Properties:</td>
+                                <td class="value">{{ user.properties.count|default:0 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label">Total Bookings Received:</td>
+                                <td class="value">{{ user.property_bookings.count|default:0 }}</td>
+                            </tr>
+                            {% elif user.role == 'TENANT' %}
+                            <tr>
+                                <td class="label">Total Bookings Made:</td>
+                                <td class="value">{{ user.tenant_bookings.count|default:0 }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <span>© 2012-2026 <a href="#">MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</a></span>
+                <span>Designed and Developed by <a href="#">ICT SOLUTIONS DESIGN</a></span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Payment Receipts - MUST Housing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #28a745;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #28a745;
+            margin: 0;
+            font-size: 28px;
+        }
+        .header p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .title {
+            background-color: #28a745;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        .summary {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 5px;
+        }
+        .summary h3 {
+            margin: 0 0 10px 0;
+            color: #155724;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        th {
+            background-color: #28a745;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #28a745;
+            color: white;
+        }
+        .total-row td {
+            border: none;
+            padding: 15px;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        .no-payments {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MUST Housing Locator</h1>
+        <p>Mbeya University of Science and Technology</p>
+        <p>Payment Receipts History</p>
+    </div>
+
+    <div class="title">APPROVED PAYMENTS RECEIPT</div>
+
+    <div class="summary">
+        <h3>Tenant: {{ user.get_full_name|default:user.username }}</h3>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Total Completed Payments:</strong> {{ payments.count }}</p>
+        <p><strong>Generated:</strong> {{ now|date:"F d, Y H:i" }}</p>
+    </div>
+
+    {% if payments %}
+    <table>
+        <thead>
+            <tr>
+                <th>Payment ID</th>
+                <th>Property</th>
+                <th>Booking #</th>
+                <th>Amount (TZS)</th>
+                <th>Paid Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in payments %}
+            <tr>
+                <td>#{{ payment.id }}</td>
+                <td>{{ payment.booking.property.title }}</td>
+                <td>{{ payment.booking.id }}</td>
+                <td>{{ payment.amount|floatformat:0 }}</td>
+                <td>{{ payment.paid_date|date:"M d, Y" }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="3" style="text-align: right;">TOTAL PAID:</td>
+                <td colspan="2">TZS {{ total_paid|floatformat:0 }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-payments">
+        <p>No approved payments found.</p>
+        <p>Your payment history will appear here once payments are verified by your landlord.</p>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p><strong>This is an official payment receipt from MUST Housing Locator.</strong></p>
+        <p>For inquiries: housing@must.ac.tz | Phone: +255 XXX XXX XXX</p>
+        <p>Generated on {{ now|date:"F d, Y" }} at {{ now|date:"H:i" }}</p>
+        <p>Document ID: RECEIPTS-{{ user.username }}-{{ now|date:"Ymd" }}</p>
+    </div>
+</body>
+</html>
