@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Add Property{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">📝 List New Property</div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" name="title" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" class="form-control" rows="3" required></textarea>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label>Property Type</label>
+                    <select name="property_type" class="form-control" required>
+                        <option value="">Select Type...</option>
+                        <option value="SINGLE">Single Room</option>
+                        <option value="BEDSITTER">Bedsitter</option>
+                        <option value="1BR">1 Bedroom</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Monthly Rent (TZS)</label>
+                    <input type="number" name="monthly_rent" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Location</label>
+                <input type="text" name="location" class="form-control" required>
+            </div>
+            
+            <button type="submit" class="btn-green" style="width: 100%; padding: 12px;">✅ Publish Listing</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Payment Slip - MUST Housing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            color: #333;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #007bff;
+            margin: 0;
+            font-size: 28px;
+        }
+        .header p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .slip-title {
+            background-color: #007bff;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        .info-section {
+            margin-bottom: 25px;
+        }
+        .info-section h3 {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-left: 4px solid #007bff;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .info-value {
+            color: #333;
+        }
+        .amount-box {
+            background-color: #d4edda;
+            border: 2px solid #28a745;
+            padding: 20px;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #155724;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        .status-pending { background-color: #fff3cd; color: #856404; }
+        .status-completed { background-color: #d4edda; color: #155724; }
+        .status-overdue { background-color: #f8d7da; color: #721c24; }
+        .payment-methods {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .payment-methods ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .payment-methods li {
+            margin: 8px 0;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 12px;
+            margin-top: 20px;
+            color: #856404;
+            border-radius: 0 4px 4px 0;
+        }
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        .signature-box {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-line {
+            border-top: 1px solid #333;
+            width: 200px;
+            padding-top: 5px;
+            text-align: center;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MUST Housing Locator</h1>
+        <p>Mbeya University of Science and Technology</p>
+        <p>Official Payment Instruction Slip</p>
+    </div>
+
+    <div class="slip-title">PAYMENT INSTRUCTION</div>
+
+    <div class="info-section">
+        <h3>Payment Reference</h3>
+        <div class="info-row">
+            <span class="info-label">Slip ID:</span>
+            <span class="info-value">#{{ payment.id }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Booking Reference:</span>
+            <span class="info-value">Booking #{{ payment.booking.id }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Generated:</span>
+            <span class="info-value">{{ now|date:"F d, Y H:i" }}</span>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h3>Tenant Details</h3>
+        <div class="info-row">
+            <span class="info-label">Name:</span>
+            <span class="info-value">{{ user.get_full_name|default:user.username }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Email:</span>
+            <span class="info-value">{{ user.email }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Phone:</span>
+            <span class="info-value">{{ user.phone|default:"Not provided" }}</span>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h3>Property Details</h3>
+        <div class="info-row">
+            <span class="info-label">Property:</span>
+            <span class="info-value">{{ payment.booking.property.title }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Location:</span>
+            <span class="info-value">{{ payment.booking.property.location }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Type:</span>
+            <span class="info-value">{{ payment.booking.property.get_property_type_display }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Landlord:</span>
+            <span class="info-value">{{ payment.booking.property.landlord.username }}</span>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h3>Payment Amount</h3>
+        <div class="amount-box">
+            TZS {{ payment.amount|floatformat:0 }}
+        </div>
+        <div class="info-row">
+            <span class="info-label">Due Date:</span>
+            <span class="info-value">{{ payment.due_date|date:"F d, Y" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Late Fee (if applicable):</span>
+            <span class="info-value">TZS {{ payment.late_fee|floatformat:0 }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Status:</span>
+            <span class="info-value">
+                <span class="status-badge status-{{ payment.status|lower }}">
+                    {{ payment.status }}
+                </span>
+            </span>
+        </div>
+    </div>
+
+    <div class="info-section">
+        <h3>How to Pay</h3>
+        <div class="payment-methods">
+            <p><strong>Accepted payment methods:</strong></p>
+            <ul>
+                <li><strong>M-Pesa:</strong> Send to landlord's registered number</li>
+                <li><strong>Bank Transfer:</strong> Use landlord's account details</li>
+                <li><strong>Cash:</strong> Pay directly to landlord with receipt</li>
+            </ul>
+            <p><strong>Important:</strong> After payment, contact your landlord immediately to confirm receipt.</p>
+        </div>
+    </div>
+
+    <div class="warning">
+        <strong>⚠️ Notice:</strong> This slip is for payment instruction only. 
+        Payment status is updated by your landlord after confirming receipt. 
+        Keep your M-Pesa/bank confirmation message as proof of payment.
+    </div>
+
+    <div class="signature-box">
+        <div class="signature-line">
+            Tenant Signature<br>
+            <small>(Upon payment)</small>
+        </div>
+        <div class="signature-line">
+            Landlord Signature<br>
+            <small>(Upon verification)</small>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><strong>MUST Housing Locator</strong> | housing@must.ac.tz | +255 XXX XXX XXX</p>
+        <p>This is an official document generated on {{ now|date:"F d, Y" }} at {{ now|date:"H:i" }}</p>
+        <p>Slip ID: {{ payment.id }} | Booking: {{ payment.booking.id }}</p>
+    </div>
+</body>
+</html>

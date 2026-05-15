@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Houses - MUST Housing{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2>Available Houses Near MUST</h2>
+    </div>
+</div>
+
+<!-- Search Filter Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="q" class="form-control" placeholder="Search..." value="{{ request.GET.q }}">
+            </div>
+            <div class="col-md-2">
+                <input type="number" name="max_price" class="form-control" placeholder="Max Price (TZS)" value="{{ request.GET.max_price }}">
+            </div>
+            <div class="col-md-2">
+                <select name="type" class="form-select">
+                    <option value="">All Types</option>
+                    <option value="SINGLE" {% if request.GET.type == 'SINGLE' %}selected{% endif %}>Single Room</option>
+                    <option value="BEDSITTER" {% if request.GET.type == 'BEDSITTER' %}selected{% endif %}>Bedsitter</option>
+                    <option value="1BR" {% if request.GET.type == '1BR' %}selected{% endif %}>1 Bedroom</option>
+                    <option value="2BR" {% if request.GET.type == '2BR' %}selected{% endif %}>2 Bedroom</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="location" class="form-control" placeholder="Location" value="{{ request.GET.location }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Filter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Properties Grid -->
+<div class="row">
+    {% if properties %}
+        {% for property in properties %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ property.title }}</h5>
+                    <p class="card-text text-muted">
+                        <small>📍 {{ property.location }} ({{ property.distance_from_must_km }} km from MUST)</small>
+                    </p>
+                    <p class="card-text">
+                        <strong>Type:</strong> {{ property.get_property_type_display }}<br>
+                        <strong>Rent:</strong> TZS {{ property.monthly_rent|floatformat:0 }}/month<br>
+                        
+                        <!-- ✅ FIXED: Removed "|join" because amenities is already text -->
+                        <strong>Amenities:</strong> {{ property.amenities }}
+                    </p>
+                    <p class="card-text">{{ property.description|truncatewords:20 }}</p>
+                    <a href="{% url 'properties:detail' property.id %}" class="btn btn-outline-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <h5>No properties found</h5>
+                <p>Try adjusting your search filters or check back later for new listings.</p>
+                <a href="{% url 'properties:create' %}" class="btn btn-success mt-2">Add Your First Property</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

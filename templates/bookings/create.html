@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card p-4">
+    <h4>Book: {{ property.title }}</h4>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label>Move-In Date</label>
+            <input type="date" name="move_in_date" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label>Move-Out Date</label>
+            <input type="date" name="move_out_date" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Confirm Booking</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Approve Booking{% endblock %}
+{% block content %}
+<div class="card col-md-6 mx-auto">
+    <div class="card-header bg-primary text-white">
+        <h4>Review Booking Request</h4>
+    </div>
+    <div class="card-body">
+        <p><strong>Tenant:</strong> {{ booking.tenant.username }}</p>
+        <p><strong>Property:</strong> {{ booking.property.title }}</p>
+        <p><strong>Move-in:</strong> {{ booking.move_in_date }}</p>
+        <p><strong>Move-out:</strong> {{ booking.move_out_date }}</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="action" value="approve" class="btn btn-success">✅ Approve</button>
+            <button type="submit" name="action" value="reject" class="btn btn-danger">❌ Reject</button>
+        </form>
+        <!-- ✅ FIXED: Added 'core:' namespace -->
+        <a href="{% url 'core:dashboard' %}" class="btn btn-secondary mt-3">Cancel</a>
+    </div>
+</div>
+{% endblock %}

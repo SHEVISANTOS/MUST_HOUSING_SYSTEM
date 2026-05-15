@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ property.title }} - MUST Housing{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2>{{ property.title }}</h2>
+                <p class="text-muted">📍 {{ property.location }} | {{ property.distance_from_must_km }} km from MUST</p>
+                <h4 class="text-primary">TZS {{ property.monthly_rent|floatformat:0 }} / month</h4>
+                <hr>
+                <p><strong>Type:</strong> {{ property.get_property_type_display }}</p>
+                <p><strong>Amenities:</strong> {{ property.amenities_list|join:", " }}</p>
+                <p><strong>Description:</strong> {{ property.description }}</p>
+                
+                
+                {% if user.role == 'TENANT' and property.is_available %}
+                    <a href="{% url 'bookings:create' property.id %}" class="btn btn-success btn-lg mt-3">Book This Property</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Banner -->
+<div class="card" style="background: linear-gradient(135deg, #00c853 0%, #69f0ae 100%); color: white; margin-bottom: 25px;">
+    <div class="card-body">
+        <h2 style="margin-bottom: 5px;">Welcome, {{ user.username|upper }}! 👋</h2>
+        <p style="opacity: 0.95;">Here's what's happening with your housing today.</p>
+        <span style="background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: 600;">
+            Role: {{ user.role }}
+        </span>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px;">
+    {% if user.role == 'LANDLORD' %}
+    <div class="card" style="border-left: 5px solid #00c853;">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🏠</div>
+            <h3 style="color: var(--text-grey); font-size: 0.9rem; margin-bottom: 5px;">My Properties</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: var(--must-green);">{{ my_properties.count|default:0 }}</p>
+        </div>
+    </div>
+    
+    <div class="card" style="border-left: 5px solid #2979ff;">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">📝</div>
+            <h3 style="color: var(--text-grey); font-size: 0.9rem; margin-bottom: 5px;">Total Bookings</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: #2979ff;">{{ total_bookings|default:0 }}</p>
+        </div>
+    </div>
+    
+    <div class="card" style="border-left: 5px solid #ff9100;">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">⏳</div>
+            <h3 style="color: var(--text-grey); font-size: 0.9rem; margin-bottom: 5px;">Pending Approvals</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: #ff9100;">{{ pending_bookings|default:0 }}</p>
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="border-left: 5px solid #00c853;">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">🏘️</div>
+            <h3 style="color: var(--text-grey); font-size: 0.9rem; margin-bottom: 5px;">Available Houses</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: var(--must-green);">{{ total_properties|default:0 }}</p>
+        </div>
+    </div>
+    
+    <div class="card" style="border-left: 5px solid #2979ff;">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">📋</div>
+            <h3 style="color: var(--text-grey); font-size: 0.9rem; margin-bottom: 5px;">My Active Bookings</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: #2979ff;">{{ active_bookings|default:0 }}</p>
+        </div>
+    </div>
+    
+    <div class="card" style="border-left: 5px solid #ff9100;">
+        <div class="card-body" style="text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 10px;">📝</div>
+            <h3 style="color: var(--text-grey); font-size: 0.9rem; margin-bottom: 5px;">Total Bookings</h3>
+            <p style="font-size: 2.5rem; font-weight: 700; color: #ff9100;">{{ total_bookings|default:0 }}</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Recent Bookings Table -->
+<div class="card">
+    <div class="card-header">
+        <span>📋 Recent Bookings</span>
+        <a href="{% if user.role == 'LANDLORD' %}{% url 'bookings:landlord_bookings' %}{% else %}{% url 'bookings:my_bookings' %}{% endif %}" 
+           style="margin-left: auto; color: white; text-decoration: none; font-size: 0.9rem; font-weight: 500;">
+            View All →
+        </a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% if recent_bookings %}
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Ref No</th>
+                    <th>Property</th>
+                    {% if user.role == 'LANDLORD' %}<th>Tenant</th>{% endif %}
+                    <th>Move-in Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in recent_bookings|slice:":10" %}
+                <tr>
+                    <td style="font-weight: 600;">BK/{{ booking.id|stringformat:"04d" }}</td>
+                    <td>{{ booking.property.title }}</td>
+                    {% if user.role == 'LANDLORD' %}<td>{{ booking.tenant.username }}</td>{% endif %}
+                    <td>{{ booking.move_in_date|date:"d-m-Y" }}</td>
+                    <td>
+                        {% if booking.status == 'CONFIRMED' %}
+                            <span class="badge badge-success">{{ booking.status }}</span>
+                        {% elif booking.status == 'CANCELLED' %}
+                            <span class="badge badge-danger">{{ booking.status }}</span>
+                        {% else %}
+                            <span class="badge" style="background: #fff3cd; color: #856404;">{{ booking.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'properties:detail' booking.property.id %}" 
+                           style="color: var(--must-green); text-decoration: none; font-weight: 500;">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align: center; padding: 40px; color: var(--text-grey);">
+            <div style="font-size: 3rem; margin-bottom: 10px;">📭</div>
+            <p>No bookings yet.</p>
+            {% if user.role == 'TENANT' %}
+            <a href="{% url 'properties:list' %}" class="btn-green" style="margin-top: 15px; display: inline-block;">Search Properties</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

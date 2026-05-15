@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MUST Housing{% endblock %}</title>
+    <style>
+        /* --- GLOBAL VARIABLES --- */
+        :root {
+            --must-green: #00c853; /* Bright Green */
+            --must-green-dark: #009624;
+            --sidebar-width: 260px;
+            --header-height: 70px;
+            --bg-color: #f4f6f9;
+            --text-dark: #333;
+            --text-grey: #666;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* --- HEADER --- */
+        .top-header {
+            background: var(--must-green);
+            color: white;
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header-brand { display: flex; align-items: center; gap: 15px; }
+        .logo-box { width: 50px; height: 50px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--must-green); }
+        .brand-text h1 { font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
+        .brand-text p { font-size: 0.9rem; opacity: 0.9; font-weight: 400; }
+        
+        .header-user { display: flex; align-items: center; gap: 20px; }
+        .user-badge { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; }
+        .avatar-circle { width: 32px; height: 32px; background: rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+        /* --- LAYOUT --- */
+        .layout-container { display: flex; margin-top: var(--header-height); min-height: calc(100vh - var(--header-height)); }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            position: fixed;
+            top: var(--header-height);
+            bottom: 0;
+            left: 0;
+            overflow-y: auto;
+            transition: transform 0.3s;
+        }
+        .nav-menu { list-style: none; padding: 20px 0; }
+        .nav-item { margin-bottom: 5px; }
+        .nav-link {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 25px;
+            color: var(--text-grey);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-left: 4px solid transparent;
+        }
+        .nav-link:hover { background: #f0f0f0; color: var(--must-green); }
+        .nav-link.active {
+            background: #e8f5e9;
+            color: var(--must-green);
+            border-left-color: var(--must-green);
+            font-weight: 700;
+        }
+        .nav-icon { font-size: 1.2rem; width: 24px; text-align: center; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 25px;
+        }
+        
+        /* --- CARDS & WIDGETS --- */
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            background: var(--must-green);
+            color: white;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .card-body { padding: 20px; }
+
+        /* --- FORMS --- */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-dark); }
+        .form-control {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;
+            font-size: 0.95rem; outline: none; transition: border-color 0.3s;
+        }
+        .form-control:focus { border-color: var(--must-green); }
+        .btn-green {
+            background: var(--must-green); color: white; border: none; padding: 10px 20px;
+            border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1rem;
+        }
+        .btn-green:hover { background: var(--must-green-dark); }
+
+        /* --- TABLES --- */
+        .table-custom { width: 100%; border-collapse: collapse; }
+        .table-custom th { text-align: left; padding: 12px; background: #f8f9fa; border-bottom: 2px solid #eee; color: var(--text-grey); }
+        .table-custom td { padding: 12px; border-bottom: 1px solid #eee; }
+        
+        /* --- BADGES --- */
+        .badge { padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); z-index: 999; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; }
+            .mobile-menu-btn { display: block; }
+        }
+        @media (min-width: 769px) { .mobile-menu-btn { display: none; } }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="top-header">
+        <div class="header-brand">
+            <button class="mobile-menu-btn" onclick="toggleSidebar()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; display:none;">☰</button>
+            <div class="logo-box">M</div>
+            <div class="brand-text">
+                <h1>MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</h1>
+                <p>HOUSING MANAGEMENT SYSTEM</p>
+            </div>
+        </div>
+        <div class="header-user">
+            <div class="user-badge">
+                <div class="avatar-circle">{{ user.username|first|upper }}</div>
+                <span>{{ user.username }}</span>
+            </div>
+            <form method="post" action="{% url 'users:logout' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" style="background:none; border:none; color:white; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                    <span>🚪</span> Log out
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <!-- Layout -->
+    <div class="layout-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span class="nav-icon">📊</span> Dashboard</a></li>
+                
+                {% if user.role == 'LANDLORD' %}
+                    <li class="nav-item"><a href="{% url 'properties:create' %}" class="nav-link {% if 'create' in request.path %}active{% endif %}"><span class="nav-icon">➕</span> Add Property</a></li>
+                    <li class="nav-item"><a href="{% url 'properties:list' %}" class="nav-link {% if 'properties' in request.path %}active{% endif %}"><span class="nav-icon">🏠</span> My Properties</a></li>
+                    <li class="nav-item"><a href="{% url 'bookings:landlord_bookings' %}" class="nav-link {% if 'bookings' in request.path %}active{% endif %}"><span class="nav-icon">📋</span> Manage Bookings</a></li>
+                {% elif user.role == 'TENANT' %}
+                    <li class="nav-item"><a href="{% url 'properties:list' %}" class="nav-link"><span class="nav-icon">🔍</span> Search Houses</a></li>
+                    <li class="nav-item"><a href="{% url 'bookings:my_bookings' %}" class="nav-link"><span class="nav-icon">📅</span> My Bookings</a></li>
+                    <li class="nav-item"><a href="{% url 'payments:my_payments' %}" class="nav-link"><span class="nav-icon">💳</span> Payments</a></li>
+                {% endif %}
+
+                <li class="nav-item"><a href="{% url 'core:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}"><span class="nav-icon">👤</span> My Profile</a></li>
+                <li class="nav-item"><a href="{% url 'users:logout' %}" class="nav-link"><span class="nav-icon">🚪</span> Logout</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Breadcrumb -->
+            <div style="margin-bottom: 20px; color: var(--text-grey);">
+                <a href="{% url 'core:dashboard' %}" style="color: var(--must-green); text-decoration: none;">Home</a> 
+                {% if request.resolver_match.url_name != 'dashboard' %}
+                    / <span>{{ request.resolver_match.url_name|title }}</span>
+                {% endif %}
+            </div>
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+    </script>
+</body>
+</html>

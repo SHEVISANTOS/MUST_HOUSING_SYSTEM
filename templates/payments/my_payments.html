@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Payment History{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">💳 Payment History</div>
+    <div class="card-body">
+        {% if payments %}
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Booking Ref</th>
+                    <th>Property</th>
+                    <th>Amount (TZS)</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td>BK/{{ payment.booking.id|stringformat:"04d" }}</td>
+                    <td>{{ payment.booking.property.title }}</td>
+                    <td>{{ payment.amount|floatformat:0 }}</td>
+                    <td>{{ payment.due_date|date:"d-m-Y" }}</td>
+                    <td>
+                        {% if payment.status == 'PENDING' %}
+                            <span class="badge" style="background:#fff3cd; color:#856404;">PENDING</span>
+                        {% elif payment.status == 'COMPLETED' %}
+                            <span class="badge badge-success">COMPLETED</span>
+                        {% else %}
+                            <span class="badge badge-danger">{{ payment.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if payment.status == 'PENDING' %}
+                            <button onclick="showInstructions('{{ payment.id }}', '{{ payment.amount|floatformat:0 }}', '{{ payment.due_date|date:"d M Y" }}')" 
+                                    class="btn-green" style="padding: 6px 12px; font-size: 0.85rem;">
+                                📄 View Instructions
+                            </button>
+                        {% else %}
+                            <span style="color: var(--text-grey);">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align:center; padding:40px; color:var(--text-grey);">
+            <p>✅ No pending payments. All your bookings are paid or awaiting landlord approval.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Payment Instructions Modal -->
+<div id="paymentModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:25px; border-radius:10px; max-width:500px; width:90%; position:relative;">
+        <h3 style="color:var(--must-green); margin-bottom:15px;">📋 Payment Instructions</h3>
+        <p><strong>Amount:</strong> TZS <span id="modalAmount"></span></p>
+        <p><strong>Due Date:</strong> <span id="modalDate"></span></p>
+        <hr style="margin:15px 0; border:0; border-top:1px solid #eee;">
+        <p><strong>Payment Methods:</strong></p>
+        <ul style="margin-left:20px; margin-bottom:15px;">
+            <li><strong>M-Pesa:</strong> Send to 07XX XXX XXX (Landlord)</li>
+            <li><strong>Bank Transfer:</strong> Account: XXXX-XXXX-XXXX</li>
+            <li><strong>Cash:</strong> Pay directly to landlord</li>
+        </ul>
+        <p style="font-size:0.9rem; color:#666; margin-bottom:15px;">
+            ⚠️ After payment, contact your landlord to confirm receipt. <strong>Only landlords can mark payments as completed.</strong>
+        </p>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <a id="downloadSlipBtn" href="#" class="btn-green" style="text-decoration:none;">📥 Download PDF</a>
+            <button onclick="document.getElementById('paymentModal').style.display='none'" style="background:#6c757d; color:white; border:none; padding:10px 15px; border-radius:5px; cursor:pointer;">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function showInstructions(id, amount, date) {
+    document.getElementById('modalAmount').textContent = amount;
+    document.getElementById('modalDate').textContent = date;
+    document.getElementById('downloadSlipBtn').href = `/payments/slip/${id}/download/`;
+    document.getElementById('paymentModal').style.display = 'flex';
+}
+</script>
+{% endblock %}
