@@ -1,24 +1,51 @@
 {% extends 'base.html' %}
 {% block title %}{{ property.title }} - MUST Housing{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h2>{{ property.title }}</h2>
-                <p class="text-muted">📍 {{ property.location }} | {{ property.distance_from_must_km }} km from MUST</p>
-                <h4 class="text-primary">TZS {{ property.monthly_rent|floatformat:0 }} / month</h4>
-                <hr>
-                <p><strong>Type:</strong> {{ property.get_property_type_display }}</p>
-                <p><strong>Amenities:</strong> {{ property.amenities_list|join:", " }}</p>
-                <p><strong>Description:</strong> {{ property.description }}</p>
-                
-                
-                {% if user.role == 'TENANT' and property.is_available %}
-                    <a href="{% url 'bookings:create' property.id %}" class="btn btn-success btn-lg mt-3">Book This Property</a>
-                {% endif %}
-            </div>
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">
+        🏠 Property Details
+    </div>
+    <div class="card-body">
+        <h2 style="margin-bottom: 10px; color: var(--must-green);">{{ property.title }}</h2>
+        
+        <p class="text-muted" style="font-size: 1.1rem; margin-bottom: 20px;">
+            📍 {{ property.location }} | {{ property.distance_from_must_km }} km from MUST
+        </p>
+        
+        <div class="alert alert-info" style="background: #e8f5e9; border-left: 5px solid var(--must-green); padding: 15px; margin-bottom: 25px;">
+            <h4 style="color: var(--must-green-dark); margin: 0;">TZS {{ property.monthly_rent|floatformat:0 }} / month</h4>
         </div>
+
+        <hr style="border-top: 1px solid #eee; margin: 20px 0;">
+
+        <div style="margin-bottom: 15px;">
+            <strong>Type:</strong> 
+            <span class="badge badge-secondary">{{ property.get_property_type_display }}</span>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <strong>Amenities:</strong><br>
+            <span style="color: #555;">{{ property.amenities_list|join:", " }}</span>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <strong>Description:</strong><br>
+            <p style="color: #555; line-height: 1.6;">{{ property.description }}</p>
+        </div>
+
+        <!-- ✅ BOOKING BUTTON (Fixed URL Name) -->
+        {% if user.role == 'TENANT' and property.is_available %}
+            <a href="{% url 'bookings:create_booking' property.id %}" 
+               class="btn btn-green btn-lg" 
+               style="display:inline-block; width: 100%; text-align: center; font-weight: 600;">
+               🏠 Book This Property
+            </a>
+        {% elif not property.is_available %}
+            <button class="btn btn-secondary btn-lg" disabled style="width: 100%; cursor: not-allowed;">
+                ❌ Not Available
+            </button>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

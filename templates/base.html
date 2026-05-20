@@ -2,24 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}MUST Housing{% endblock %}</title>
     <style>
-        /* --- GLOBAL VARIABLES --- */
+        /* ========================================
+           🎨 GLOBAL VARIABLES
+           ======================================== */
         :root {
-            --must-green: #00c853; /* Bright Green */
+            --must-green: #00c853;
             --must-green-dark: #009624;
             --sidebar-width: 260px;
             --header-height: 70px;
             --bg-color: #f4f6f9;
             --text-dark: #333;
             --text-grey: #666;
+            --border-color: #e0e0e0;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg-color); display: flex; flex-direction: column; min-height: 100vh; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
 
-        /* --- HEADER --- */
+        /* ========================================
+           🟢 HEADER
+           ======================================== */
         .top-header {
             background: var(--must-green);
             color: white;
@@ -31,116 +40,394 @@
             position: fixed;
             top: 0; left: 0; right: 0;
             z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-md);
         }
-        .header-brand { display: flex; align-items: center; gap: 15px; }
-        .logo-box { width: 50px; height: 50px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--must-green); }
-        .brand-text h1 { font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
-        .brand-text p { font-size: 0.9rem; opacity: 0.9; font-weight: 400; }
+        .header-brand { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+        .logo-box { 
+            width: 48px; height: 48px; 
+            background: white; border-radius: 10px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: 800; color: var(--must-green); 
+            flex-shrink: 0; font-size: 1.3rem;
+        }
+        .brand-text { min-width: 0; }
+        .brand-text h1 { 
+            font-size: 1.1rem; font-weight: 700; line-height: 1.2; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+        }
+        .brand-text p { font-size: 0.8rem; opacity: 0.9; font-weight: 400; }
         
-        .header-user { display: flex; align-items: center; gap: 20px; }
-        .user-badge { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.2); padding: 5px 15px; border-radius: 20px; }
-        .avatar-circle { width: 32px; height: 32px; background: rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .header-user { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+        .user-badge { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; }
+        .avatar-circle { 
+            width: 32px; height: 32px; 
+            background: rgba(255,255,255,0.3); border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-weight: bold; font-size: 0.9rem; 
+        }
+        .logout-btn { background:none; border:none; color:white; cursor:pointer; display:flex; align-items:center; gap:6px; padding: 6px 10px; font-size: 0.9rem; border-radius: 6px; transition: background 0.2s; }
+        .logout-btn:hover { background: rgba(255,255,255,0.15); }
 
-        /* --- LAYOUT --- */
-        .layout-container { display: flex; margin-top: var(--header-height); min-height: calc(100vh - var(--header-height)); }
+        /* ========================================
+           ☰ MOBILE MENU BUTTON
+           ======================================== */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.6rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .mobile-menu-btn:hover { background: rgba(255,255,255,0.15); }
 
-        /* --- SIDEBAR --- */
+        /* ========================================
+           📐 LAYOUT
+           ======================================== */
+        .layout-container { display: flex; margin-top: var(--header-height); min-height: calc(100vh - var(--header-height)); position: relative; }
+
+        /* ========================================
+           📂 SIDEBAR
+           ======================================== */
         .sidebar {
             width: var(--sidebar-width);
             background: white;
-            border-right: 1px solid #e0e0e0;
+            border-right: 1px solid var(--border-color);
             position: fixed;
             top: var(--header-height);
             bottom: 0;
             left: 0;
             overflow-y: auto;
-            transition: transform 0.3s;
+            overflow-x: hidden;
+            transition: transform 0.3s ease;
+            z-index: 999;
         }
-        .nav-menu { list-style: none; padding: 20px 0; }
-        .nav-item { margin-bottom: 5px; }
+        .nav-menu { padding: 15px 0; }
+        .nav-item { margin-bottom: 4px; }
         .nav-link {
             display: flex; align-items: center; gap: 12px;
-            padding: 12px 25px;
+            padding: 12px 22px;
             color: var(--text-grey);
-            text-decoration: none;
             font-weight: 500;
             transition: all 0.2s;
             border-left: 4px solid transparent;
+            font-size: 0.95rem;
         }
-        .nav-link:hover { background: #f0f0f0; color: var(--must-green); }
+        .nav-link:hover { background: #f8f9fa; color: var(--must-green); }
         .nav-link.active {
             background: #e8f5e9;
             color: var(--must-green);
             border-left-color: var(--must-green);
-            font-weight: 700;
+            font-weight: 600;
         }
-        .nav-icon { font-size: 1.2rem; width: 24px; text-align: center; }
+        .nav-icon { font-size: 1.15rem; width: 24px; text-align: center; flex-shrink: 0; }
 
-        /* --- MAIN CONTENT --- */
+        /* ========================================
+           📄 MAIN CONTENT
+           ======================================== */
         .main-content {
             flex: 1;
-            margin-left: var(--sidebar-width);
-            padding: 25px;
+            padding: 24px;
+            width: 100%;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        
-        /* --- CARDS & WIDGETS --- */
+
+        /* ========================================
+           🌫️ SIDEBAR OVERLAY (MOBILE)
+           ======================================== */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: var(--header-height);
+            left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 998;
+            backdrop-filter: blur(2px);
+        }
+        .sidebar-overlay.active { display: block; }
+
+        /* ========================================
+           📦 CARDS & WIDGETS
+           ======================================== */
         .card {
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
             margin-bottom: 20px;
             overflow: hidden;
         }
         .card-header {
             background: var(--must-green);
             color: white;
-            padding: 15px 20px;
-            font-size: 1.1rem;
+            padding: 16px 20px;
+            font-size: 1.05rem;
             font-weight: 600;
             display: flex; align-items: center; gap: 10px;
         }
         .card-body { padding: 20px; }
 
-        /* --- FORMS --- */
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: var(--text-dark); }
+        /* ========================================
+           📝 FORMS
+           ======================================== */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 500; color: var(--text-dark); font-size: 0.9rem; }
         .form-control {
-            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;
-            font-size: 0.95rem; outline: none; transition: border-color 0.3s;
+            width: 100%; padding: 11px 14px; border: 1px solid #ddd; border-radius: 8px;
+            font-size: 0.95rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .form-control:focus { border-color: var(--must-green); }
-        .btn-green {
-            background: var(--must-green); color: white; border: none; padding: 10px 20px;
-            border-radius: 5px; cursor: pointer; font-weight: 600; font-size: 1rem;
-        }
-        .btn-green:hover { background: var(--must-green-dark); }
-
-        /* --- TABLES --- */
-        .table-custom { width: 100%; border-collapse: collapse; }
-        .table-custom th { text-align: left; padding: 12px; background: #f8f9fa; border-bottom: 2px solid #eee; color: var(--text-grey); }
-        .table-custom td { padding: 12px; border-bottom: 1px solid #eee; }
+        .form-control:focus { border-color: var(--must-green); box-shadow: 0 0 0 3px rgba(0,200,83,0.15); }
         
-        /* --- BADGES --- */
-        .badge { padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; font-weight: 600; }
+        /* ========================================
+           🔘 BUTTONS
+           ======================================== */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 10px 18px; border-radius: 8px;
+            font-weight: 600; font-size: 0.95rem;
+            cursor: pointer; border: none; transition: all 0.2s;
+        }
+        .btn-green { background: var(--must-green); color: white; }
+        .btn-green:hover { background: var(--must-green-dark); transform: translateY(-1px); }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-secondary:hover { background: #5a6268; }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+
+        .button-container {
+            display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;
+            margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);
+        }
+
+        /* ========================================
+           📊 TABLES - SCROLLABLE
+           ======================================== */
+        .table-wrapper { 
+            overflow-x: auto; 
+            -webkit-overflow-scrolling: touch; 
+            border-radius: 8px;
+        }
+        .table-custom { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 700px; /* Ensures table doesn't squash */
+        }
+        .table-custom th { 
+            text-align: left; 
+            padding: 14px; 
+            background: #f8f9fa; 
+            border-bottom: 2px solid #eee; 
+            color: var(--text-grey); 
+            font-weight: 600; 
+            font-size: 0.85rem;
+            white-space: nowrap; /* Prevent header wrapping */
+        }
+        .table-custom td { 
+            padding: 14px; 
+            border-bottom: 1px solid #eee; 
+            font-size: 0.9rem;
+            white-space: nowrap; /* Prevent cell wrapping */
+        }
+
+        /* 🔹 Recent Bookings Table (Special Styling) */
+        .recent-bookings-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 12px;
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+        .recent-bookings-table {
+            width: 100%;
+            min-width: 850px; /* Wider for more columns */
+            border-collapse: collapse;
+        }
+        .recent-bookings-table th,
+        .recent-bookings-table td {
+            padding: 14px 18px;
+            text-align: left;
+            white-space: nowrap;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .recent-bookings-table th {
+            background: rgba(0, 200, 83, 0.1);
+            color: var(--must-green-dark);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .recent-bookings-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        /* Custom scrollbar for recent bookings */
+        .recent-bookings-wrapper::-webkit-scrollbar {
+            height: 8px;
+        }
+        .recent-bookings-wrapper::-webkit-scrollbar-track {
+            background: rgba(0, 200, 83, 0.1);
+            border-radius: 10px;
+        }
+        .recent-bookings-wrapper::-webkit-scrollbar-thumb {
+            background: var(--must-green);
+            border-radius: 10px;
+        }
+        .recent-bookings-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--must-green-dark);
+        }
+
+        /* ========================================
+           🏷️ BADGES
+           ======================================== */
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; display: inline-block; }
         .badge-success { background: #d4edda; color: #155724; }
         .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .badge-secondary { background: #e2e3e5; color: #383d41; }
 
-        /* --- RESPONSIVE --- */
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); z-index: 999; }
-            .sidebar.open { transform: translateX(0); }
-            .main-content { margin-left: 0; }
-            .mobile-menu-btn { display: block; }
+        /* ========================================
+           🍞 BREADCRUMB
+           ======================================== */
+        .breadcrumb { margin-bottom: 20px; color: var(--text-grey); font-size: 0.9rem; }
+        .breadcrumb a { color: var(--must-green); font-weight: 500; }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        /* ========================================
+           🦶 FOOTER
+           ======================================== */
+        .footer {
+            background: white;
+            border-top: 1px solid var(--border-color);
+            padding: 20px;
+            margin-top: auto;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-grey);
         }
-        @media (min-width: 769px) { .mobile-menu-btn { display: none; } }
+        .footer a { color: var(--must-green); text-decoration: none; font-weight: 500; }
+
+        /* ========================================
+           📱 RESPONSIVE BREAKPOINTS (SIMS STYLE)
+           ======================================== */
+        
+        /* 🔹 PC & iPad (≥768px) - Sidebar PERMANENTLY FIXED */
+        @media (min-width: 768px) {
+            .mobile-menu-btn { display: none !important; }
+            
+            .sidebar {
+                position: fixed !important;
+                top: var(--header-height) !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                width: var(--sidebar-width) !important;
+                transform: translateX(0) !important;
+                z-index: 999 !important;
+                box-shadow: 2px 0 12px rgba(0,0,0,0.05);
+            }
+            
+            .main-content {
+                margin-left: var(--sidebar-width) !important;
+                padding: 24px;
+                min-height: calc(100vh - var(--header-height));
+                width: calc(100% - var(--sidebar-width));
+            }
+            
+            .sidebar-overlay { display: none !important; }
+            .brand-text p { display: block; }
+            
+            /* Prevent JS from hiding sidebar on desktop/tablet */
+            .sidebar.open { transform: translateX(0) !important; }
+        }
+
+        /* 🔹 Mobile Phones (≤767px) - Sidebar Collapsible */
+        @media (max-width: 767px) {
+            .mobile-menu-btn { display: block !important; }
+            
+            .sidebar {
+                position: fixed !important;
+                top: var(--header-height) !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                width: var(--sidebar-width) !important;
+                transform: translateX(-100%) !important;
+                z-index: 999 !important;
+                box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+            }
+            
+            .sidebar.open { transform: translateX(0) !important; }
+            
+            .main-content {
+                margin-left: 0 !important;
+                padding: 16px;
+                width: 100%;
+            }
+            
+            .sidebar-overlay.active { display: block; }
+            
+            .header-user .user-badge span { display: none; }
+            .logout-btn span { display: none; }
+            .logout-btn::after { content: "🚪"; font-size: 1.1rem; }
+            
+            .brand-text h1 { font-size: 1rem; }
+            .brand-text p { display: none; }
+            .logo-box { width: 44px; height: 44px; font-size: 1.1rem; }
+            
+            .button-container { flex-direction: column; }
+            .button-container .btn { width: 100%; }
+        }
+
+        /* 🔹 Small Phones (≤576px) */
+        @media (max-width: 576px) {
+            .top-header { padding: 0 12px; }
+            .main-content { padding: 14px; }
+            .brand-text h1 { font-size: 0.95rem; }
+            .logo-box { width: 40px; height: 40px; font-size: 1rem; }
+            
+            .nav-link { padding: 11px 16px; font-size: 0.92rem; gap: 10px; }
+            .nav-icon { font-size: 1.05rem; width: 22px; }
+            
+            .table-wrapper { margin: 0 -14px; padding: 0 14px; }
+        }
+
+        /* 🔹 Extra Small Phones (≤480px) */
+        @media (max-width: 480px) {
+            :root { --header-height: 65px; }
+            .top-header { padding: 0 10px; height: var(--header-height); }
+            .logo-box { width: 38px; height: 38px; font-size: 0.95rem; }
+            .brand-text h1 { font-size: 0.9rem; }
+            
+            .main-content { padding: 12px; }
+            .card { border-radius: 10px; margin-bottom: 16px; }
+            .card-header { font-size: 0.95rem; padding: 14px 16px; }
+            .card-body { padding: 16px; }
+            
+            .btn { padding: 9px 14px; font-size: 0.9rem; }
+            .form-control { padding: 10px 12px; font-size: 0.92rem; }
+        }
+
+        /* 🔹 Print Styles */
+        @media print {
+            .top-header, .sidebar, .mobile-menu-btn, .sidebar-overlay { display: none !important; }
+            .main-content { margin-left: 0; padding: 0; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+        }
+
+        /* 🔹 Accessibility: Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; animation: none !important; }
+        }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header class="top-header">
         <div class="header-brand">
-            <button class="mobile-menu-btn" onclick="toggleSidebar()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; display:none;">☰</button>
+            <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle navigation">☰</button>
             <div class="logo-box">M</div>
             <div class="brand-text">
                 <h1>MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</h1>
@@ -154,8 +441,8 @@
             </div>
             <form method="post" action="{% url 'users:logout' %}" style="display:inline;">
                 {% csrf_token %}
-                <button type="submit" style="background:none; border:none; color:white; cursor:pointer; display:flex; align-items:center; gap:5px;">
-                    <span>🚪</span> Log out
+                <button type="submit" class="logout-btn" aria-label="Log out">
+                    <span>Log out</span>
                 </button>
             </form>
         </div>
@@ -166,39 +453,128 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <ul class="nav-menu">
-                <li class="nav-item"><a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span class="nav-icon">📊</span> Dashboard</a></li>
+                <li class="nav-item">
+                    <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <span class="nav-icon">📊</span> Dashboard
+                    </a>
+                </li>
                 
                 {% if user.role == 'LANDLORD' %}
-                    <li class="nav-item"><a href="{% url 'properties:create' %}" class="nav-link {% if 'create' in request.path %}active{% endif %}"><span class="nav-icon">➕</span> Add Property</a></li>
-                    <li class="nav-item"><a href="{% url 'properties:list' %}" class="nav-link {% if 'properties' in request.path %}active{% endif %}"><span class="nav-icon">🏠</span> My Properties</a></li>
-                    <li class="nav-item"><a href="{% url 'bookings:landlord_bookings' %}" class="nav-link {% if 'bookings' in request.path %}active{% endif %}"><span class="nav-icon">📋</span> Manage Bookings</a></li>
+                <li class="nav-item">
+                    <a href="{% url 'properties:create' %}" class="nav-link {% if 'create' in request.path %}active{% endif %}">
+                        <span class="nav-icon">➕</span> Add Property
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'properties:list' %}" class="nav-link {% if 'properties' in request.path and 'create' not in request.path %}active{% endif %}">
+                        <span class="nav-icon">🏠</span> My Properties
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'bookings:landlord_bookings' %}" class="nav-link {% if 'bookings' in request.path %}active{% endif %}">
+                        <span class="nav-icon">📋</span> Manage Bookings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'payments:landlord_payments' %}" class="nav-link {% if 'payments/landlord' in request.path %}active{% endif %}">
+                        <span class="nav-icon">💰</span> Verify Payments
+                    </a>
+                </li>
+                
                 {% elif user.role == 'TENANT' %}
-                    <li class="nav-item"><a href="{% url 'properties:list' %}" class="nav-link"><span class="nav-icon">🔍</span> Search Houses</a></li>
-                    <li class="nav-item"><a href="{% url 'bookings:my_bookings' %}" class="nav-link"><span class="nav-icon">📅</span> My Bookings</a></li>
-                    <li class="nav-item"><a href="{% url 'payments:my_payments' %}" class="nav-link"><span class="nav-icon">💳</span> Payments</a></li>
+                <li class="nav-item">
+                    <a href="{% url 'properties:list' %}" class="nav-link {% if 'properties' in request.path %}active{% endif %}">
+                        <span class="nav-icon">🔍</span> Search Houses
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'bookings:my_bookings' %}" class="nav-link {% if 'bookings' in request.path %}active{% endif %}">
+                        <span class="nav-icon">📅</span> My Bookings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'payments:my_payments' %}" class="nav-link {% if 'payments/my-payments' in request.path %}active{% endif %}">
+                        <span class="nav-icon">💳</span> Payments
+                    </a>
+                </li>
                 {% endif %}
-
-                <li class="nav-item"><a href="{% url 'core:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}"><span class="nav-icon">👤</span> My Profile</a></li>
-                <li class="nav-item"><a href="{% url 'users:logout' %}" class="nav-link"><span class="nav-icon">🚪</span> Logout</a></li>
+                
+                <li class="nav-item">
+                    <a href="{% url 'core:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                        <span class="nav-icon">👤</span> My Profile
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'users:logout' %}" class="nav-link">
+                        <span class="nav-icon">🚪</span> Logout
+                    </a>
+                </li>
             </ul>
         </aside>
 
+        <!-- Overlay for mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
         <!-- Main Content -->
         <main class="main-content">
-            <!-- Breadcrumb -->
-            <div style="margin-bottom: 20px; color: var(--text-grey);">
-                <a href="{% url 'core:dashboard' %}" style="color: var(--must-green); text-decoration: none;">Home</a> 
+            <div class="breadcrumb">
+                <a href="{% url 'core:dashboard' %}">Home</a> 
                 {% if request.resolver_match.url_name != 'dashboard' %}
                     / <span>{{ request.resolver_match.url_name|title }}</span>
                 {% endif %}
             </div>
             
             {% block content %}{% endblock %}
+            
+            <!-- Footer -->
+            <footer class="footer">
+                <p>© 2023-2026 <a href="#">MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</a></p>
+                <p>Designed and Developed by <a href="#">SHEVI_SANTOS</a></p>
+            </footer>
         </main>
     </div>
 
+    <!-- JavaScript -->
     <script>
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+            
+            // Prevent body scroll when sidebar is open on mobile
+            if (window.innerWidth <= 767) {
+                document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+            }
+        }
+
+        // Close sidebar when clicking a nav link on mobile
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 767) {
+                    toggleSidebar();
+                }
+            });
+        });
+
+        // Close sidebar on resize to desktop/tablet
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 767) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // Close sidebar on Escape key (mobile only)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && window.innerWidth <= 767) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar.classList.contains('open')) {
+                    toggleSidebar();
+                }
+            }
+        });
     </script>
 </body>
 </html>

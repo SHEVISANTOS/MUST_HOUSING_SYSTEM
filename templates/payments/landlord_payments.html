@@ -1,56 +1,116 @@
 {% extends 'base.html' %}
-{% block title %}Verify Payments{% endblock %}
+{% block title %}Verify Tenant Payments{% endblock %}
 
 {% block content %}
 <div class="card">
-    <div class="card-header">💰 Verify Tenant Payments</div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>💰 Verify Tenant Payments</span>
+        <span class="badge badge-success">Total: {{ total_confirmed|floatformat:0 }} TZS</span>
+    </div>
     <div class="card-body">
+        <!-- Stats Overview -->
+        <div class="d-flex gap-3 mb-4">
+            <div class="flex-grow-1 card p-3 text-center border-warning">
+                <div class="fs-4 fw-bold text-warning">{{ pending_count }}</div>
+                <small class="text-muted">Awaiting Verification</small>
+            </div>
+            <div class="flex-grow-1 card p-3 text-center border-success">
+                <div class="fs-4 fw-bold text-success">{{ completed_count }}</div>
+                <small class="text-muted">Confirmed</small>
+            </div>
+        </div>
+
         {% if payments %}
-        <table class="table-custom">
-            <thead>
-                <tr>
-                    <th>Payment ID</th>
-                    <th>Tenant</th>
-                    <th>Property</th>
-                    <th>Amount (TZS)</th>
-                    <th>Due Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for payment in payments %}
-                <tr>
-                    <td>#{{ payment.id }}</td>
-                    <td>{{ payment.booking.tenant.username }}</td>
-                    <td>{{ payment.booking.property.title }}</td>
-                    <td>{{ payment.amount|floatformat:0 }}</td>
-                    <td>{{ payment.due_date|date:"d-m-Y" }}</td>
-                    <td>
-                        {% if payment.status == 'PENDING' %}
-                            <span class="badge" style="background:#fff3cd; color:#856404;">PENDING</span>
-                        {% elif payment.status == 'COMPLETED' %}
-                            <span class="badge badge-success">COMPLETED</span>
-                        {% else %}
-                            <span class="badge badge-danger">{{ payment.status }}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if payment.status == 'PENDING' %}
-                            <a href="{% url 'payments:verify' payment.id %}" class="btn-green" style="padding:6px 12px; font-size:0.85rem; text-decoration:none;">
-                                ✅ Verify Payment
-                            </a>
-                        {% else %}
-                            <span style="color:var(--text-grey);">-</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <!-- Responsive Table Wrapper -->
+        <div class="table-wrapper">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Payment ID</th>
+                        <th>Tenant</th>
+                        <th>Property</th>
+                        <th>Amount (TZS)</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td data-label="Payment ID" style="font-weight: 600;">
+                            #{{ payment.id|slice:":8" }}
+                        </td>
+                        <td data-label="Tenant">
+                            {{ payment.booking.tenant.username }}
+                            {% if payment.booking.tenant.phone %}
+                                <br><small class="text-muted">{{ payment.booking.tenant.phone }}</small>
+                            {% endif %}
+                        </td>
+                        <td data-label="Property">
+                            {{ payment.booking.property.title|truncatewords:3 }}
+                            <br><small class="text-muted">{{ payment.booking.property.location }}</small>
+                        </td>
+                        <td data-label="Amount" style="font-weight: 600;">
+                            {{ payment.amount|floatformat:0 }}
+                        </td>
+                        <td data-label="Due Date">
+                            {{ payment.due_date|date:"d-m-Y" }}
+                            {% if payment.is_overdue and payment.status != 'COMPLETED' %}
+                                <br><small class="text-danger">⚠️ Overdue</small>
+                            {% endif %}
+                        </td>
+                        <td data-label="Status">
+                            {% if payment.status == 'COMPLETED' %}
+                                <span class="badge badge-success">✅ Confirmed</span>
+                            {% elif payment.status == 'TENANT_PAID' %}
+                                <span class="badge badge-warning">⏳ Awaiting Verification</span>
+                            {% elif payment.status == 'PENDING' %}
+                                <span class="badge badge-info"> Pending</span>
+                            {% elif payment.status == 'OVERDUE' %}
+                                <span class="badge badge-danger">⚠️ Overdue</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ payment.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Action">
+                            {% if payment.status == 'TENANT_PAID' %}
+                                <a href="{% url 'payments:verify' payment.id %}" 
+                                   class="btn btn-sm btn-green"
+                                   style="display:inline-block; margin-bottom:4px; width:100%; text-align:center;">
+                                    ✅ Verify
+                                </a>
+                                <a href="{% url 'payments:payment_detail' payment.id %}" 
+                                   class="btn btn-sm btn-secondary"
+                                   style="display:inline-block; width:100%; text-align:center;">
+                                    📄 View
+                                </a>
+                            {% elif payment.status == 'COMPLETED' %}
+                                <span class="text-success fw-bold" style="display:block; text-align:center;">✅ Verified</span>
+                            {% else %}
+                                <a href="{% url 'payments:payment_detail' payment.id %}" 
+                                   class="btn btn-sm btn-secondary"
+                                   style="display:inline-block; width:100%; text-align:center;">
+                                    📄 View
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-        <div style="text-align:center; padding:40px; color:var(--text-grey);">
-            <p>✅ No pending payments to verify.</p>
+        <!-- Empty State -->
+        <div class="text-center py-5" style="color: var(--text-grey);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">✅</div>
+            <p class="mb-2">No pending payments to verify.</p>
+            <p class="small text-muted mb-4">
+                When tenants mark payments as made, they'll appear here for your confirmation.
+            </p>
+            <a href="{% url 'bookings:landlord_bookings' %}" class="btn btn-green">
+                📋 View My Bookings
+            </a>
         </div>
         {% endif %}
     </div>
