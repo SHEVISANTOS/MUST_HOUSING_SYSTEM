@@ -66,7 +66,7 @@
     {% endif %}
 </div>
 
-<!-- Recent Bookings Table -->
+<!-- Recent Bookings Table - SCROLLABLE -->
 <div class="card">
     <div class="card-header">
         <span>📋 Recent Bookings</span>
@@ -77,49 +77,90 @@
     </div>
     <div class="card-body" style="padding: 0;">
         {% if recent_bookings %}
-        <table class="table-custom">
-            <thead>
-                <tr>
-                    <th>Ref No</th>
-                    <th>Property</th>
-                    {% if user.role == 'LANDLORD' %}<th>Tenant</th>{% endif %}
-                    <th>Move-in Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for booking in recent_bookings|slice:":10" %}
-                <tr>
-                    <td style="font-weight: 600;">BK/{{ booking.id|stringformat:"04d" }}</td>
-                    <td>{{ booking.property.title }}</td>
-                    {% if user.role == 'LANDLORD' %}<td>{{ booking.tenant.username }}</td>{% endif %}
-                    <td>{{ booking.move_in_date|date:"d-m-Y" }}</td>
-                    <td>
-                        {% if booking.status == 'CONFIRMED' %}
-                            <span class="badge badge-success">{{ booking.status }}</span>
-                        {% elif booking.status == 'CANCELLED' %}
-                            <span class="badge badge-danger">{{ booking.status }}</span>
-                        {% else %}
-                            <span class="badge" style="background: #fff3cd; color: #856404;">{{ booking.status }}</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{% url 'properties:detail' booking.property.id %}" 
-                           style="color: var(--must-green); text-decoration: none; font-weight: 500;">
-                            View
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <!-- 🔹 SCROLLABLE WRAPPER for Recent Bookings -->
+        <div class="recent-bookings-wrapper">
+            <table class="recent-bookings-table">
+                <thead>
+                    <tr>
+                        <th>Ref No</th>
+                        <th>Property</th>
+                        {% if user.role == 'LANDLORD' %}<th>Tenant</th>{% endif %}
+                        <th>Move-in Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in recent_bookings|slice:":10" %}
+                    <tr>
+                        <td data-label="Ref No" style="font-weight: 600;">BK/{{ booking.id|stringformat:"04d" }}</td>
+                        <td data-label="Property">{{ booking.property.title|truncatewords:3 }}</td>
+                        {% if user.role == 'LANDLORD' %}<td data-label="Tenant">{{ booking.tenant.username }}</td>{% endif %}
+                        <td data-label="Move-in Date">{{ booking.move_in_date|date:"d-m-Y" }}</td>
+                        <td data-label="Status">
+                            {% if booking.status == 'CONFIRMED' %}
+                                <span class="badge badge-success">{{ booking.status }}</span>
+                            {% elif booking.status == 'CANCELLED' %}
+                                <span class="badge badge-danger">{{ booking.status }}</span>
+                            {% elif booking.status == 'PENDING' %}
+                                <span class="badge badge-warning">{{ booking.status }}</span>
+                            {% elif booking.status == 'PAID' %}
+                                <span class="badge badge-info">{{ booking.status }}</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ booking.status }}</span>
+                            {% endif %}
+                        </td>
+                        
+                        <!-- 🔹 DYNAMIC ACTION COLUMN -->
+                        <td data-label="Action">
+                            {% if user.role == 'LANDLORD' %}
+                                <!-- LANDLORD ACTIONS -->
+                                {% if booking.status == 'PENDING' %}
+                                    <a href="{% url 'bookings:approve_booking' booking.id %}" class="btn btn-sm btn-green" style="display:inline-block; margin-bottom:4px;">✅ Approve</a>
+                                    <a href="{% url 'bookings:reject_booking' booking.id %}" class="btn btn-sm btn-secondary" style="display:inline-block;">❌ Reject</a>
+                                
+                                {% elif booking.status == 'CONFIRMED' %}
+                                    <a href="{% url 'payments:landlord_payments' %}" class="btn btn-sm btn-info" style="display:inline-block;">💰 Check Payment</a>
+                                
+                                {% elif booking.status == 'PAID' %}
+                                    <span class="text-muted" style="font-size:0.85rem;">Completed</span>
+                                
+                                {% else %}
+                                    <a href="{% url 'bookings:view_booking' booking.id %}" class="btn btn-sm btn-secondary" style="display:inline-block;">View Details</a>
+                                {% endif %}
+
+                            {% else %}
+                                <!-- TENANT ACTIONS (SAFE CHECK ADDED) -->
+                                {% if booking.status == 'CONFIRMED' %}
+                                    <a href="{% url 'payments:mark_payment' booking.id %}" class="btn btn-sm btn-green" style="display:inline-block;">💳 Pay Now</a>
+                                
+                                {% elif booking.status == 'PENDING' %}
+                                    <span class="text-muted" style="font-size:0.85rem;">Awaiting Approval</span>
+                                
+                                {% elif booking.status == 'PAID' %}
+                                    <!-- ✅ SAFE CHECK: Only show receipt if payment actually exists -->
+                                    {% if booking.payment %}
+                                        <a href="{% url 'payments:payment_detail' booking.payment.id %}" class="btn btn-sm btn-secondary" style="display:inline-block;">📄 Receipt</a>
+                                    {% else %}
+                                        <span class="badge badge-success">Verified</span>
+                                    {% endif %}
+                                
+                                {% else %}
+                                    <a href="{% url 'bookings:my_bookings' %}" class="btn btn-sm btn-secondary" style="display:inline-block;">View</a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
         <div style="text-align: center; padding: 40px; color: var(--text-grey);">
             <div style="font-size: 3rem; margin-bottom: 10px;">📭</div>
             <p>No bookings yet.</p>
             {% if user.role == 'TENANT' %}
-            <a href="{% url 'properties:list' %}" class="btn-green" style="margin-top: 15px; display: inline-block;">Search Properties</a>
+            <a href="{% url 'properties:list' %}" class="btn btn-green" style="margin-top: 15px; display: inline-block;">Search Properties</a>
             {% endif %}
         </div>
         {% endif %}

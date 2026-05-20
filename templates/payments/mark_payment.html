@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Mark Payment Made{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 700px; margin: 0 auto;">
+    <div class="card-header">✅ Mark Payment as Made</div>
+    <div class="card-body">
+        
+        <!-- ✅ DYNAMIC PAYMENT BREAKDOWN -->
+        <div class="alert alert-info mb-4" style="background:#d1ecf1; border:1px solid #bee5eb; padding:20px; border-radius:8px;">
+            <h5 class="mb-3" style="color: #0c5460; font-weight: 600;">💰 Payment Calculation</h5>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #bee5eb; padding-bottom: 8px;">
+                <span><strong>Property:</strong></span>
+                <span>{{ booking.property.title }}</span>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #bee5eb; padding-bottom: 8px;">
+                <span><strong>Monthly Rent:</strong></span>
+                <span>TZS {{ monthly_rent|floatformat:0 }}</span>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #bee5eb; padding-bottom: 8px;">
+                <span><strong>Duration:</strong></span>
+                <span>{{ months_booked }} Month(s)</span>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #666;">
+                <span><em>({{ booking.move_in_date|date:"d M Y" }} to {{ booking.move_out_date|date:"d M Y" }})</em></span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 15px; padding-top: 10px; border-top: 2px solid #0c5460;">
+                <span style="font-size: 1.1rem; font-weight: 700; color: #0c5460;">TOTAL AMOUNT DUE:</span>
+                <span style="font-size: 1.3rem; font-weight: 800; color: var(--must-green);">TZS {{ total_amount|floatformat:0 }}</span>
+            </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Hidden field to ensure backend calculation is used, but form expects it -->
+            <input type="hidden" name="amount" value="{{ total_amount }}">
+
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Payment Method *</label>
+                {{ form.payment_method }}
+                {% if form.payment_method.errors %}
+                    <small class="text-danger">{{ form.payment_method.errors }}</small>
+                {% endif %}
+            </div>
+            
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Payment Reference (Optional)</label>
+                {{ form.payment_reference }}
+                <small class="text-muted" style="color:#666; font-size:0.85rem;">e.g., M-Pesa code: QKH123456789 or Bank Ref</small>
+            </div>
+            
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Upload Proof (Optional)</label>
+                {{ form.payment_proof }}
+                <small class="text-muted" style="color:#666; font-size:0.85rem;">Screenshot of M-Pesa message, bank receipt, etc.</small>
+            </div>
+            
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Notes (Optional)</label>
+                {{ form.payment_notes }}
+            </div>
+
+            <div class="alert alert-warning" style="background:#fff3cd; border:1px solid #ffc107; padding:12px; border-radius:6px; margin:20px 0;">
+                <strong>⚠️ Important:</strong> Only mark as paid after you have actually sent the money offline. 
+                Your landlord will verify receipt before confirming.
+            </div>
+
+            <div class="button-container" style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:20px; padding-top:20px; border-top:1px solid #eee;">
+                <a href="{% url 'bookings:my_bookings' %}" class="btn btn-secondary">← Cancel</a>
+                <button type="submit" class="btn btn-green">✅ Confirm Payment of TZS {{ total_amount|floatformat:0 }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

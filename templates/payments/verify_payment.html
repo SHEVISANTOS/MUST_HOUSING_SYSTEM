@@ -2,69 +2,81 @@
 {% block title %}Verify Payment{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width:700px; margin:0 auto;">
-    <!-- Green Header -->
+<div class="card" style="max-width: 600px; margin: 0 auto;">
     <div class="card-header">✅ Confirm Payment Receipt</div>
-    
     <div class="card-body">
-        <!-- Warning Alert -->
-        <div class="alert" style="background:#e8f5e9; border-left:5px solid var(--must-green); color:#2e7d32; padding:15px; margin-bottom:25px; display:flex; align-items:center; gap:10px;">
-            <span style="font-size:1.5rem;">⚠️</span>
-            <div>
-                <strong>Verify Before Approving:</strong><br>
-                <span style="font-size:0.95rem;">Only click verify if you have physically received the payment from the tenant or seen the transaction confirmation on your phone.</span>
-            </div>
-        </div>
-        
-        <!-- Payment Details Box -->
-        <div style="background:#f8f9fa; padding:20px; border-radius:8px; margin-bottom:25px;">
-            <h3 style="margin-top:0; margin-bottom:15px; color:var(--text-dark); border-bottom:1px solid #ddd; padding-bottom:10px;">Transaction Details</h3>
-            <table style="width:100%; font-size:1rem;">
-                <tr>
-                    <td style="padding:10px 0; color:var(--text-grey); width:40%;">Tenant:</td>
-                    <td style="padding:10px 0; font-weight:600;">{{ payment.booking.tenant.username }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:10px 0; color:var(--text-grey);">Phone:</td>
-                    <td style="padding:10px 0; font-weight:600;">{{ payment.booking.tenant.phone|default:"Not provided" }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:10px 0; color:var(--text-grey);">Property:</td>
-                    <td style="padding:10px 0; font-weight:600;">{{ payment.booking.property.title }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:10px 0; color:var(--text-grey);">Amount:</td>
-                    <td style="padding:10px 0; font-weight:700; font-size:1.3rem; color:var(--must-green);">TZS {{ payment.amount|floatformat:0 }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:10px 0; color:var(--text-grey);">Due Date:</td>
-                    <td style="padding:10px 0; font-weight:600;">{{ payment.due_date|date:"d-m-Y" }}</td>
-                </tr>
-                <tr>
-                    <td style="padding:10px 0; color:var(--text-grey);">Current Status:</td>
-                    <td style="padding:10px 0;">
-                        <span class="badge" style="background:#fff3cd; color:#856404; padding:5px 10px; border-radius:15px;">{{ payment.status }}</span>
-                    </td>
-                </tr>
-            </table>
+        <div class="alert alert-warning mb-4" style="background:#fff3cd; border:1px solid #ffc107; padding:15px; border-radius:6px;">
+            <strong>⚠️ Verify Before Approving:</strong> Only click verify if you have physically received the payment from the tenant or seen the transaction confirmation on your phone.
         </div>
 
-        <!-- Action Buttons -->
+        <table class="info-table" style="width:100%; margin-bottom:20px;">
+            <tr>
+                <td class="label" style="width:35%; color:var(--text-grey); font-weight:500;">Tenant:</td>
+                <td class="value" style="font-weight:600;">{{ payment.booking.tenant.username }}</td>
+            </tr>
+            <tr>
+                <td class="label">Phone:</td>
+                <td class="value">{{ payment.booking.tenant.phone|default:"Not provided" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Property:</td>
+                <td class="value">{{ payment.booking.property.title }}</td>
+            </tr>
+            <tr>
+                <td class="label">Amount:</td>
+                <td class="value fw-bold">TZS {{ payment.amount|floatformat:0 }}</td>
+            </tr>
+            <tr>
+                <td class="label">Due Date:</td>
+                <td class="value">{{ payment.due_date|date:"d-m-Y" }}</td>
+            </tr>
+            <tr>
+                <td class="label">Current Status:</td>
+                <td class="value">{{ payment.get_status_display }}</td>
+            </tr>
+            {% if payment.payment_reference %}
+            <tr>
+                <td class="label">Payment Reference:</td>
+                <td class="value">{{ payment.payment_reference }}</td>
+            </tr>
+            {% endif %}
+            {% if payment.payment_proof %}
+            <tr>
+                <td class="label">Uploaded Proof:</td>
+                <td class="value">
+                    <a href="{{ payment.payment_proof.url }}" target="_blank" class="btn btn-sm btn-green">🖼️ View Proof</a>
+                </td>
+            </tr>
+            {% endif %}
+            {% if payment.payment_notes %}
+            <tr>
+                <td class="label">Tenant Notes:</td>
+                <td class="value">{{ payment.payment_notes }}</td>
+            </tr>
+            {% endif %}
+        </table>
+
         <form method="post">
             {% csrf_token %}
-            <button type="submit" class="btn-green" style="width:100%; padding:14px; font-size:1.1rem; box-shadow: 0 4px 10px rgba(0, 200, 83, 0.3);">
-                ✅ Confirm Payment Received & Verify
-            </button>
+            
+            <div class="form-group" style="margin-bottom:15px;">
+                {{ form.confirm }}
+                <label for="{{ form.confirm.id_for_label }}" style="margin-left: 8px; font-weight: 500;">
+                    I confirm I have received this payment offline
+                </label>
+            </div>
+
+            <div class="form-group" style="margin-bottom:20px;">
+                <label>{{ form.confirmation_notes.label }}</label>
+                {{ form.confirmation_notes }}
+            </div>
+
+            <div class="button-container" style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:20px; padding-top:20px; border-top:1px solid #eee;">
+                <a href="{% url 'payments:landlord_payments' %}" class="btn btn-secondary">← Back to Payments</a>
+                <a href="{% url 'core:dashboard' %}" class="btn btn-secondary">Dashboard →</a>
+                <button type="submit" class="btn btn-green">✅ Confirm & Verify Payment</button>
+            </div>
         </form>
-        
-        <div style="display:flex; justify-content:space-between; margin-top:15px;">
-            <a href="{% url 'payments:landlord_payments' %}" style="color:var(--text-grey); text-decoration:none; font-weight:500;">
-                ← Back to Payments
-            </a>
-            <a href="{% url 'core:dashboard' %}" style="color:var(--must-green); text-decoration:none; font-weight:500;">
-                Back to Dashboard →
-            </a>
-        </div>
     </div>
 </div>
 {% endblock %}
