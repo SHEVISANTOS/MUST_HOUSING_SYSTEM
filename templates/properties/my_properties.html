@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}My Properties{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>🏠 My Properties</span>
+        <div>
+            <span class="badge badge-success me-2">{{ total }} Total</span>
+            <span class="badge badge-info">{{ available }} Available</span>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if properties %}
+            {% for prop in properties %}
+            <div class="property-card mb-3 p-3 border rounded" style="background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">{{ prop.title }}</h5>
+                        <p class="text-muted mb-1">📍 {{ prop.location }} | {{ prop.distance_from_must_km }} km from MUST</p>
+                        <p class="mb-1"><strong>Type:</strong> {{ prop.get_property_type_display }} | <strong>Rent:</strong> TZS {{ prop.monthly_rent|floatformat:0 }}/month</p>
+                        <p class="mb-0 text-muted">{{ prop.description|truncatewords:30 }}</p>
+                    </div>
+                    <div class="text-end ms-3">
+                        <span class="badge {% if prop.is_available %}badge-success{% else %}badge-secondary{% endif %} mb-2">
+                            {% if prop.is_available %}✅ Available{% else %}❌ Unavailable{% endif %}
+                        </span>
+                        <a href="{% url 'properties:detail' prop.id %}" class="btn btn-sm btn-green">👁️ View Details</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5" style="color: var(--text-grey);">
+                <div style="font-size: 3rem; margin-bottom: 15px;">🏠</div>
+                <h4>No Properties Listed Yet</h4>
+                <p class="text-muted">Start earning by listing your first property!</p>
+                <a href="{% url 'properties:create' %}" class="btn btn-green mt-2">+ Add New Property</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

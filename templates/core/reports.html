@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Generate Reports - MUST Housing{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <span>📊 Generate Reports</span>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-4">
+            Download comprehensive reports about the housing management system. 
+            All reports are generated in CSV format and can be opened in Excel or Google Sheets.
+        </p>
+
+        <!-- Report Categories -->
+        <div class="row">
+            <!-- 💰 Financial Reports -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">💰 Financial Reports</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Payment and revenue data</p>
+                        
+                        <a href="{% url 'core:export_payments' %}" class="btn btn-outline-success w-100 mb-2">
+                            💵 Payments Report
+                        </a>
+                        <small class="text-muted d-block mb-3">All payment transactions with tenant details</small>
+                        
+                        <a href="{% url 'core:export_financial' %}" class="btn btn-outline-warning w-100">
+                            📈 Financial Summary
+                        </a>
+                        <small class="text-muted d-block">Revenue breakdown by property type</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📋 Booking Reports -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">📋 Booking Reports</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Property booking data</p>
+                        
+                        <a href="{% url 'core:export_bookings' %}" class="btn btn-outline-info w-100 mb-2">
+                            📋 Bookings Report
+                        </a>
+                        <small class="text-muted d-block mb-3">All bookings with status and dates</small>
+                        
+                        <a href="{% url 'core:export_activity' %}" class="btn btn-outline-primary w-100">
+                            📊 Activity Report
+                        </a>
+                        <small class="text-muted d-block">System activity and trends (last 30 days)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 👥 User Reports -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">👥 User Reports</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">User account data</p>
+                        
+                        <a href="{% url 'core:export_users' %}" class="btn btn-outline-primary w-100 mb-2">
+                            👥 Users Report
+                        </a>
+                        <small class="text-muted d-block">All users with roles and verification status</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🏠 Property Reports -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">🏠 Property Reports</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Property listing data</p>
+                        
+                        <a href="{% url 'core:export_properties' %}" class="btn btn-outline-success w-100 mb-2">
+                            🏠 Properties Report
+                        </a>
+                        <small class="text-muted d-block">All properties with landlord and pricing details</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="alert alert-info mt-4">
+            <h6 class="mb-2">📌 Report Information:</h6>
+            <ul class="mb-0">
+                <li>All reports are generated in <strong>CSV format</strong></li>
+                <li>Reports include summary statistics at the bottom</li>
+                <li>Financial reports show revenue in Tanzanian Shillings (TZS)</li>
+                <li>Activity reports show data from the last 30 days</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

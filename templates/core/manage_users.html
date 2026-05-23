@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% block title %}Manage Users - MUST Housing{% endblock %}
+
+{% block content %}
+<style>
+    /* ✅ Mobile-First Responsive Styles */
+    
+    /* Stats Cards - Responsive Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* 2 cards per row on mobile */
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    @media (min-width: 576px) {
+        .stats-grid {
+            grid-template-columns: repeat(3, 1fr); /* 3 cards on small tablets */
+        }
+    }
+    @media (min-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(6, 1fr); /* 6 cards on desktop */
+        }
+    }
+    
+    .stat-card {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 16px 12px;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    .stat-card:hover {
+        border-color: var(--must-green);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,200,83,0.15);
+    }
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 4px;
+    }
+    .stat-value.revenue {
+        font-size: 1.1rem;
+    }
+    .stat-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #666;
+    }
+    
+    /* Search/Filter Row - Stacked on Mobile */
+    .search-filter-row {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    @media (min-width: 768px) {
+        .search-filter-row {
+            flex-direction: row;
+            align-items: center;
+        }
+    }
+    .search-filter-row .col-search { flex: 2; min-width: 0; }
+    .search-filter-row .col-filter { flex: 1; min-width: 200px; }
+    .search-filter-row .col-action { flex: 0; text-align: right; }
+    
+    /* Input Group - Full width on mobile */
+    .input-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .input-group .form-control {
+        flex: 1;
+        min-width: 150px;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+    .input-group .btn {
+        padding: 10px 16px;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+    
+    /* Select Dropdown - Full width on mobile */
+    .form-control.select-role {
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 0.9rem;
+    }
+    
+    /* Action Button - Full width on mobile */
+    .btn-add-user {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+    @media (min-width: 768px) {
+        .btn-add-user {
+            width: auto;
+        }
+    }
+    
+    /* Table - Horizontal Scroll with Sticky First Column */
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+        margin: 0 -16px; /* Compensate for card padding */
+        padding: 0 16px;
+    }
+    @media (min-width: 768px) {
+        .table-container {
+            margin: 0;
+            padding: 0;
+        }
+    }
+    .users-table {
+        width: 100%;
+        min-width: 800px; /* Ensure table doesn't squash */
+        border-collapse: collapse;
+    }
+    .users-table th,
+    .users-table td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+    .users-table th {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #555;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    .users-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+    
+    /* User Cell - Wrap on mobile */
+    .user-cell {
+        min-width: 150px;
+    }
+    .user-cell .avatar-circle {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    .user-cell .username {
+        font-weight: 600;
+        font-size: 0.9rem;
+        word-break: break-word;
+    }
+    .user-cell .superuser-badge {
+        font-size: 0.7rem;
+        color: #888;
+    }
+    
+    /* Badges - Responsive sizing */
+    .badge {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 20px;
+    }
+    
+    /* Action Buttons - Touch-friendly */
+    .btn-edit {
+        padding: 6px 14px;
+        font-size: 0.8rem;
+        min-height: 36px; /* Touch target size */
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    /* Empty State - Centered */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #888;
+    }
+    .empty-state i {
+        font-size: 2.5rem;
+        opacity: 0.3;
+        margin-bottom: 12px;
+    }
+    .empty-state p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+    
+    /* Card Spacing - Mobile optimized */
+    .card {
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .card-header {
+        padding: 16px 20px;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    .card-body {
+        padding: 16px;
+    }
+    @media (min-width: 768px) {
+        .card-header { padding: 20px 28px; }
+        .card-body { padding: 24px 28px; }
+    }
+</style>
+
+<div class="card">
+    <div class="card-header">
+        <span>👥 Manage Users</span>
+    </div>
+    <div class="card-body">
+        
+        <!-- 🔍 Search and Filter - Responsive Layout -->
+        <div class="search-filter-row">
+            <div class="col-search">
+                <form method="get" action="{% url 'core:manage_users' %}">
+                    <div class="input-group">
+                        <input type="text" name="q" class="form-control" 
+                               placeholder="Search users..." 
+                               value="{{ search_query|default:'' }}"
+                               aria-label="Search users">
+                        <button type="submit" class="btn btn-green">
+                            <i class="fas fa-search"></i> <span class="d-none d-sm-inline">Search</span>
+                        </button>
+                        {% if search_query or role_filter %}
+                        <a href="{% url 'core:manage_users' %}" class="btn btn-secondary" title="Clear filters">
+                            <i class="fas fa-times"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+            <div class="col-filter">
+                <form method="get" action="{% url 'core:manage_users' %}">
+                    <select name="role" class="form-control select-role" onchange="this.form.submit()" aria-label="Filter by role">
+                        <option value="">All Roles</option>
+                        <option value="TENANT" {% if role_filter == 'TENANT' %}selected{% endif %}>Tenants</option>
+                        <option value="LANDLORD" {% if role_filter == 'LANDLORD' %}selected{% endif %}>Landlords</option>
+                        <option value="ADMIN" {% if role_filter == 'ADMIN' %}selected{% endif %}>Admins</option>
+                    </select>
+                    {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+                </form>
+            </div>
+            <div class="col-action">
+                <a href="/admin/users/user/add/" class="btn btn-green btn-add-user">
+                    <i class="fas fa-plus"></i> <span class="d-none d-sm-inline">Add User</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 📊 Stats Cards - Responsive Grid -->
+        <div class="stats-grid">
+            <div class="stat-card" style="border-top-color: #3b82f6;">
+                <div class="stat-value text-primary">{{ total_users }}</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card" style="border-top-color: #22c55e;">
+                <div class="stat-value text-success">{{ users|length }}</div>
+                <div class="stat-label">Properties</div>
+            </div>
+            <div class="stat-card" style="border-top-color: #06b6d4;">
+                <div class="stat-value text-info">{{ tenant_count }}</div>
+                <div class="stat-label">Tenants</div>
+            </div>
+            <div class="stat-card" style="border-top-color: #f59e0b;">
+                <div class="stat-value text-warning">{{ landlord_count }}</div>
+                <div class="stat-label">Landlords</div>
+            </div>
+            <div class="stat-card" style="border-top-color: #6b7280;">
+                <div class="stat-value text-dark">{{ admin_count }}</div>
+                <div class="stat-label">Admins</div>
+            </div>
+            <div class="stat-card" style="border-top-color: #9ca3af;">
+                <div class="stat-value text-secondary">
+                    {% if users|length > 0 %}{{ users.0.date_joined|date:"Y" }}{% else %}-{% endif %}
+                </div>
+                <div class="stat-label">Since</div>
+            </div>
+        </div>
+
+        <!-- 👥 Users Table - Horizontal Scroll -->
+        <div class="table-container">
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td class="user-cell">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-circle" style="background: var(--must-green); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                    {{ user.username|first|upper }}
+                                </div>
+                                <div>
+                                    <div class="username">{{ user.username }}</div>
+                                    {% if user.is_superuser %}<div class="superuser-badge">Superuser</div>{% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if user.role == 'TENANT' %}bg-info{% elif user.role == 'LANDLORD' %}bg-warning{% elif user.role == 'ADMIN' %}bg-dark{% else %}bg-primary{% endif %}">
+                                {{ user.role }}
+                            </span>
+                        </td>
+                        <td>{{ user.email|default:"-" }}</td>
+                        <td>{{ user.phone|default:"-" }}</td>
+                        <td>
+                            <span class="badge {% if user.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                            {% if user.is_verified %}
+                                <span class="badge bg-success ms-1">✓</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                        <td>
+                            <a href="/admin/users/user/{{ user.id }}/change/" class="btn btn-sm btn-primary btn-edit">
+                                <i class="fas fa-edit"></i> <span class="d-none d-md-inline">Edit</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <i class="fas fa-users-slash"></i>
+                                <p>No users found</p>
+                                <a href="/admin/users/user/add/" class="btn btn-green btn-sm mt-2">
+                                    <i class="fas fa-plus"></i> Add First User
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

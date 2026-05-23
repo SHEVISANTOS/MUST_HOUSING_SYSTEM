@@ -1,0 +1,64 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | MUST Housing{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}" style="display: inline-flex; align-items: center; gap: 12px; text-decoration: none;">
+        <span style="background: white; color: #00c853; width: 48px; height: 48px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">M</span>
+        <div>
+            <div style="font-size: 1.2rem; font-weight: 700; color: white; margin-bottom: 2px;">MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</div>
+            <div style="font-size: 0.85rem; font-weight: 400; opacity: 0.95;">Housing Management System - Admin Portal</div>
+        </div>
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif !important; }
+</style>
+{% endblock %}
+
+{% block usertools %}
+{% if has_permission %}
+<div id="user-tools" style="display: flex; align-items: center; gap: 15px;">
+    <div style="background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px;">
+        <span style="width: 32px; height: 32px; background: white; color: #00c853; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">{{ user.username|first|upper }}</span>
+        <span style="font-weight: 600;">{{ user.username|upper }}</span>
+    </div>
+    <a href="{% url 'core:admin_dashboard' %}" style="color: white; text-decoration: none; padding: 8px 15px; background: rgba(255,255,255,0.15); border-radius: 6px; font-weight: 500; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+        <i class="fas fa-chart-line"></i> Dashboard
+    </a>
+    
+    <!-- ✅ FIXED: POST form for secure logout -->
+    <form method="post" action="{% url 'admin:logout' %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" style="color: white; text-decoration: none; padding: 8px 15px; background: rgba(220,53,69,0.8); border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.background='rgba(220,53,69,1)'" onmouseout="this.style.background='rgba(220,53,69,0.8)'">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs" style="padding: 15px 30px; font-size: 0.95rem;">
+    <a href="{% url 'admin:index' %}" style="text-decoration: none;">
+        <i class="fas fa-home"></i> Home
+    </a>
+    {% if title %} › <span style="font-weight: 500;">{{ title }}</span>{% endif %}
+</div>
+{% endblock %}

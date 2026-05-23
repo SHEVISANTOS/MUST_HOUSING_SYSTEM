@@ -1,51 +1,195 @@
 {% extends 'base.html' %}
-{% block title %}{{ property.title }} - MUST Housing{% endblock %}
+{% block title %}{{ property.title }}{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 800px; margin: 0 auto;">
-    <div class="card-header">
-        🏠 Property Details
-    </div>
-    <div class="card-body">
-        <h2 style="margin-bottom: 10px; color: var(--must-green);">{{ property.title }}</h2>
-        
-        <p class="text-muted" style="font-size: 1.1rem; margin-bottom: 20px;">
-            📍 {{ property.location }} | {{ property.distance_from_must_km }} km from MUST
-        </p>
-        
-        <div class="alert alert-info" style="background: #e8f5e9; border-left: 5px solid var(--must-green); padding: 15px; margin-bottom: 25px;">
-            <h4 style="color: var(--must-green-dark); margin: 0;">TZS {{ property.monthly_rent|floatformat:0 }} / month</h4>
-        </div>
+<style>
+    .property-detail-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 15px;
+    }
+    .property-image {
+        width: 100%;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .property-image img {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+    }
+    .rental-card {
+        border: 2px solid #00c853;
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 20px 0;
+        box-shadow: 0 4px 10px rgba(0,200,83,0.15);
+    }
+    .rental-header {
+        background: #00c853;
+        color: white;
+        padding: 12px 15px;
+        font-weight: 600;
+    }
+    .rental-body {
+        padding: 15px;
+        background: white;
+    }
+    .price-display {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    .price-period {
+        color: #666;
+        margin-bottom: 15px;
+    }
+    .book-btn {
+        background: linear-gradient(135deg, #00c853 0%, #69f0ae 100%);
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        margin-bottom: 10px;
+        box-shadow: 0 3px 6px rgba(0,200,83,0.3);
+    }
+    .contact-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+    .availability-badge {
+        display: inline-block;
+        background: #d4edda;
+        color: #155724;
+        padding: 5px 12px;
+        border-radius: 5px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-top: 10px;
+    }
+    @media (min-width: 768px) {
+        .property-image img {
+            height: 450px;
+        }
+        .price-display {
+            font-size: 2.2rem;
+        }
+    }
+</style>
 
-        <hr style="border-top: 1px solid #eee; margin: 20px 0;">
-
-        <div style="margin-bottom: 15px;">
-            <strong>Type:</strong> 
-            <span class="badge badge-secondary">{{ property.get_property_type_display }}</span>
-        </div>
-
-        <div style="margin-bottom: 15px;">
-            <strong>Amenities:</strong><br>
-            <span style="color: #555;">{{ property.amenities_list|join:", " }}</span>
-        </div>
-
-        <div style="margin-bottom: 25px;">
-            <strong>Description:</strong><br>
-            <p style="color: #555; line-height: 1.6;">{{ property.description }}</p>
-        </div>
-
-        <!-- ✅ BOOKING BUTTON (Fixed URL Name) -->
-        {% if user.role == 'TENANT' and property.is_available %}
-            <a href="{% url 'bookings:create_booking' property.id %}" 
-               class="btn btn-green btn-lg" 
-               style="display:inline-block; width: 100%; text-align: center; font-weight: 600;">
-               🏠 Book This Property
-            </a>
-        {% elif not property.is_available %}
-            <button class="btn btn-secondary btn-lg" disabled style="width: 100%; cursor: not-allowed;">
-                ❌ Not Available
-            </button>
+<div class="property-detail-container">
+    
+    <!-- 1. Property Image (TOP) -->
+    <div class="property-image">
+        {% if property.images.all %}
+            <img src="{{ property.images.first.image.url }}" alt="{{ property.title }}">
+        {% else %}
+            <img src="/static/images/no-image.jpg" alt="No Image" style="background:#eee;">
         {% endif %}
     </div>
+
+    <!-- 2. Property Location (Google Map) -->
+    {% if property.latitude and property.longitude %}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">📍 Property Location</h5>
+        </div>
+        <div class="card-body p-0">
+            <div id="property-map" style="height: 400px; width: 100%;"></div>
+        </div>
+    </div>
+    
+    <script>
+        function initMap() {
+            const propertyLocation = {
+                lat: {{ property.latitude }},
+                lng: {{ property.longitude }}
+            };
+            
+            const map = new google.maps.Map(document.getElementById("property-map"), {
+                zoom: 15,
+                center: propertyLocation,
+            });
+            
+            new google.maps.Marker({
+                position: propertyLocation,
+                map: map,
+                title: "{{ property.title }}",
+            });
+        }
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLjjFDTQm8a9_xKgOf02V8JppN1j0yLg8&callback=initMap"></script>
+    {% endif %}
+
+    <!-- 3. Property Details -->
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+            <h2 class="mb-2" style="color: #00c853; font-weight: 700;">{{ property.title }}</h2>
+            <p class="text-muted mb-3">📍 {{ property.location }} | {{ property.distance_from_must_km }} km from MUST</p>
+            
+            <p><strong>Type:</strong> <span class="badge bg-secondary">{{ property.get_property_type_display }}</span></p>
+            <p><strong>Amenities:</strong> {{ property.amenities_list|join:", " }}</p>
+            <p><strong>Description:</strong> {{ property.description }}</p>
+            
+            {% if property.google_maps_link %}
+            <a href="{{ property.google_maps_link }}" target="_blank" class="btn btn-sm btn-outline-primary mb-3">📍 View on Google Maps</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 4. Rental Details Card (BOTTOM) -->
+    <div class="rental-card">
+        <div class="rental-header">💰 Rental Details</div>
+        <div class="rental-body">
+            <div class="price-display">TZS {{ property.monthly_rent|floatformat:0 }}</div>
+            <div class="price-period">per month</div>
+            
+            {% if user.role == 'TENANT' and property.is_available %}
+                <a href="{% url 'bookings:create_booking' property.id %}" class="book-btn">
+                    ✅ Book This Property
+                </a>
+            {% elif not property.is_available %}
+                <button class="btn btn-secondary w-100 py-2 mb-2" disabled style="font-weight:600;">❌ Not Available</button>
+            {% else %}
+                <div class="alert alert-info text-center p-2 mb-2 small">Please login as tenant to book</div>
+            {% endif %}
+
+            <hr class="my-3">
+
+            <div class="small text-muted mb-2 fw-bold">Contact Landlord:</div>
+            <div class="contact-item">
+                <span class="me-2">👤</span> <strong>{{ property.landlord.username|title }}</strong>
+            </div>
+            {% if property.landlord.phone %}
+            <div class="contact-item">
+                <span class="me-2">📱</span> <a href="tel:{{ property.landlord.phone }}" class="text-decoration-none text-dark">{{ property.landlord.phone }}</a>
+            </div>
+            {% endif %}
+            {% if property.landlord.email %}
+            <div class="contact-item">
+                <span class="me-2">✉️</span> <a href="mailto:{{ property.landlord.email }}" class="text-decoration-none text-success">{{ property.landlord.email }}</a>
+            </div>
+            {% endif %}
+
+            <div class="text-center mt-3">
+                {% if property.is_available %}
+                    <span class="availability-badge">✅ Available Now</span>
+                {% else %}
+                    <span class="availability-badge" style="background:#f8d7da; color:#721c24;">❌ Rented</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
 </div>
 {% endblock %}

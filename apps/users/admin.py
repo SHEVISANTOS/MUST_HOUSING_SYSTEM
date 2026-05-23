@@ -4,22 +4,24 @@ from .models import User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    # List display settings
-    list_display = ('username', 'email', 'role', 'is_verified', 'is_active', 'date_joined')
-    list_filter = ('role', 'is_verified', 'is_active', 'is_staff')
+    list_display = ('username', 'email', 'role', 'phone', 'is_verified', 'is_active', 'date_joined')
+    list_filter = ('role', 'is_verified', 'is_active', 'is_staff', 'date_joined')
     search_fields = ('username', 'email', 'phone')
     ordering = ('-date_joined',)
     
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Personal Info', {'fields': ('email', 'phone', 'role')}),
+        ('Verification', {'fields': ('is_verified',)}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important Dates', {'fields': ('last_login', 'date_joined')}),
+    )
     
-    fieldsets = BaseUserAdmin.fieldsets + (
-        ('Additional Info', {
-            'fields': ('role', 'phone', 'is_verified')
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'phone', 'role', 'password1', 'password2'),
         }),
     )
     
-    
-    add_fieldsets = BaseUserAdmin.add_fieldsets + (
-        ('Additional Info', {
-            'fields': ('role', 'phone', 'is_verified') 
-        }),
-    )
+    readonly_fields = ('last_login', 'date_joined')

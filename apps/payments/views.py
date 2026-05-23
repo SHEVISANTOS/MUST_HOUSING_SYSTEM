@@ -54,28 +54,43 @@ def landlord_payments(request):
 
 @login_required
 def verify_payment(request, payment_id):
-    """Landlord-only view to verify and mark a tenant payment as completed."""
+    """
+    Landlord-only view to verify and mark a tenant payment as completed.
+    ✅ FIXED: Removed form dependency to prevent validation issues.
+    """
     payment = get_object_or_404(Payment, id=payment_id)
     
+    # Security: Only property landlord can verify
     if payment.booking.property.landlord != request.user:
         messages.error(request, "Permission denied. You can only verify payments for your own properties.")
         return redirect('core:dashboard')
     
+    # Only allow verification if tenant has marked as paid
     if payment.status not in ['PENDING', 'TENANT_PAID']:
         messages.warning(request, 'This payment cannot be verified at this time.')
         return redirect('payments:landlord_payments')
     
     if request.method == 'POST':
-        form = LandlordConfirmForm(request.POST)
-        if form.is_valid():
+        try:
             with transaction.atomic():
+                # ✅ Get confirmation notes directly from POST (no form dependency)
+                confirmation_notes = request.POST.get('confirmation_notes', '').strip()
+                
+                # Update Payment Status
                 payment.status = 'COMPLETED'
                 payment.paid_date = timezone.now().date()
                 payment.landlord_confirmed_at = timezone.now()
-                if form.cleaned_data.get('confirmation_notes'):
-                    payment.payment_notes = f"{payment.payment_notes or ''}\n[Landlord: {form.cleaned_data['confirmation_notes']}]".strip()
+                
+                # Add landlord notes if provided
+                if confirmation_notes:
+                    if payment.payment_notes:
+                        payment.payment_notes = f"{payment.payment_notes}\n[Landlord: {confirmation_notes}]"
+                    else:
+                        payment.payment_notes = f"[Landlord: {confirmation_notes}]"
+                
                 payment.save()
                 
+                # Update Booking Status to PAID
                 booking = payment.booking
                 if booking.status == 'CONFIRMED':
                     booking.status = 'PAID'
@@ -83,37 +98,34 @@ def verify_payment(request, payment_id):
                 
                 messages.success(request, f"✅ Payment of TZS {payment.amount:,.0f} verified successfully!")
                 return redirect('payments:landlord_payments')
-    else:
-        form = LandlordConfirmForm()
+                
+        except Exception as e:
+            logger.error(f"Error verifying payment {payment_id}: {e}")
+            messages.error(request, f"Error verifying payment: {str(e)}")
+            return redirect('payments:verify', payment_id=payment.id)
     
+    # If GET request, show the verification form
     context = {
         'payment': payment,
-        'form': form,
     }
     return render(request, 'payments/verify_payment.html', context)
 
 
+
 @login_required
 def download_payment_slip(request, payment_id):
-    """Generate and download a payment instruction slip as PDF."""
     payment = get_object_or_404(Payment, id=payment_id, booking__tenant=request.user)
     
-    if not WEASYPRINT_AVAILABLE:
-        return HttpResponse('PDF generation service is currently unavailable.', status=503)
+    html_string = render_to_string('payments/payment_slip.html', {
+        'payment': payment,
+        'now': timezone.now(),
+        'user': request.user
+    })
     
-    try:
-        html_string = render_to_string('payments/payment_slip.html', {
-            'payment': payment, 'user': request.user, 'now': timezone.now()
-        })
-        pdf_content = HTML(string=html_string).write_pdf()
-        
-        response = HttpResponse(pdf_content, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="payment_slip_{payment.id}.pdf"'
-        return response
-    except Exception as e:
-        logger.error(f"PDF generation failed for payment {payment_id}: {e}")
-        messages.error(request, "Failed to generate PDF. Please try again later.")
-        return redirect('payments:my_payments')
+    pdf_content = HTML(string=html_string).write_pdf()
+    response = HttpResponse(pdf_content, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="payment_slip_{payment.id}.pdf"'
+    return response
 
 
 @login_required
@@ -168,7 +180,7 @@ def download_approved_payments_list(request):
         return HttpResponse('Error generating receipts list.', status=500)
 
 
-# ==================== NEW: OFFLINE PAYMENT FLOW (UPDATED WITH CALCULATION) ====================
+# ====================OFFLINE PAYMENT FLOW WITH CALCULATION====================
 
 @login_required
 def mark_payment_made(request, booking_id):
@@ -204,7 +216,7 @@ def mark_payment_made(request, booking_id):
         booking=booking,
         defaults={
             'tenant': request.user,
-            'amount': total_amount, # ✅ Use calculated total
+            'amount': total_amount, 
             'status': 'PENDING',
             'due_date': move_in,
         }

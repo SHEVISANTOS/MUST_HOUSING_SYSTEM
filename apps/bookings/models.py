@@ -13,7 +13,7 @@ class Booking(models.Model):
         ('COMPLETED', 'Completed'),
     ]
     
-    # ✅ Field Definitions - Ensure all parentheses are closed
+    # Field Definitions - Ensure all parentheses are closed
     property = models.ForeignKey(
         Property, 
         on_delete=models.CASCADE, 
@@ -41,7 +41,7 @@ class Booking(models.Model):
     def __str__(self):
         return f"Booking #{self.id} - {self.property.title}"
 
-    # ✅ Helper Property to get the latest payment
+    # Helper Property to get the latest payment
     @builtin_property
     def payment(self):
         """
