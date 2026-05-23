@@ -394,9 +394,9 @@
     <!-- Header -->
     <div class="header">
         <div class="logo-container">
-            <img src="{% static 'images/must-logo.png' %}" alt="MUST Logo" class="logo" 
-                 onerror="this.src='https://via.placeholder.com/70x70/2c5f8a/ffffff?text=MUST'">
-        </div>
+          <img src="{% static 'img/must_logo.png' %}" alt="MUST Logo" class="logo"  
+          onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22 viewBox=%220 0 70 70%22><rect width=%2270%22 height=%2270%22 fill=%22%2300c853%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2224%22 font-weight=%22bold%22 fill=%22white%22>M</text></svg>'">
+       </div>
         <div class="header-text">
             <h1>MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</h1>
             <h2>HOUSING MANAGEMENT SYSTEM</h2>
@@ -405,8 +405,30 @@
     
     <!-- Info Bar -->
     <div class="info-bar">
-        <span>Academic Year: 2024/2025</span>
-        <span id="current-date">{{ today|date:"F d, Y" }}</span>
+        <span>SEASON: 2025/2026</span>
+        <span id="current-date"></span>
+
+<script>
+function updateDateTime() {
+    const now = new Date();
+
+    const options = {
+        weekday: 'short',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    };
+
+    document.getElementById("current-date").innerHTML =
+        now.toLocaleString('en-US', options);
+}
+
+updateDateTime();
+setInterval(updateDateTime, 1000);
+</script>
     </div>
     
     <!-- Main Content -->
@@ -466,7 +488,7 @@
                 <!-- Error Message -->
                 <div id="error-message" class="error-message {% if form.errors %}show{% endif %}">
                     {% if form.errors %}
-                        <strong>Login Failed:</strong> Invalid username or password. Please try again.
+                        <strong>Login Failed:</strong> Invalid login.
                     {% else %}
                         <strong>Error:</strong> Please fill in all required fields.
                     {% endif %}
@@ -539,7 +561,7 @@
         <span>© 2024 - 2026 MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</span>
         <div>
             
-            <span>Designed and Developed by: ICT SOLUTIONS DESIGN</span>
+            <span>Designed and Developed by: SHEVI SANTOS</span>
         </div>
     </div>
     

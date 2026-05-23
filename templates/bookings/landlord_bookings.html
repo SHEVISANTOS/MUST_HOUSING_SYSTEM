@@ -1,37 +1,95 @@
 {% extends 'base.html' %}
 {% block title %}Manage Bookings - MUST Housing{% endblock %}
+
 {% block content %}
-<h2>My Booking Requests</h2>
-{% if bookings %}
-<table class="table">
-    <thead>
-        <tr>
-            <th>Property</th>
-            <th>Tenant</th>
-            <th>Status</th>
-            <th>Move In</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for b in bookings %}
-        <tr>
-            <td>{{ b.property.title }}</td>
-            <td>{{ b.tenant.username }}</td>
-            <td><span class="badge bg-{% if b.status == 'PENDING' %}warning{% elif b.status == 'CONFIRMED' %}success{% else %}danger{% endif %}">{{ b.status }}</span></td>
-            <td>{{ b.move_in_date }}</td>
-            <td>
-                {% if b.status == 'PENDING' %}
-                <a href="{% url 'bookings:approve' b.id %}" class="btn btn-sm btn-primary">Review</a>
-                {% else %}
-                -
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>No bookings yet.</p>
-{% endif %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>📋 Manage Booking Requests</span>
+        <span class="badge badge-info">{{ bookings.count }} Total</span>
+    </div>
+    <div class="card-body">
+        
+        {% if bookings %}
+        <!-- Responsive Table Wrapper -->
+        <div class="table-wrapper">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Tenant</th>
+                        <th>Status</th>
+                        <th>Move In</th>
+                        <th>Move Out</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bookings %}
+                    <tr>
+                        <td data-label="Property" style="font-weight: 600;">
+                            {{ b.property.title|truncatewords:3 }}
+                            <br><small class="text-muted">{{ b.property.location }}</small>
+                        </td>
+                        <td data-label="Tenant">
+                            {{ b.tenant.username|upper }}
+                            {% if b.tenant.phone %}
+                                <br><small class="text-muted">📞 {{ b.tenant.phone }}</small>
+                            {% endif %}
+                        </td>
+                        <td data-label="Status">
+                            {% if b.status == 'PENDING' %}
+                                <span class="badge badge-warning">⏳ Pending</span>
+                            {% elif b.status == 'CONFIRMED' %}
+                                <span class="badge badge-success">✅ Confirmed</span>
+                            {% elif b.status == 'PAID' %}
+                                <span class="badge badge-info">💰 Paid</span>
+                            {% elif b.status == 'CANCELLED' %}
+                                <span class="badge badge-danger">❌ Cancelled</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ b.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Move In">{{ b.move_in_date|date:"d-m-Y" }}</td>
+                        <td data-label="Move Out">{{ b.move_out_date|date:"d-m-Y" }}</td>
+                        <td data-label="Action">
+                            {% if b.status == 'PENDING' %}
+                                <!-- ✅ FIXED: Use correct URL name 'approve_booking' -->
+                                <a href="{% url 'bookings:approve_booking' b.id %}" 
+                                   class="btn btn-sm btn-green" 
+                                   style="display:inline-block; margin-bottom:4px; width:100%; text-align:center;">
+                                    ✅ Approve
+                                </a>
+                                <a href="{% url 'bookings:reject_booking' b.id %}" 
+                                   class="btn btn-sm btn-secondary" 
+                                   style="display:inline-block; width:100%; text-align:center;">
+                                    ❌ Reject
+                                </a>
+                            {% elif b.status == 'CONFIRMED' %}
+                                <span class="text-muted" style="font-size:0.85rem; display:block; text-align:center;">Awaiting Payment</span>
+                            {% elif b.status == 'PAID' %}
+                                <span class="text-success fw-bold" style="display:block; text-align:center;">✅ Active</span>
+                            {% else %}
+                                <span class="text-muted" style="font-size:0.85rem; display:block; text-align:center;">{{ b.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5" style="color: var(--text-grey);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">📭</div>
+            <p class="mb-2">No booking requests yet.</p>
+            <p class="small text-muted mb-4">
+                When tenants book your properties, they'll appear here for your review.
+            </p>
+            <a href="{% url 'properties:list' %}" class="btn btn-green">
+                🏠 View My Properties
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

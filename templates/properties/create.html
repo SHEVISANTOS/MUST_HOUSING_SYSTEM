@@ -2,45 +2,140 @@
 {% block title %}Add Property{% endblock %}
 
 {% block content %}
-<div class="card">
+<div class="card" style="max-width: 800px; margin: 0 auto;">
     <div class="card-header">📝 List New Property</div>
     <div class="card-body">
-        <form method="post">
+        
+        <!-- ✅ Display Form Errors -->
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-3" style="background:#f8d7da; color:#721c24; padding:10px; border-radius:6px;">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             
-            <div class="form-group">
-                <label>Title</label>
-                <input type="text" name="title" class="form-control" required>
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Title *</label>
+                {{ form.title }}
+                {% if form.title.errors %}<small class="text-danger">{{ form.title.errors }}</small>{% endif %}
             </div>
             
-            <div class="form-group">
-                <label>Description</label>
-                <textarea name="description" class="form-control" rows="3" required></textarea>
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Description *</label>
+                {{ form.description }}
+                {% if form.description.errors %}<small class="text-danger">{{ form.description.errors }}</small>{% endif %}
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom:14px;">
                 <div class="form-group">
-                    <label>Property Type</label>
-                    <select name="property_type" class="form-control" required>
-                        <option value="">Select Type...</option>
-                        <option value="SINGLE">Single Room</option>
-                        <option value="BEDSITTER">Bedsitter</option>
-                        <option value="1BR">1 Bedroom</option>
-                    </select>
+                    <label style="display:block; margin-bottom:6px; font-weight:500;">Property Type *</label>
+                    {{ form.property_type }}
+                    {% if form.property_type.errors %}<small class="text-danger">{{ form.property_type.errors }}</small>{% endif %}
                 </div>
                 <div class="form-group">
-                    <label>Monthly Rent (TZS)</label>
-                    <input type="number" name="monthly_rent" class="form-control" required>
+                    <label style="display:block; margin-bottom:6px; font-weight:500;">Monthly Rent (TZS) *</label>
+                    {{ form.monthly_rent }}
+                    {% if form.monthly_rent.errors %}<small class="text-danger">{{ form.monthly_rent.errors }}</small>{% endif %}
                 </div>
             </div>
             
-            <div class="form-group">
-                <label>Location</label>
-                <input type="text" name="location" class="form-control" required>
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Location *</label>
+                {{ form.location }}
+                {% if form.location.errors %}<small class="text-danger">{{ form.location.errors }}</small>{% endif %}
+            </div>
+
+            <!-- Distance from MUST -->
+            {% if form.distance_from_must_km %}
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Distance from MUST (km)</label>
+                {{ form.distance_from_must_km }}
+            </div>
+            {% endif %}
+            
+            <!-- Amenities -->
+            {% if form.amenities %}
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Amenities</label>
+                {{ form.amenities }}
+                <small class="text-muted">Separate with commas: water, wifi, parking</small>
+            </div>
+            {% endif %}
+
+            <!-- ✅ NEW: Property Images Upload -->
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Property Images *</label>
+                <input type="file" name="property_images" class="form-control" multiple accept="image/*" required>
+                <small class="text-muted">📸 Upload multiple photos (first image will be the cover photo)</small>
+                <div id="imagePreview" class="mt-2" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+            </div>
+
+            <!-- ✅ NEW: Google Maps Location -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #00c853;">
+                <h5 style="margin-bottom: 12px; color: #00c853;">📍 Google Maps Location</h5>
+                
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="display:block; margin-bottom:6px; font-weight:500;">Google Maps Link</label>
+                    {{ form.google_maps_link }}
+                    <small class="text-muted">🔗 Paste the Google Maps link to your property (optional)</small>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:6px; font-weight:500;">Latitude</label>
+                        {{ form.latitude }}
+                        <small class="text-muted">e.g., -8.9094</small>
+                    </div>
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:6px; font-weight:500;">Longitude</label>
+                        {{ form.longitude }}
+                        <small class="text-muted">e.g., 33.4607</small>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3" style="background:#d1ecf1; color:#0c5460; padding:10px; border-radius:6px; font-size:0.9rem;">
+                    <strong>💡 How to get coordinates:</strong><br>
+                    1. Open <a href="https://maps.google.com" target="_blank">Google Maps</a><br>
+                    2. Find your property location<br>
+                    3. Right-click on the exact spot<br>
+                    4. Copy the numbers (latitude, longitude)
+                </div>
             </div>
             
-            <button type="submit" class="btn-green" style="width: 100%; padding: 12px;">✅ Publish Listing</button>
+            <!-- Availability -->
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    {{ form.is_available }}
+                    <span style="margin-left: 8px; font-weight: 500;">✅ Property is available for rent</span>
+                </label>
+            </div>
+            
+            <button type="submit" class="btn-green" style="width: 100%; padding: 12px; font-weight: 600;">✅ Publish Listing</button>
         </form>
     </div>
 </div>
+</div>
+
+<!-- Image Preview Script -->
+<script>
+document.querySelector('input[name="property_images"]').addEventListener('change', function(e) {
+    const preview = document.getElementById('imagePreview');
+    preview.innerHTML = '';
+    
+    if (this.files) {
+        Array.from(this.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.cssText = 'width: 100px; height: 75px; object-fit: cover; border-radius: 6px; border: 2px solid #ddd;';
+                preview.appendChild(img);
+            }
+            reader.readAsDataURL(file);
+        });
+    }
+});
+</script>
 {% endblock %}

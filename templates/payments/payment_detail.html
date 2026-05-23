@@ -2,92 +2,125 @@
 {% block title %}Payment Details{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 700px; margin: 0 auto;">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span>💳 Payment Details</span>
+<div class="card" style="max-width: 700px; margin: 0 auto; border-radius: 12px; overflow: hidden;">
+    
+    <!-- ✅ GREEN HEADER WITH DYNAMIC STATUS BADGE -->
+    <div class="card-header d-flex justify-content-between align-items-center" style="background: var(--must-green); color: white; padding: 15px 20px;">
+        <h5 class="mb-0 font-weight-bold">💳 Payment Details</h5>
+        
         {% if payment.status == 'COMPLETED' %}
-            <span class="badge badge-success">✅ CONFIRMED</span>
+            <span class="badge" style="background: #fff; color: var(--must-green); font-weight: bold;">✅ CONFIRMED</span>
         {% elif payment.status == 'TENANT_PAID' %}
-            <span class="badge badge-warning">⏳ PENDING CONFIRMATION</span>
+            <span class="badge" style="background: #fff3cd; color: #856404; font-weight: bold;">⏳ PENDING CONFIRMATION</span>
+        {% elif payment.status == 'PENDING' %}
+            <span class="badge" style="background: rgba(255,255,255,0.9); color: #dc3545; font-weight: bold;">❌ UNPAID</span>
         {% else %}
-            <span class="badge badge-info">🔄 PENDING</span>
+            <span class="badge" style="background: rgba(255,255,255,0.2); color: white;">{{ payment.get_status_display }}</span>
         {% endif %}
     </div>
-    
-    <div class="card-body">
-        <!-- Payment Info -->
-        <table class="info-table" style="width:100%; margin-bottom:20px;">
-            <tr>
-                <td class="label" style="width:35%; color:var(--text-grey); font-weight:500;">Booking Reference:</td>
-                <td class="value" style="font-weight:600;">#{{ payment.booking.id }}</td>
-            </tr>
-            <tr>
-                <td class="label">Property:</td>
-                <td class="value">{{ payment.booking.property.title }}</td>
-            </tr>
-            <tr>
-                <td class="label">Amount:</td>
-                <td class="value fw-bold">{{ payment.amount|floatformat:0 }} TZS</td>
-            </tr>
-            <tr>
-                <td class="label">Payment Method:</td>
-                <td class="value">{{ payment.get_payment_method_display|default:"Not specified" }}</td>
-            </tr>
-            {% if payment.payment_reference %}
-            <tr>
-                <td class="label">Reference:</td>
-                <td class="value">{{ payment.payment_reference }}</td>
-            </tr>
-            {% endif %}
-            {% if payment.payment_proof %}
-            <tr>
-                <td class="label">Proof:</td>
-                <td class="value">
-                    <a href="{{ payment.payment_proof.url }}" target="_blank" class="btn btn-sm btn-green">🖼️ View Proof</a>
-                </td>
-            </tr>
-            {% endif %}
-            {% if payment.payment_notes %}
-            <tr>
-                <td class="label">Notes:</td>
-                <td class="value">{{ payment.payment_notes }}</td>
-            </tr>
-            {% endif %}
-            <tr>
-                <td class="label">Marked Paid:</td>
-                <td class="value">{{ payment.tenant_paid_at|date:"d-m-Y H:i"|default:"Not yet" }}</td>
-            </tr>
-            <tr>
-                <td class="label">Confirmed By Landlord:</td>
-                <td class="value">{{ payment.landlord_confirmed_at|date:"d-m-Y H:i"|default:"Not yet" }}</td>
-            </tr>
-        </table>
 
-        <!-- Action Buttons -->
-        <div class="button-container" style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:20px; padding-top:20px; border-top:1px solid #eee;">
-            {% if not is_landlord %}
-                <!-- Tenant Actions -->
-                {% if payment.status == 'PENDING' %}
-                    <a href="{% url 'payments:mark_payment' payment.booking.id %}" class="btn btn-green">✏️ Edit Payment Info</a>
-                {% elif payment.status == 'TENANT_PAID' %}
-                    <span class="text-muted">✅ Waiting for landlord confirmation...</span>
-                {% endif %}
-                
-                {% if payment.status != 'COMPLETED' and payment.status != 'CANCELLED' %}
-                    <a href="{% url 'payments:cancel_payment' payment.id %}" class="btn btn-secondary">❌ Cancel Payment</a>
-                {% endif %}
-            {% else %}
-                <!-- Landlord Actions -->
-                {% if payment.status == 'TENANT_PAID' %}
-                    <a href="{% url 'payments:verify' payment.id %}" class="btn btn-green">✅ Confirm Received</a>
-                    <a href="#" class="btn btn-secondary" onclick="alert('Contact tenant to verify payment details')">📞 Contact Tenant</a>
-                {% elif payment.status == 'COMPLETED' %}
-                    <span class="text-success fw-bold">✅ Payment Verified & Booking Active</span>
-                {% endif %}
-            {% endif %}
+    <div class="card-body" style="padding: 25px;">
+        
+        <!-- Payment Information Grid -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <p class="text-muted mb-1 small text-uppercase">Booking Reference</p>
+                <p class="font-weight-bold h5">#{{ payment.booking.id|stringformat:"04d" }}</p>
+            </div>
             
-            <a href="{% if is_landlord %}{% url 'payments:landlord_payments' %}{% else %}{% url 'payments:my_payments' %}{% endif %}" class="btn btn-secondary">← Back to List</a>
+            <div class="col-md-6 mb-3">
+                <p class="text-muted mb-1 small text-uppercase">Property</p>
+                <p class="font-weight-bold h5">{{ payment.booking.property.title }}</p>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <p class="text-muted mb-1 small text-uppercase">Amount Due</p>
+                <p class="font-weight-bold h4 text-success">TZS {{ payment.amount|floatformat:0 }}</p>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <p class="text-muted mb-1 small text-uppercase">Due Date</p>
+                <p class="font-weight-bold">{{ payment.due_date|date:"d-m-Y" }}</p>
+            </div>
+
+            <!-- Only show these if payment has been made -->
+            {% if payment.status != 'PENDING' %}
+                <div class="col-md-6 mb-3">
+                    <p class="text-muted mb-1 small text-uppercase">Payment Method</p>
+                    <p class="font-weight-bold">{{ payment.get_payment_method_display|default:"Not Specified" }}</p>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <p class="text-muted mb-1 small text-uppercase">Reference Code</p>
+                    <code style="background: #f8f9fa; padding: 8px 12px; border-radius: 6px; font-size: 1rem; display: inline-block;">
+                        {{ payment.payment_reference|default:"No reference provided" }}
+                    </code>
+                </div>
+
+                <!-- ✅ VIEW PROOF BUTTON SECTION -->
+                <div class="col-md-12 mb-3">
+                    <p class="text-muted mb-1 small text-uppercase">Proof of Payment</p>
+                    {% if payment.payment_proof %}
+                        <!-- This button opens the image in a new tab -->
+                        <a href="{{ payment.payment_proof.url }}" target="_blank" class="btn btn-sm btn-green mt-1">
+                            🖼️ View Proof
+                        </a>
+                    {% else %}
+                        <span class="text-muted italic">No image uploaded.</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <div class="col-md-6 mb-3">
+                <p class="text-muted mb-1 small text-uppercase">Marked Paid By Tenant</p>
+                <p class="font-weight-bold">{{ payment.tenant_paid_at|date:"d-m-Y H:i"|default:"Not yet marked" }}</p>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <p class="text-muted mb-1 small text-uppercase">Confirmed By Landlord</p>
+                <p class="font-weight-bold">
+                    {% if payment.landlord_confirmed_at %}
+                        {{ payment.landlord_confirmed_at|date:"d-m-Y H:i" }}
+                    {% else %}
+                        <span class="text-danger">Not yet</span>
+                    {% endif %}
+                </p>
+            </div>
         </div>
+
+        <hr style="border-top: 1px solid #eee; margin: 20px 0;">
+
+        <!-- ✅ DYNAMIC ACTION BUTTONS -->
+        <div class="d-flex gap-2 flex-wrap">
+            
+            <!-- 1. IF TENANT AND PAYMENT IS PENDING: SHOW PAY NOW -->
+            {% if not is_landlord and payment.status == 'PENDING' %}
+                <a href="{% url 'payments:mark_payment' payment.booking.id %}" class="btn btn-green flex-grow-1 text-center btn-lg">
+                    💳 Pay Now
+                </a>
+            {% endif %}
+
+            <!-- 2. IF LANDLORD AND PAYMENT IS TENANT_PAID: SHOW CONFIRM RECEIVED -->
+            {% if is_landlord and payment.status == 'TENANT_PAID' %}
+                <a href="{% url 'payments:verify' payment.id %}" class="btn btn-green flex-grow-1 text-center btn-lg">
+                    ✅ Confirm Received
+                </a>
+            {% endif %}
+
+            <!-- 3. CONTACT TENANT BUTTON (Always visible for landlords) -->
+            {% if is_landlord %}
+                <a href="mailto:{{ payment.booking.tenant.email }}" class="btn btn-secondary flex-grow-1 text-center">
+                    📞 Contact Tenant
+                </a>
+            {% endif %}
+
+            <!-- 4. BACK BUTTON -->
+            <a href="{% if is_landlord %}{% url 'payments:landlord_payments' %}{% else %}{% url 'payments:my_payments' %}{% endif %}" 
+               class="btn btn-outline-secondary flex-grow-1 text-center">
+               ← Back to List
+            </a>
+        </div>
+
     </div>
 </div>
 {% endblock %}

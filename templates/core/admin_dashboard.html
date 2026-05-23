@@ -1,0 +1,331 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --must-green: #00c853;
+    --must-green-dark: #009624;
+    --must-green-light: #e8f5e9;
+    --surface:  #ffffff;
+    --surface2: #f8f9fa;
+    --surface3: #f4f6f9;
+    --border:   #e0e0e0;
+    --border2:  #d0d0d0;
+    --gold:     #e8a020;
+    --blue:     #3b82f6;
+    --amber:    #f59e0b;
+    --red:      #ef4444;
+    --cyan:     #06b6d4;
+    --purple:   #a78bfa;
+    --text1:    #2c3e50;
+    --text2:    #5a6c7d;
+    --text3:    #8b909e;
+  }
+
+  /* ✅ OVERRIDE TO LIGHT THEME */
+  #adash * { box-sizing: border-box; }
+  #adash { 
+    font-family: 'Instrument Sans', sans-serif; 
+    color: var(--text1);
+    background: var(--surface3) !important;
+  }
+  
+  /* ✅ LIGHT BACKGROUND */
+  .main-content, .card, body {
+    background: var(--surface) !important;
+  }
+
+  /* ─── SECTION LABEL ─────────────────────────── */
+  .adash-section-label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 16px; margin-top: 36px;
+  }
+  .adash-section-label:first-of-type { margin-top: 0; }
+  .adash-section-label::after {
+    content: '';
+    flex: 1; height: 1px;
+    background: var(--border);
+    min-width: 40px;
+  }
+
+  /* ─── OUTER CARD ─────────────────────────────── */
+  .card.adash-wrap {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 12px !important;
+    overflow: visible !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .card.adash-wrap .card-header {
+    background: var(--must-green) !important;
+    border-bottom: none !important;
+    padding: 20px 28px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .adash-header-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+  .adash-header-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    color: white; letter-spacing: 0.01em;
+  }
+  .card.adash-wrap .card-body { padding: 28px; background: var(--surface) !important; }
+
+  /* ─── STAT CARDS ─────────────────────────────── */
+  .adash-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 0;
+  }
+  .adash-stat {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 20px 18px;
+    position: relative; overflow: hidden;
+    transition: all 0.3s ease;
+    animation: adFadeUp 0.45s ease both;
+  }
+  .adash-stat:nth-child(1){animation-delay:0.04s}
+  .adash-stat:nth-child(2){animation-delay:0.09s}
+  .adash-stat:nth-child(3){animation-delay:0.14s}
+  .adash-stat:nth-child(4){animation-delay:0.19s}
+  .adash-stat:nth-child(5){animation-delay:0.24s}
+  .adash-stat:nth-child(6){animation-delay:0.29s}
+  .adash-stat::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:3px;
+    background: var(--sc, var(--must-green));
+    border-radius: 12px 12px 0 0;
+  }
+  .adash-stat:hover {
+    border-color: var(--sc, var(--must-green));
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,200,83,0.15);
+  }
+  .adash-stat-icon {
+    font-size: 1.5rem; margin-bottom: 12px; display: block;
+  }
+  .adash-stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.8rem; font-weight: 800;
+    color: var(--sc, var(--must-green));
+    letter-spacing: -0.03em; line-height: 1;
+    margin-bottom: 6px;
+  }
+  .adash-stat-value.revenue {
+    font-size: 1.2rem; letter-spacing: -0.01em;
+  }
+  .adash-stat-label {
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  /* ─── REPORTS BLOCK ──────────────────────────── */
+  .adash-reports-box {
+    background: var(--must-green-light);
+    border: 2px solid var(--must-green);
+    border-radius: 12px;
+    padding: 22px 24px;
+    display: flex; align-items: center;
+    gap: 20px; flex-wrap: wrap;
+    border-left: 4px solid var(--must-green);
+  }
+  .adash-reports-text { flex: 1; min-width: 200px; }
+  .adash-reports-text p {
+    font-size: 0.9rem; color: var(--text2); line-height: 1.6; margin: 0;
+  }
+  .btn.btn-green.adash-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px; border-radius: 8px;
+    background: var(--must-green);
+    color: white !important;
+    border: none !important;
+    font-size: 0.85rem; font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,200,83,0.3);
+  }
+  .btn.btn-green.adash-btn:hover {
+    background: var(--must-green-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,200,83,0.4);
+  }
+
+  /* ─── CONFIG TABLE ───────────────────────────── */
+  .adash-config {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .table.adash-table { margin: 0; border-collapse: collapse; width: 100%; }
+  .table.adash-table tr { border-bottom: 1px solid var(--border); }
+  .table.adash-table tr:last-child { border-bottom: none; }
+  .table.adash-table th, .table.adash-table td {
+    padding: 13px 20px;
+    background: transparent !important;
+    border: none !important;
+    font-size: 0.85rem;
+  }
+  .table.adash-table th {
+    font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.07em; text-transform: uppercase;
+    color: var(--text3); width: 160px;
+    background: var(--surface2) !important;
+  }
+  .table.adash-table td { color: var(--text2); }
+  .table.adash-table code {
+    font-size: 0.78rem;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 5px; padding: 2px 7px;
+    color: var(--must-green-dark); font-family: 'Courier New', monospace;
+  }
+  .badge.bg-danger  { background: var(--red) !important; color:white; border:none; border-radius:6px; padding:3px 9px; font-size:0.72rem; letter-spacing:0.06em; font-weight:700; }
+  .badge.bg-success { background: var(--must-green) !important;  color:white; border:none; border-radius:6px; padding:3px 9px; font-size:0.72rem; letter-spacing:0.06em; font-weight:700; }
+
+  /* ─── USER MGMT BUTTONS ──────────────────────── */
+  .adash-user-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn.adash-ubtn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 20px; border-radius: 8px;
+    font-size: 0.85rem; font-weight: 600;
+    text-decoration: none; border: 2px solid;
+    transition: all 0.2s;
+  }
+  .btn.adash-ubtn.primary {
+    background: var(--blue); color: white;
+    border-color: var(--blue);
+  }
+  .btn.adash-ubtn.primary:hover {
+    background: #2563eb; border-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+  }
+  .btn.adash-ubtn.outline {
+    background: white; color: var(--text2);
+    border-color: var(--border);
+  }
+  .btn.adash-ubtn.outline:hover {
+    background: var(--surface2); color: var(--text1);
+    border-color: var(--must-green); transform: translateY(-2px);
+  }
+
+  @keyframes adFadeUp {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  @media (max-width: 640px) {
+    .card.adash-wrap .card-body { padding: 20px; }
+    .adash-stats { grid-template-columns: repeat(2, 1fr); }
+    .adash-reports-box { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+
+<div id="adash">
+<div class="card adash-wrap">
+
+  <div class="card-header">
+    <div class="adash-header-icon">🔐</div>
+    <span class="adash-header-title">Administrator Dashboard</span>
+  </div>
+
+  <div class="card-body">
+
+    <!-- ── SYSTEM USAGE ── -->
+    <div class="adash-section-label">📊 System Usage Overview</div>
+    <div class="adash-stats row mb-4">
+      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
+        <div class="adash-stat" style="--sc:#3b82f6">
+          <span class="adash-stat-icon">👥</span>
+          <div class="adash-stat-value">{{ stats.total_users }}</div>
+          <div class="adash-stat-label">Total Users</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
+        <div class="adash-stat" style="--sc:#22c55e">
+          <span class="adash-stat-icon">🏠</span>
+          <div class="adash-stat-value">{{ stats.properties }}</div>
+          <div class="adash-stat-label">Properties</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
+        <div class="adash-stat" style="--sc:#06b6d4">
+          <span class="adash-stat-icon">📋</span>
+          <div class="adash-stat-value">{{ stats.bookings }}</div>
+          <div class="adash-stat-label">Bookings</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
+        <div class="adash-stat" style="--sc:#f59e0b">
+          <span class="adash-stat-icon">💳</span>
+          <div class="adash-stat-value">{{ stats.completed_payments }}</div>
+          <div class="adash-stat-label">Payments</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
+        <div class="adash-stat" style="--sc:#e8a020">
+          <span class="adash-stat-icon">💰</span>
+          <div class="adash-stat-value revenue">TZS {{ stats.total_revenue|floatformat:0 }}</div>
+          <div class="adash-stat-label">Revenue</div>
+        </div>
+      </div>
+      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
+        <div class="adash-stat" style="--sc:#a78bfa">
+          <span class="adash-stat-icon">🤝</span>
+          <div class="adash-stat-value">{{ stats.landlords }}<span style="font-size:1rem;opacity:0.5;font-weight:400;">/{{ stats.tenants }}</span></div>
+          <div class="adash-stat-label">Landlords / Tenants</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GENERATE REPORTS ── -->
+    <div class="adash-section-label">📄 Generate Reports</div>
+    <div class="adash-reports-box mb-4">
+      <div class="adash-reports-text">
+        <p>Access all system reports (Payments, Bookings, Users, Properties, Financial &amp; Activity).</p>
+      </div>
+      <a href="{% url 'core:reports_page' %}" class="btn btn-green adash-btn">
+        📊 Open Reports Center
+      </a>
+    </div>
+
+    <!-- ── SYSTEM CONFIG ── -->
+    <div class="adash-section-label">⚙️ System Configuration</div>
+    <div class="adash-config table-responsive mb-4">
+      <table class="table adash-table table-bordered">
+        <tr><th>Django Version</th><td>{{ sys_config.django_version }}</td></tr>
+        <tr><th>Debug Mode</th><td><span class="badge {% if sys_config.debug_mode == 'ON' %}bg-danger{% else %}bg-success{% endif %}">{{ sys_config.debug_mode }}</span></td></tr>
+        <tr><th>Database Engine</th><td>{{ sys_config.db_engine }}</td></tr>
+        <tr><th>Media Path</th><td><code>{{ sys_config.media_path }}</code></td></tr>
+        <tr><th>Static Path</th><td><code>{{ sys_config.static_path }}</code></td></tr>
+        <tr><th>Allowed Hosts</th><td>{{ sys_config.allowed_hosts }}</td></tr>
+      </table>
+    </div>
+
+    <!-- ── MANAGE USERS ── -->
+    <div class="adash-section-label">👥 Manage User Accounts</div>
+    <div class="adash-user-btns d-flex gap-2 flex-wrap">
+      <a href="/admin/users/user/" class="btn adash-ubtn primary">🛠️ Open Django User Admin</a>
+      <a href="/admin/" class="btn adash-ubtn outline">🌐 Full Admin Panel</a>
+    </div>
+
+  </div>
+</div>
+</div>
+{% endblock %}

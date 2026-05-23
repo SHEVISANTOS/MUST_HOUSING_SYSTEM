@@ -214,7 +214,7 @@
         .table-custom { 
             width: 100%; 
             border-collapse: collapse; 
-            min-width: 700px; /* Ensures table doesn't squash */
+            min-width: 700px;
         }
         .table-custom th { 
             text-align: left; 
@@ -224,13 +224,13 @@
             color: var(--text-grey); 
             font-weight: 600; 
             font-size: 0.85rem;
-            white-space: nowrap; /* Prevent header wrapping */
+            white-space: nowrap;
         }
         .table-custom td { 
             padding: 14px; 
             border-bottom: 1px solid #eee; 
             font-size: 0.9rem;
-            white-space: nowrap; /* Prevent cell wrapping */
+            white-space: nowrap;
         }
 
         /* 🔹 Recent Bookings Table (Special Styling) */
@@ -243,7 +243,7 @@
         }
         .recent-bookings-table {
             width: 100%;
-            min-width: 850px; /* Wider for more columns */
+            min-width: 850px;
             border-collapse: collapse;
         }
         .recent-bookings-table th,
@@ -264,7 +264,6 @@
         .recent-bookings-table tbody tr:hover {
             background: #f8f9fa;
         }
-        /* Custom scrollbar for recent bookings */
         .recent-bookings-wrapper::-webkit-scrollbar {
             height: 8px;
         }
@@ -312,7 +311,7 @@
         .footer a { color: var(--must-green); text-decoration: none; font-weight: 500; }
 
         /* ========================================
-           📱 RESPONSIVE BREAKPOINTS (SIMS STYLE)
+           📱 RESPONSIVE BREAKPOINTS
            ======================================== */
         
         /* 🔹 PC & iPad (≥768px) - Sidebar PERMANENTLY FIXED */
@@ -339,8 +338,6 @@
             
             .sidebar-overlay { display: none !important; }
             .brand-text p { display: block; }
-            
-            /* Prevent JS from hiding sidebar on desktop/tablet */
             .sidebar.open { transform: translateX(0) !important; }
         }
 
@@ -450,23 +447,47 @@
 
     <!-- Layout -->
     <div class="layout-container">
-        <!-- Sidebar -->
+        <!-- ✅ ROLE-BASED SIDEBAR NAVIGATION -->
         <aside class="sidebar" id="sidebar">
             <ul class="nav-menu">
+                <!-- 🔐 ADMIN MENU -->
+                {% if user.is_superuser or user.role == 'ADMIN' %}
+                <li class="nav-item">
+                    <a href="{% url 'core:admin_dashboard' %}" class="nav-link {% if 'admin-dashboard' in request.path %}active{% endif %}">
+                        <span class="nav-icon">🔐</span> Admin Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/admin/" class="nav-link">
+                        <span class="nav-icon">⚙️</span> Administer
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'core:reports_page' %}" class="nav-link {% if 'reports' in request.path and 'admin-dashboard' not in request.path %}active{% endif %}">
+                        <span class="nav-icon">📊</span> Generate Reports
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <!-- ✅ FIXED: Changed from core:dashboard to core:manage_users -->
+                    <a href="{% url 'core:manage_users' %}" class="nav-link {% if 'manage-users' in request.path %}active{% endif %}">
+                        <span class="nav-icon">👥</span> Manage Users
+                    </a>
+                </li>
+                
+                <!-- 🏠 LANDLORD MENU -->
+                {% elif user.role == 'LANDLORD' %}
                 <li class="nav-item">
                     <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                         <span class="nav-icon">📊</span> Dashboard
                     </a>
                 </li>
-                
-                {% if user.role == 'LANDLORD' %}
                 <li class="nav-item">
                     <a href="{% url 'properties:create' %}" class="nav-link {% if 'create' in request.path %}active{% endif %}">
                         <span class="nav-icon">➕</span> Add Property
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'properties:list' %}" class="nav-link {% if 'properties' in request.path and 'create' not in request.path %}active{% endif %}">
+                    <a href="{% url 'properties:my_properties' %}" class="nav-link {% if 'properties' in request.path and 'create' not in request.path %}active{% endif %}">
                         <span class="nav-icon">🏠</span> My Properties
                     </a>
                 </li>
@@ -481,7 +502,13 @@
                     </a>
                 </li>
                 
-                {% elif user.role == 'TENANT' %}
+                <!-- 👤 TENANT MENU -->
+                {% else %}
+                <li class="nav-item">
+                    <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <span class="nav-icon">📊</span> Dashboard
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a href="{% url 'properties:list' %}" class="nav-link {% if 'properties' in request.path %}active{% endif %}">
                         <span class="nav-icon">🔍</span> Search Houses
@@ -499,13 +526,14 @@
                 </li>
                 {% endif %}
                 
-                <li class="nav-item">
+                <!-- 🔹 COMMON: Profile & Logout (for all roles) -->
+                <li class="nav-item" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
                     <a href="{% url 'core:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
                         <span class="nav-icon">👤</span> My Profile
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'users:logout' %}" class="nav-link">
+                    <a href="{% url 'core:logout' %}" class="nav-link">
                         <span class="nav-icon">🚪</span> Logout
                     </a>
                 </li>

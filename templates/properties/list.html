@@ -53,7 +53,7 @@
                         <strong>Type:</strong> {{ property.get_property_type_display }}<br>
                         <strong>Rent:</strong> TZS {{ property.monthly_rent|floatformat:0 }}/month<br>
                         
-                        <!-- ✅ FIXED: Removed "|join" because amenities is already text -->
+                        
                         <strong>Amenities:</strong> {{ property.amenities }}
                     </p>
                     <p class="card-text">{{ property.description|truncatewords:20 }}</p>
