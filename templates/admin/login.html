@@ -1,163 +1,488 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login - MUST Housing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            /* ✅ UPDATED: Blue/Teal color scheme to match main login */
+            --primary:  #3b82f6;
+            --primary-dark: #2563eb;
+            --primary-light: #dbeafe;
+            --accent:   #f59e0b;
+            --accent-light: #fef3c7;
+            --navy:     #1e3a8a;
+            --navy-light: #3b82f6;
+            --cream:    #f9fafb;
+            --white:    #ffffff;
+            --muted:    #6b7280;
+            --border:   #e5e7eb;
+            --danger:   #ef4444;
+            --success:  #10b981;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        html, body {
+            height: 100%;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: #1f2937;
+        }
+
+        .page-wrap {
             min-height: 100vh;
+            display: grid;
+            grid-template-rows: auto auto 1fr auto; /* ✅ Added: extra row for info bar */
+        }
+
+        /* ── HEADER (matches main login) ── */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--navy) 100%);
+            padding: 0 40px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 20px;
+            gap: 22px;
+            height: 88px;
+            position: relative;
+            overflow: hidden;
         }
-        .login-container {
+        .header::after {
+            content: '';
+            position: absolute; right: -60px; top: -60px;
+            width: 260px; height: 260px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            pointer-events: none;
+        }
+        .logo-ring {
+            width: 58px; height: 58px;
+            border-radius: 14px;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.15);
+        }
+        .logo-ring img {
+            width: 44px; height: 44px; object-fit: contain;
+        }
+        .header-text h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.15rem; font-weight: 600;
+            color: white; letter-spacing: 0.01em; line-height: 1.2;
+        }
+        .header-text h2 {
+            font-size: 0.75rem; font-weight: 400;
+            color: rgba(255,255,255,0.85);
+            letter-spacing: 0.12em; text-transform: uppercase; margin-top: 3px;
+        }
+        .header-badge {
+            margin-left: auto;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px; padding: 6px 14px;
+            font-size: 0.78rem; color: rgba(255,255,255,0.9);
+            letter-spacing: 0.04em; flex-shrink: 0;
+        }
+        .header-badge strong { color: #fbbf24; font-weight: 600; }
+
+        /* ✅ INFO BAR (new) */
+        .info-bar {
+            background: var(--primary-light);
+            padding: 10px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--navy);
+            font-weight: 500;
+            border-bottom: 2px solid var(--primary);
+        }
+        .info-bar .season {
+            color: var(--navy);
+        }
+        .info-bar .current-date {
+            color: var(--muted);
+        }
+
+        /* ── MAIN ── */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 480px;
+            max-width: 1140px;
+            margin: 0 auto;
             width: 100%;
-            max-width: 400px;
-            padding: 40px;
+            padding: 52px 40px;
+            gap: 60px;
+            align-items: start;
         }
-        .logo {
-            text-align: center;
-            margin-bottom: 30px;
+
+        /* ── LEFT PANEL ── */
+        .left-panel { padding-top: 8px; }
+
+        .welcome-eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--primary-light); color: var(--primary-dark);
+            border-radius: 100px; padding: 5px 14px;
+            font-size: 0.78rem; font-weight: 600;
+            letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 18px;
         }
-        .logo h1 {
-            color: #667eea;
-            font-size: 28px;
-            margin-bottom: 8px;
+        .welcome-eyebrow span {
+            width: 6px; height: 6px; background: var(--primary);
+            border-radius: 50%; display: inline-block;
         }
-        .logo p {
-            color: #666;
-            font-size: 14px;
+        .welcome-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.1rem; font-weight: 600;
+            color: var(--navy); line-height: 1.25; margin-bottom: 16px;
         }
-        .form-group {
-            margin-bottom: 20px;
+        .welcome-title em { font-style: normal; color: var(--primary); }
+
+        .welcome-desc {
+            font-size: 0.95rem; color: var(--muted);
+            line-height: 1.75; max-width: 420px; margin-bottom: 44px;
         }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 600;
-            font-size: 14px;
+
+        /* admin capability cards */
+        .cap-cards { display: flex; flex-direction: column; gap: 14px; }
+        .cap-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 16px; padding: 18px 22px;
+            display: flex; align-items: flex-start; gap: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 15px;
-            transition: border-color 0.3s;
+        .cap-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 24px rgba(59,130,246,0.1);
         }
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #667eea;
+        .cap-icon {
+            width: 42px; height: 42px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; flex-shrink: 0;
         }
+        .cap-icon.blue   { background: var(--primary-light); }
+        .cap-icon.amber  { background: var(--accent-light); }
+        .cap-icon.green  { background: #d1fae5; }
+
+        .cap-info h4 {
+            font-size: 0.88rem; font-weight: 600;
+            color: var(--navy); margin-bottom: 6px;
+        }
+        .cap-info ul { list-style: none; display: flex; flex-wrap: wrap; gap: 5px 10px; }
+        .cap-info ul li {
+            font-size: 0.78rem; color: var(--muted);
+            position: relative; padding-left: 10px;
+        }
+        .cap-info ul li::before { content: '·'; position: absolute; left: 0; color: var(--primary); font-weight: bold; }
+
+        /* ── LOGIN CARD ── */
+        .login-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 44px 40px 36px;
+            box-shadow: 0 12px 48px rgba(30,58,138,0.1), 0 2px 8px rgba(30,58,138,0.05);
+            position: sticky; top: 32px;
+        }
+
+        /* admin badge strip at top - BLUE THEME */
+        .admin-strip {
+            display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--navy) 100%);
+            margin: -44px -40px 32px;
+            padding: 14px 28px;
+            border-radius: 24px 24px 0 0;
+        }
+        .admin-strip-icon {
+            width: 34px; height: 34px; background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 9px; display: flex; align-items: center;
+            justify-content: center; font-size: 1rem;
+        }
+        .admin-strip-text { font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.95); letter-spacing: 0.04em; text-transform: uppercase; }
+        .admin-strip-sub  { font-size: 0.72rem; color: rgba(255,255,255,0.75); margin-top: 1px; }
+
+        .login-card-header { margin-bottom: 28px; }
+        .login-card-header h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.55rem; font-weight: 600;
+            color: var(--navy); margin-bottom: 4px;
+        }
+        .login-card-header p { font-size: 0.85rem; color: var(--muted); }
+        .accent-bar {
+            width: 36px; height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 100px; margin-top: 12px;
+        }
+
+        /* error / message */
         .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            border-left: 4px solid #c33;
+            display: none;
+            background: #fef2f2; color: var(--danger);
+            padding: 13px 16px; border-radius: 10px;
+            margin-bottom: 22px;
+            border: 1px solid #fecaca;
+            font-size: 0.875rem; line-height: 1.5;
         }
-        .btn-login {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+        .error-message.show { display: flex; gap: 10px; align-items: flex-start; }
+        .error-message .err-icon { font-size: 1.05rem; flex-shrink: 0; margin-top: 1px; }
+
+        /* form */
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
+            display: block;
+            font-size: 0.82rem; font-weight: 600;
+            color: var(--navy); letter-spacing: 0.03em;
+            text-transform: uppercase; margin-bottom: 8px;
         }
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        .form-group input {
+            width: 100%; height: 50px;
+            padding: 0 16px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--navy); background: #f9fafb;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            outline: none;
         }
-        .btn-login:active {
-            transform: translateY(0);
+        .form-group input:focus {
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
         }
+
+        .login-btn {
+            width: 100%; height: 52px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white; border: none; border-radius: 12px;
+            font-size: 0.95rem; font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer; letter-spacing: 0.02em;
+            transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+            position: relative; overflow: hidden;
+        }
+        .login-btn::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 60%);
+        }
+        .login-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 28px rgba(59,130,246,0.35);
+        }
+        .login-btn:active { transform: translateY(0); }
+
+        /* footer link */
+        .back-link {
+            text-align: center; margin-top: 22px; padding-top: 18px;
+            border-top: 1px solid var(--border);
+        }
+        .back-link a {
+            font-size: 0.85rem; color: var(--muted);
+            text-decoration: none; font-weight: 500;
+            transition: color 0.2s;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .back-link a:hover { color: var(--primary); }
+
+        /* ── FOOTER ── */
         .footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-            font-size: 13px;
+            background: linear-gradient(135deg, var(--navy) 0%, var(--primary-dark) 100%);
+            padding: 16px 40px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .footer a {
-            color: #667eea;
-            text-decoration: none;
-        }
-        .footer a:hover {
-            text-decoration: underline;
+        .footer-left  { font-size: 0.78rem; color: rgba(255,255,255,0.7); }
+        .footer-right { font-size: 0.78rem; color: rgba(255,255,255,0.7); }
+        .footer-right strong { color: #fbbf24; font-weight: 600; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 820px) {
+            .main { grid-template-columns: 1fr; padding: 32px 22px; gap: 36px; }
+            .login-card { position: static; padding: 44px 24px 28px; }
+            .header { padding: 0 22px; }
+            .header-badge { display: none; }
+            .info-bar { padding: 10px 22px; flex-direction: column; gap: 5px; text-align: center; }
+            .welcome-title { font-size: 1.6rem; }
+            .footer { flex-direction: column; gap: 6px; text-align: center; padding: 14px 22px; }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="logo">
-            <h1>🔐 Admin Login</h1>
-            <p>MUST Housing Management System</p>
+<div class="page-wrap">
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo-ring">
+            <img src="{% static 'img/must_logo.png' %}" alt="MUST Logo" class="logo"
+                 onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22 viewBox=%220 0 70 70%22><rect width=%2270%22 height=%2270%22 fill=%22%233b82f6%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2224%22 font-weight=%22bold%22 fill=%22white%22>M</text></svg>'">
         </div>
-
-        <form method="post">
-            {% csrf_token %}
-            
-            {% if form.errors %}
-                <div class="error-message">
-                    <strong>⚠️ Invalid username or password.</strong><br>
-                    Please try again.
-                </div>
-            {% endif %}
-
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="error-message">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-
-            <div class="form-group">
-                <label for="id_username">Username</label>
-                <input type="text" name="username" id="id_username" required autofocus 
-                       placeholder="Enter your username" 
-                       value="{{ form.username.value|default:'' }}">
-            </div>
-
-            <div class="form-group">
-                <label for="id_password">Password</label>
-                <input type="password" name="password" id="id_password" required 
-                       placeholder="Enter your password">
-            </div>
-
-            <input type="hidden" name="next" value="{{ next }}">
-
-            <button type="submit" class="btn-login">Log In</button>
-        </form>
-
-        <div class="footer">
-            <a href="/">← Back to Main Site</a>
+        <div class="header-text">
+            <h1>Mbeya University of Science and Technology</h1>
+            <h2>Housing Management System</h2>
         </div>
+        <div class="header-badge">
+            SEASON &nbsp;<strong>2025/2026</strong>
+        </div>
+    </header>
+
+    <!-- ✅ INFO BAR (new) -->
+    <div class="info-bar">
+        <span class="season"> </span>
+        <span class="current-date" id="current-date"></span>
     </div>
 
-    <script>
-        // Focus on username field
-        document.getElementById('id_username').focus();
-    </script>
+    <!-- MAIN -->
+    <main class="main">
+
+        <!-- LEFT PANEL -->
+        <div class="left-panel">
+            <div class="welcome-eyebrow"><span></span>Administrator Portal</div>
+            <h2 class="welcome-title">Manage &amp; oversee<br><em>MUST Housing</em>.</h2>
+            <p class="welcome-desc">
+                The admin portal gives you complete control over the Housing Management System — from users and properties to payments and system configuration.
+            </p>
+
+            <div class="cap-cards">
+                <div class="cap-card">
+                    <div class="cap-icon blue">👥</div>
+                    <div class="cap-info">
+                        <h4>User Management</h4>
+                        <ul>
+                            <li>Manage all accounts</li>
+                            <li>Assign roles</li>
+                            <li>Deactivate users</li>
+                            <li>View activity logs</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="cap-card">
+                    <div class="cap-icon amber">📊</div>
+                    <div class="cap-info">
+                        <h4>Reports &amp; Analytics</h4>
+                        <ul>
+                            <li>Financial reports</li>
+                            <li>Booking summaries</li>
+                            <li>Property statistics</li>
+                            <li>Activity reports</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="cap-card">
+                    <div class="cap-icon green">⚙️</div>
+                    <div class="cap-info">
+                        <h4>System Configuration</h4>
+                        <ul>
+                            <li>Monitor system health</li>
+                            <li>Django admin panel</li>
+                            <li>Database settings</li>
+                            <li>System configuration</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOGIN CARD -->
+        <div>
+            <div class="login-card">
+
+                <!-- blue admin strip -->
+                <div class="admin-strip">
+                    <div class="admin-strip-icon">🔐</div>
+                    <div>
+                        <div class="admin-strip-text">Administrator Access</div>
+                        <div class="admin-strip-sub">Restricted — authorised personnel only</div>
+                    </div>
+                </div>
+
+                <div class="login-card-header">
+                    <h3>Admin Sign In</h3>
+                    <p>Enter your administrator credentials to continue</p>
+                    <div class="accent-bar"></div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="error-message show">
+                        <span class="err-icon">⚠️</span>
+                        <span><strong>Login failed.</strong> Invalid username or password. Please try again.</span>
+                    </div>
+                    {% endif %}
+
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="error-message show">
+                            <span class="err-icon">⚠️</span>
+                            <span>{{ message }}</span>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <div class="form-group">
+                        <label for="id_username">Username</label>
+                        <input type="text" name="username" id="id_username"
+                               required autofocus
+                               placeholder="Enter your admin username"
+                               value="{{ form.username.value|default:'' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_password">Password</label>
+                        <input type="password" name="password" id="id_password"
+                               required
+                               placeholder="Enter your password">
+                    </div>
+
+                    <input type="hidden" name="next" value="{{ next }}">
+
+                    <button type="submit" class="login-btn">Sign In to Admin Portal</button>
+                </form>
+
+                <div class="back-link">
+                    <a href="/">← Back to Main Site</a>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <span class="footer-left">© 2024 – 2026 Mbeya University of Science and Technology</span>
+        <span class="footer-right">Designed &amp; Developed by <strong>Shevi Santos</strong></span>
+    </footer>
+
+</div>
+
+<script>
+    // Update current date and time
+    function updateDateTime() {
+        const now = new Date();
+        const options = {
+            weekday: 'short',
+            month: 'short',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        };
+        document.getElementById('current-date').textContent = 
+            now.toLocaleString('en-US', options);
+    }
+    
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+    
+    document.getElementById('id_username').focus();
+</script>
 </body>
 </html>
