@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.44']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.44', '192.168.150.157' , '192.168.26.157', '192.168.41.157']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -17,8 +17,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',  # ✅ Required for static files
-    'crispy_forms',
+    'django.contrib.staticfiles',
     'crispy_bootstrap5',
     'apps.users',
     'apps.properties',
@@ -28,7 +27,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # ✅ Serves static files in production
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -85,16 +84,16 @@ TIME_ZONE = 'Africa/Dar_es_Salaam'
 USE_I18N = True
 USE_TZ = True
 
-# ✅ Static & Media Files Configuration - FIXED
+# Static & Media Files Configuration - FIXED
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# ✅ CRITICAL FIX: Tell Django where to find static files during development
+# CRITICAL FIX: Tell Django where to find static files during development
 STATICFILES_DIRS = [
     BASE_DIR / 'static',  # Points to /home/santos/Desktop/MUST_HOUSING/static
 ]
 
-# ✅ WhiteNoise configuration (for production static file serving)
+# WhiteNoise configuration (for production static file serving)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MEDIA_URL = '/media/'              

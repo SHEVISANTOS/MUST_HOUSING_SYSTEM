@@ -31,5 +31,4 @@ urlpatterns = [
     # Verification routes (both map to same view for flexibility)
     path('verify/<uuid:payment_id>/', views.verify_payment, name='verify'),
     path('landlord/payment/<uuid:payment_id>/confirm/', views.verify_payment, name='confirm_payment'),
-    path('verify/<uuid:payment_id>/', views.verify_payment, name='verify'),
 ]

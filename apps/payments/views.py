@@ -116,16 +116,23 @@ def verify_payment(request, payment_id):
 def download_payment_slip(request, payment_id):
     payment = get_object_or_404(Payment, id=payment_id, booking__tenant=request.user)
     
-    html_string = render_to_string('payments/payment_slip.html', {
-        'payment': payment,
-        'now': timezone.now(),
-        'user': request.user
-    })
+    if not WEASYPRINT_AVAILABLE:
+        return HttpResponse('PDF generation service is currently unavailable.', status=503)
     
-    pdf_content = HTML(string=html_string).write_pdf()
-    response = HttpResponse(pdf_content, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="payment_slip_{payment.id}.pdf"'
-    return response
+    try:
+        html_string = render_to_string('payments/payment_slip.html', {
+            'payment': payment,
+            'now': timezone.now(),
+            'user': request.user
+        })
+        
+        pdf_content = HTML(string=html_string).write_pdf()
+        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="payment_slip_{payment.id}.pdf"'
+        return response
+    except Exception as e:
+        logger.error(f"PDF generation failed for payment slip {payment_id}: {e}")
+        return HttpResponse('Error generating payment slip.', status=500)
 
 
 @login_required
