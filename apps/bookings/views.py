@@ -118,13 +118,20 @@ def approve_booking(request, booking_id):
         # 2. Auto-create Payment Record (Offline Workflow)
         from apps.payments.models import Payment
         
+        # Calculate stay duration in months
+        move_in = booking.move_in_date
+        move_out = booking.move_out_date
+        months_diff = (move_out.year - move_in.year) * 12 + (move_out.month - move_in.month)
+        if months_diff <= 0:
+            months_diff = 1
+        total_amount = booking.property.monthly_rent * months_diff
+
         # Use get_or_create to prevent duplicates if clicked twice
         Payment.objects.get_or_create(
             booking=booking,
             defaults={
                 'tenant': booking.tenant,
-                'landlord': booking.property.landlord,
-                'amount': booking.property.monthly_rent, # Or use a calculated total if needed
+                'amount': total_amount,
                 'due_date': booking.move_in_date,
                 'status': 'PENDING', # Tenant needs to mark this as paid
             }
