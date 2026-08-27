@@ -9,13 +9,13 @@ from django.db import transaction
 from .models import Payment
 from .forms import TenantPaymentForm, LandlordConfirmForm
 
-# WeasyPrint setup
+# xhtml2pdf setup (Serverless friendly - no C dependencies)
 try:
-    from weasyprint import HTML
-    WEASYPRINT_AVAILABLE = True
+    from xhtml2pdf import pisa
+    PDF_AVAILABLE = True
 except ImportError:
-    WEASYPRINT_AVAILABLE = False
-    logging.warning("WeasyPrint not installed. PDF generation will be disabled.")
+    PDF_AVAILABLE = False
+    logging.warning("xhtml2pdf not installed. PDF generation will be disabled.")
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,6 @@ def verify_payment(request, payment_id):
     if request.method == 'POST':
         try:
             with transaction.atomic():
-                # ✅ Get confirmation notes directly from POST (no form dependency)
                 confirmation_notes = request.POST.get('confirmation_notes', '').strip()
                 
                 # Update Payment Status
@@ -102,7 +101,7 @@ def verify_payment(request, payment_id):
         except Exception as e:
             logger.error(f"Error verifying payment {payment_id}: {e}")
             messages.error(request, f"Error verifying payment: {str(e)}")
-            return redirect('payments:verify', payment_id=payment.id)
+            return redirect('payments:verify_payment', payment_id=payment.id)
     
     # If GET request, show the verification form
     context = {
@@ -111,12 +110,12 @@ def verify_payment(request, payment_id):
     return render(request, 'payments/verify_payment.html', context)
 
 
-
 @login_required
 def download_payment_slip(request, payment_id):
+    """Generate payment slip PDF for a completed payment."""
     payment = get_object_or_404(Payment, id=payment_id, booking__tenant=request.user)
     
-    if not WEASYPRINT_AVAILABLE:
+    if not PDF_AVAILABLE:
         return HttpResponse('PDF generation service is currently unavailable.', status=503)
     
     try:
@@ -126,9 +125,16 @@ def download_payment_slip(request, payment_id):
             'user': request.user
         })
         
-        pdf_content = HTML(string=html_string).write_pdf()
-        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="payment_slip_{payment.id}.pdf"'
+        
+        # Generate PDF using xhtml2pdf
+        pisa_status = pisa.CreatePDF(html_string, dest=response)
+        
+        if pisa_status.err:
+            logger.error(f"PDF generation failed for payment slip {payment_id}")
+            return HttpResponse('Error generating payment slip.', status=500)
+            
         return response
     except Exception as e:
         logger.error(f"PDF generation failed for payment slip {payment_id}: {e}")
@@ -140,17 +146,26 @@ def download_payment_invoice(request, payment_id):
     """Generate invoice PDF for a pending payment."""
     payment = get_object_or_404(Payment, id=payment_id, booking__tenant=request.user)
     
-    if not WEASYPRINT_AVAILABLE:
+    if not PDF_AVAILABLE:
         return HttpResponse('PDF generation service is currently unavailable.', status=503)
     
     try:
         html_string = render_to_string('payments/payment_invoice.html', {
-            'payment': payment, 'user': request.user, 'now': timezone.now()
+            'payment': payment, 
+            'user': request.user, 
+            'now': timezone.now()
         })
-        pdf_content = HTML(string=html_string).write_pdf()
         
-        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="invoice_{payment.id}.pdf"'
+        
+        # Generate PDF using xhtml2pdf
+        pisa_status = pisa.CreatePDF(html_string, dest=response)
+        
+        if pisa_status.err:
+            logger.error(f"PDF generation failed for invoice {payment_id}")
+            return HttpResponse('Error generating invoice.', status=500)
+            
         return response
     except Exception as e:
         logger.error(f"PDF generation failed for invoice {payment_id}: {e}")
@@ -167,7 +182,7 @@ def download_approved_payments_list(request):
     
     total_paid = sum(p.amount for p in payments)
     
-    if not WEASYPRINT_AVAILABLE:
+    if not PDF_AVAILABLE:
         return HttpResponse('PDF generation service is currently unavailable.', status=503)
     
     try:
@@ -177,17 +192,24 @@ def download_approved_payments_list(request):
             'now': timezone.now(),
             'total_paid': total_paid
         })
-        pdf_content = HTML(string=html_string).write_pdf()
         
-        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="receipts_{request.user.username}.pdf"'
+        
+        # Generate PDF using xhtml2pdf
+        pisa_status = pisa.CreatePDF(html_string, dest=response)
+        
+        if pisa_status.err:
+            logger.error(f"PDF generation failed for receipts list")
+            return HttpResponse('Error generating receipts list.', status=500)
+            
         return response
     except Exception as e:
         logger.error(f"PDF generation failed for receipts list: {e}")
         return HttpResponse('Error generating receipts list.', status=500)
 
 
-# ====================OFFLINE PAYMENT FLOW WITH CALCULATION====================
+# ==================== OFFLINE PAYMENT FLOW WITH CALCULATION ====================
 
 @login_required
 def mark_payment_made(request, booking_id):
@@ -218,7 +240,6 @@ def mark_payment_made(request, booking_id):
     total_amount = monthly_rent * months_diff
     
     # 5. Create or Get Payment Record
-    # ✅ FIXED: Removed 'landlord' key because Payment model doesn't have this field
     payment, created = Payment.objects.get_or_create(
         booking=booking,
         defaults={
@@ -240,7 +261,7 @@ def mark_payment_made(request, booking_id):
             with transaction.atomic():
                 payment = form.save(commit=False)
                 
-                # ✅ Enforce the calculated amount to prevent tampering
+                # Enforce the calculated amount to prevent tampering
                 payment.amount = total_amount 
                 
                 payment.status = 'TENANT_PAID'
@@ -290,7 +311,7 @@ def payment_detail(request, payment_id):
     context = {
         'payment': payment,
         'is_landlord': is_landlord,
-        'WEASYPRINT_AVAILABLE': WEASYPRINT_AVAILABLE,
+        'PDF_AVAILABLE': PDF_AVAILABLE, # Updated from WEASYPRINT_AVAILABLE
     }
     return render(request, 'payments/payment_detail.html', context)
 
