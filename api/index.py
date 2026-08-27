@@ -3,12 +3,14 @@ import sys
 import os
 from pathlib import Path
 
-# Add the project directory to the sys.path
+# 1. Add the project root to sys.path (so it can find the 'config' folder)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-# Set the Django settings module
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "MUST_HOUSING.config.settings")
+# 2. Set the Django settings module (Must match manage.py exactly)
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
-# Initialize the Django WSGI application
+# 3. Initialize the Django WSGI application
 from django.core.wsgi import get_wsgi_application
-application = get_wsgi_application()
+
+# 4. Vercel looks for a variable named 'app'
+app = get_wsgi_application()
