@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 load_dotenv()
 
@@ -9,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11']
+ALLOWED_HOSTS = ['.vercel.app','localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -23,6 +24,7 @@ INSTALLED_APPS = [
     'apps.properties',
     'apps.bookings',
     'apps.payments',
+    'whitenoise.runserver_nostatic',
 ]
 
 MIDDLEWARE = [
@@ -66,15 +68,11 @@ TEMPLATES = [{
 WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
-        'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"},
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('NEON_DATABASE_URL'),
+        conn_max_age=600, # Keeps connections alive for better performance
+        ssl_require=True  # Ensures SSL is used (Neon requires this)
+    )
 }
 
 AUTH_USER_MODEL = 'users.User'
