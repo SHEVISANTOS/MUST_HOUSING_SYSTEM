@@ -1,5 +1,5 @@
-# config/settings.py
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
@@ -8,9 +8,16 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
-DEBUG = os.getenv('DJANGO_DEBUG', 'True') == 'True'
-ALLOWED_HOSTS = ['.vercel.app','localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11']
+# ⬇️ CRITICAL FIX: Tell Python to look inside the 'apps' folder
+sys.path.insert(0, str(BASE_DIR / 'apps'))
+
+# ⬇️ CRITICAL FIX: Add a fallback so it never crashes as None
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-dev-key-replace-in-vercel')
+
+# Keep Debug False in production, but allow local override
+DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
+
+ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -19,12 +26,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    # Third party
     'crispy_bootstrap5',
-    'apps.users',
-    'apps.properties',
-    'apps.bookings',
-    'apps.payments',
     'whitenoise.runserver_nostatic',
+    
+    # ⬇️ CRITICAL FIX: Use simple names now that 'apps' is in sys.path
+    'users',
+    'properties',
+    'bookings',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -70,11 +81,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('NEON_DATABASE_URL'),
-        conn_max_age=600, # Keeps connections alive for better performance
-        ssl_require=True  # Ensures SSL is used (Neon requires this)
+        conn_max_age=600,
+        ssl_require=True
     )
 }
 
+# This now perfectly matches the simplified INSTALLED_APPS name
 AUTH_USER_MODEL = 'users.User'
 
 LANGUAGE_CODE = 'en-us'
@@ -82,17 +94,16 @@ TIME_ZONE = 'Africa/Dar_es_Salaam'
 USE_I18N = True
 USE_TZ = True
 
-# Static & Media Files Configuration - FIXED
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
-# CRITICAL FIX: Tell Django where to find static files during development
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',  # Points to /home/santos/Desktop/MUST_HOUSING/static
-]
-
-# WhiteNoise configuration (for production static file serving)
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Use the modern Django 4.2+ storage setting
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 MEDIA_URL = '/media/'              
 MEDIA_ROOT = BASE_DIR / 'media'    
@@ -102,7 +113,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
-# 🔐 Authentication Settings
 LOGIN_URL = 'users:login'
-LOGIN_REDIRECT_URL = 'core:post_login_redirect'
+LOGIN_REDIRECT_URL = 'core:post_login_redirect' # Ensure 'core' app exists, or change to 'users:dashboard' etc.
 LOGOUT_REDIRECT_URL = 'users:login'
