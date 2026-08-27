@@ -23,7 +23,7 @@ django-crontab==0.7.1
 django-filter==24.2
 
 # PDF & Image Generation (WeasyPrint dependencies)
-weasyprint==62.3
+xhtml2pdf==0.2.16
 pillow==10.3.0
 fonttools==4.53.0
 pydyf==0.10.0
