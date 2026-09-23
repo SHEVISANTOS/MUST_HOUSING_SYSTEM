@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Invoice</title>
+    <style>
+        @page { size: A4; margin: 10mm; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.25;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+        }
+        .container { width: 100%; }
+
+        /* Header */
+        .header { text-align: center; border-bottom: 2px solid #14746c; padding-bottom: 8px; margin-bottom: 10px; }
+        .header .brand-logo { width: 40px; height: 40px; margin-bottom: 4px; }
+        .header h1 { font-size: 15pt; margin: 0; color: #14746c; letter-spacing: 0.5px; }
+        .header h2 { font-size: 11pt; margin: 2px 0 4px; font-weight: 400; color: #333; }
+        .header .doc-title { font-size: 12pt; font-weight: 700; text-transform: uppercase; background: #e4f2f0; display: inline-block; padding: 3px 12px; border: 1px solid #14746c; }
+
+        /* Layout tables. xhtml2pdf has no flexbox/grid support, and it also
+           paints a bordered <div>'s border/background around EACH block-level
+           child separately instead of as one box, so every "boxed" section
+           here is a single-cell <table><td> rather than a styled <div>. */
+        table.layout { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 10px; }
+        table.layout.split td { width: 50%; vertical-align: top; }
+        table.layout.split td.left { padding-right: 5px; }
+        table.layout.split td.right { padding-left: 5px; }
+
+        .box { border: 1px solid #d1d5db; padding: 6px 8px; background: #fafafa; }
+        .box h3 { font-size: 10pt; margin: 0 0 5px 0; color: #14746c; border-bottom: 1px dashed #d1d5db; padding-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .box p { margin: 3px 0; font-size: 10pt; }
+        .box .label { font-weight: 600; display: inline-block; width: 75px; color: #4b5563; }
+
+        /* Amount Due Highlight */
+        .payment-banner {
+            border: 1.5px solid #14746c;
+            background: #e4f2f0; margin-bottom: 10px;
+        }
+        .payment-banner td { padding: 7px 12px; }
+        .payment-banner .amount-label { font-size: 8.5pt; color: #0b5750; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 2px; }
+        .payment-banner .amount { font-size: 20pt; font-weight: 800; color: #14746c; }
+        .payment-banner .meta { text-align: right; font-size: 9.5pt; }
+        .payment-banner .meta p { margin: 2px 0; }
+        .overdue { color: #b91c1c; }
+
+        /* Instructions */
+        .instructions {
+            font-size: 9.5pt; background: #fffbeb; border: 1px solid #fcd34d; padding: 6px 10px;
+            margin-bottom: 10px;
+        }
+        .instructions ul { margin: 4px 0; padding-left: 16px; }
+        .instructions .notice { color: #b91c1c; font-weight: 600; margin-top: 5px; font-size: 9pt; }
+
+        /* Footer */
+        .footer { text-align: center; font-size: 8pt; color: #6b7280; margin-top: 10px; border-top: 1px dashed #d1d5db; padding-top: 3px; line-height: 1.15; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            {% if logo %}<img src="{{ logo }}" alt="VOT House Finding" class="brand-logo"><br>{% endif %}
+            <h1>VOT House Finding</h1>
+            <h2>VOT Mwanza Limited</h2>
+            <div class="doc-title">Payment Invoice</div>
+        </div>
+
+        <!-- Reference -->
+        <table class="layout"><tr><td class="box">
+            <h3>INVOICE REFERENCE</h3>
+            <p><span class="label">Invoice ID:</span> #{{ payment.id }}</p>
+            <p><span class="label">Booking Ref:</span> #{{ payment.booking.id|stringformat:"04d" }}</p>
+            <p><span class="label">Issued:</span> {{ now|date:"F d, Y H:i" }}</p>
+        </td></tr></table>
+
+        <!-- Tenant & Property -->
+        <table class="layout split">
+            <tr>
+                <td class="left box">
+                    <h3>BILLED TO</h3>
+                    <p><span class="label">Name:</span> {{ payment.tenant.get_full_name|default:payment.tenant.username|upper }}</p>
+                    <p><span class="label">Email:</span> {{ payment.tenant.email }}</p>
+                    <p><span class="label">Phone:</span> {{ payment.tenant.phone|default:"N/A" }}</p>
+                </td>
+                <td class="right box">
+                    <h3>PROPERTY DETAILS</h3>
+                    <p><span class="label">Property:</span> {{ payment.booking.property.title|upper }}</p>
+                    <p><span class="label">Location:</span> {{ payment.booking.property.location|capfirst }}</p>
+                    <p><span class="label">Type:</span> {{ payment.booking.property.get_property_type_display }}</p>
+                    <p><span class="label">Landlord:</span> {{ payment.booking.property.landlord.username|capfirst }}</p>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Amount Due -->
+        <table class="payment-banner layout">
+            <tr>
+                <td>
+                    <p class="amount-label">Amount Due</p>
+                    <div class="amount">TZS {{ payment.amount|floatformat:0 }}</div>
+                </td>
+                <td class="meta">
+                    <p><strong>Due Date:</strong> {% if payment.is_overdue %}<span class="overdue">{{ payment.due_date|date:"F d, Y" }} (Overdue)</span>{% else %}{{ payment.due_date|date:"F d, Y" }}{% endif %}</p>
+                    {% if payment.late_fee %}<p><strong>Late Fee:</strong> TZS {{ payment.late_fee|floatformat:0 }}</p>{% endif %}
+                    <p><strong>Status:</strong> {{ payment.get_status_display|upper }}</p>
+                </td>
+            </tr>
+        </table>
+
+        <!-- How to Pay -->
+        <table class="layout"><tr><td class="instructions">
+            <strong>How to Pay</strong>
+            <ul>
+                <li><strong>M-Pesa:</strong> Send to landlord's registered number</li>
+                <li><strong>Bank Transfer:</strong> Use landlord's account details</li>
+                <li><strong>Cash:</strong> Pay directly to landlord with receipt</li>
+            </ul>
+            <p><strong>Important:</strong> After payment, mark it as paid in your account and contact your landlord to confirm receipt.</p>
+            <p class="notice">⚠️ Notice: This invoice is a request for payment, not proof of payment. Keep your M-Pesa/bank confirmation message once you pay.</p>
+        </td></tr></table>
+
+        <!-- Footer -->
+        <div class="footer">
+            VOT House Finding | info@votmwanza.co.tz | +255 693 446 111<br>
+            Official document generated on {{ now|date:"F d, Y" }} at {{ now|date:"H:i" }} | Invoice ID: {{ payment.id }} | Booking: {{ payment.booking.id }}
+        </div>
+    </div>
+</body>
+</html>

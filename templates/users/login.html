@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - MUST Housing</title>
+    <title>Login - VOT House Finding</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -424,12 +424,12 @@
     <div class="header">
         <div class="header-left">
             <div class="logo-container">
-              <img src="{% static 'img/must_logo.png' %}" alt="MUST Logo" class="logo"  
-              onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22 viewBox=%220 0 70 70%22><rect width=%2270%22 height=%2270%22 fill=%22%233b82f6%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2224%22 font-weight=%22bold%22 fill=%22white%22>M</text></svg>'">
+              <img src="{% static 'img/vot_icon.png' %}" alt="VOT House Finding Logo" class="logo"
+              onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22 viewBox=%220 0 70 70%22><rect width=%2270%22 height=%2270%22 fill=%22%2314746c%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2224%22 font-weight=%22bold%22 fill=%22white%22>V</text></svg>'">
            </div>
             <div class="header-text">
-                <h1>Mbeya University of Science and Technology</h1>
-                <h2>HOUSING MANAGEMENT SYSTEM</h2>
+                <h1>VOT House Finding</h1>
+                <h2>VOT MWANZA LIMITED</h2>
             </div>
         </div>
         <div class="season-badge">
@@ -469,14 +469,14 @@
         <!-- Left Panel -->
         <div class="left-panel">
             <div class="welcome-text">
-                <h3>Welcome to MUST Housing</h3>
-                <p>The Housing Management System facilitates property listings, bookings, and rent payments for students and staff near Mbeya University of Science and Technology.</p>
+                <h3>Welcome to VOT House Finding</h3>
+                <p>The House Finding System facilitates property listings, bookings, and rent payments for tenants and landlords, brought to you by VOT Mwanza Limited.</p>
             </div>
             
             <div class="feature-section">
                 <h4>🏠 Tenants (Students/Staff)</h4>
                 <ul class="feature-list">
-                    <li>Search available houses near MUST</li>
+                    <li>Search available houses nearby</li>
                     <li>Book properties online</li>
                     <li>Track payment history</li>
                     <li>View booking status</li>
@@ -591,7 +591,7 @@
     
     <!-- Footer -->
     <div class="footer">
-        <span>© 2023 - 2026 MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</span>
+        <span>© 2023 - 2026 VOT MWANZA LIMITED</span>
         <div>
             
             <span>Designed and Developed by: Shevi Santos</span>
@@ -658,7 +658,7 @@
         
         // Check for saved username (Remember Me)
         window.addEventListener('load', function() {
-            const savedUsername = localStorage.getItem('must_housing_username');
+            const savedUsername = localStorage.getItem('vot_house_finding_username');
             const rememberCheckbox = document.getElementById('remember-me');
             
             if (savedUsername) {
@@ -673,15 +673,15 @@
             const username = document.getElementById('id_username').value;
             
             if (rememberCheckbox.checked) {
-                localStorage.setItem('must_housing_username', username);
+                localStorage.setItem('vot_house_finding_username', username);
             } else {
-                localStorage.removeItem('must_housing_username');
+                localStorage.removeItem('vot_house_finding_username');
             }
         });
         
         // Show forgot password modal (placeholder)
         function showForgotPassword() {
-            alert('Password recovery feature will be available soon.\n\nPlease contact the system administrator at:\n📧 housing@must.ac.tz\n📞 +255 XXX XXX XXX');
+            alert('Password recovery feature will be available soon.\n\nPlease contact the system administrator at:\n📧 info@votmwanza.co.tz\n📞 +255 XXX XXX XXX');
         }
         
         // Auto-hide success messages after 5 seconds

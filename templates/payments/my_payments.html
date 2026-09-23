@@ -3,7 +3,14 @@
 
 {% block content %}
 <div class="card">
-    <div class="card-header">💳 Payment History</div>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>💳 Payment History</span>
+        {% if completed_count %}
+        <a href="{% url 'payments:download_receipts' %}" class="btn btn-sm" style="background:#fff; color:var(--vot-teal);">
+            🧾 Download All Receipts
+        </a>
+        {% endif %}
+    </div>
     <div class="card-body">
         {% if payments %}
         <!-- Responsive Table Wrapper -->
@@ -64,9 +71,18 @@
                                 </a>
                             {% endif %}
                             
+                            <!-- Download Invoice (while payment is still owed) -->
+                            {% if payment.status != 'COMPLETED' %}
+                                <a href="{% url 'payments:download_invoice' payment.id %}"
+                                   class="btn btn-sm"
+                                   style="background:#fffbeb; color:#92400e; display:inline-block; margin-bottom:6px; width:100%; text-align:center;">
+                                    🧾 Invoice
+                                </a>
+                            {% endif %}
+
                             <!-- Download Slip (always available) -->
-                            <a href="{% url 'payments:download_slip' payment.id %}" 
-                               class="btn btn-sm" 
+                            <a href="{% url 'payments:download_slip' payment.id %}"
+                               class="btn btn-sm"
                                style="background:#f8f9fa; color:#333; display:inline-block; width:100%; text-align:center;">
                                 📥 Slip
                             </a>

@@ -26,7 +26,10 @@ def property_list(request):
     if location:
         queryset = queryset.filter(location__icontains=location)
         
-    return render(request, 'properties/list.html', {'properties': queryset})
+    return render(request, 'properties/list.html', {
+        'properties': queryset,
+        'property_types': Property.PROPERTY_TYPES,
+    })
 
 @login_required
 def property_detail(request, pk):

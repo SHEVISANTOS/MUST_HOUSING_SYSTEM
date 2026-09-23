@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 
-{% block title %}Search Houses - MUST Housing{% endblock %}
+{% block title %}Search Houses - VOT House Finding{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
-        <h2>Available Houses Near MUST</h2>
+        <h2>Available Houses</h2>
     </div>
 </div>
 
@@ -22,10 +22,9 @@
             <div class="col-md-2">
                 <select name="type" class="form-select">
                     <option value="">All Types</option>
-                    <option value="SINGLE" {% if request.GET.type == 'SINGLE' %}selected{% endif %}>Single Room</option>
-                    <option value="BEDSITTER" {% if request.GET.type == 'BEDSITTER' %}selected{% endif %}>Bedsitter</option>
-                    <option value="1BR" {% if request.GET.type == '1BR' %}selected{% endif %}>1 Bedroom</option>
-                    <option value="2BR" {% if request.GET.type == '2BR' %}selected{% endif %}>2 Bedroom</option>
+                    {% for value, label in property_types %}
+                    <option value="{{ value }}" {% if request.GET.type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="col-md-3">
@@ -47,7 +46,7 @@
                 <div class="card-body">
                     <h5 class="card-title">{{ property.title }}</h5>
                     <p class="card-text text-muted">
-                        <small>📍 {{ property.location }} ({{ property.distance_from_must_km }} km from MUST)</small>
+                        <small>📍 {{ property.location }} ({{ property.distance_from_center_km }} km from city center)</small>
                     </p>
                     <p class="card-text">
                         <strong>Type:</strong> {{ property.get_property_type_display }}<br>

@@ -6,9 +6,9 @@
 
 <style>
   :root {
-    --must-green: #00c853;
-    --must-green-dark: #009624;
-    --must-green-light: #e8f5e9;
+    --vot-teal: #14746c;
+    --vot-teal-dark: #0b5750;
+    --vot-teal-light: #e4f2f0;
     --surface:  #ffffff;
     --surface2: #f8f9fa;
     --surface3: #f4f6f9;
@@ -63,7 +63,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
   }
   .card.adash-wrap .card-header {
-    background: var(--must-green) !important;
+    background: var(--vot-teal) !important;
     border-bottom: none !important;
     padding: 20px 28px;
     display: flex; align-items: center; gap: 12px;
@@ -106,13 +106,13 @@
   .adash-stat::before {
     content: '';
     position: absolute; top:0; left:0; right:0; height:3px;
-    background: var(--sc, var(--must-green));
+    background: var(--sc, var(--vot-teal));
     border-radius: 12px 12px 0 0;
   }
   .adash-stat:hover {
-    border-color: var(--sc, var(--must-green));
+    border-color: var(--sc, var(--vot-teal));
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,200,83,0.15);
+    box-shadow: 0 8px 24px rgba(20,116,108,0.15);
   }
   .adash-stat-icon {
     font-size: 1.5rem; margin-bottom: 12px; display: block;
@@ -120,7 +120,7 @@
   .adash-stat-value {
     font-family: 'Syne', sans-serif;
     font-size: 1.8rem; font-weight: 800;
-    color: var(--sc, var(--must-green));
+    color: var(--sc, var(--vot-teal));
     letter-spacing: -0.03em; line-height: 1;
     margin-bottom: 6px;
   }
@@ -135,13 +135,13 @@
 
   /* ─── REPORTS BLOCK ──────────────────────────── */
   .adash-reports-box {
-    background: var(--must-green-light);
-    border: 2px solid var(--must-green);
+    background: var(--vot-teal-light);
+    border: 2px solid var(--vot-teal);
     border-radius: 12px;
     padding: 22px 24px;
     display: flex; align-items: center;
     gap: 20px; flex-wrap: wrap;
-    border-left: 4px solid var(--must-green);
+    border-left: 4px solid var(--vot-teal);
   }
   .adash-reports-text { flex: 1; min-width: 200px; }
   .adash-reports-text p {
@@ -150,19 +150,19 @@
   .btn.btn-green.adash-btn {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 11px 22px; border-radius: 8px;
-    background: var(--must-green);
+    background: var(--vot-teal);
     color: white !important;
     border: none !important;
     font-size: 0.85rem; font-weight: 600;
     text-decoration: none;
     transition: all 0.2s;
     white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(0,200,83,0.3);
+    box-shadow: 0 2px 8px rgba(20,116,108,0.3);
   }
   .btn.btn-green.adash-btn:hover {
-    background: var(--must-green-dark);
+    background: var(--vot-teal-dark);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,200,83,0.4);
+    box-shadow: 0 4px 12px rgba(20,116,108,0.4);
   }
 
   /* ─── CONFIG TABLE ───────────────────────────── */
@@ -193,10 +193,10 @@
     background: var(--surface3);
     border: 1px solid var(--border);
     border-radius: 5px; padding: 2px 7px;
-    color: var(--must-green-dark); font-family: 'Courier New', monospace;
+    color: var(--vot-teal-dark); font-family: 'Courier New', monospace;
   }
   .badge.bg-danger  { background: var(--red) !important; color:white; border:none; border-radius:6px; padding:3px 9px; font-size:0.72rem; letter-spacing:0.06em; font-weight:700; }
-  .badge.bg-success { background: var(--must-green) !important;  color:white; border:none; border-radius:6px; padding:3px 9px; font-size:0.72rem; letter-spacing:0.06em; font-weight:700; }
+  .badge.bg-success { background: var(--vot-teal) !important;  color:white; border:none; border-radius:6px; padding:3px 9px; font-size:0.72rem; letter-spacing:0.06em; font-weight:700; }
 
   /* ─── USER MGMT BUTTONS ──────────────────────── */
   .adash-user-btns { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -222,7 +222,7 @@
   }
   .btn.adash-ubtn.outline:hover {
     background: var(--surface2); color: var(--text1);
-    border-color: var(--must-green); transform: translateY(-2px);
+    border-color: var(--vot-teal); transform: translateY(-2px);
   }
 
   @keyframes adFadeUp {

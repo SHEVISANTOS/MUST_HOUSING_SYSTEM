@@ -228,7 +228,7 @@ def export_users_report(request):
     response['Content-Disposition'] = 'attachment; filename="users_report.csv"'
     writer = csv.writer(response)
     
-    writer.writerow(['MUST HOUSING SYSTEM - USERS REPORT'])
+    writer.writerow(['VOT HOUSE FINDING - USERS REPORT'])
     writer.writerow(['Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
     writer.writerow([])
     writer.writerow(['Username', 'Email', 'Role', 'Phone', 'Is Verified', 'Is Active', 'Date Joined', 'Last Login'])
@@ -266,7 +266,7 @@ def export_properties_report(request):
     response['Content-Disposition'] = 'attachment; filename="properties_report.csv"'
     writer = csv.writer(response)
     
-    writer.writerow(['MUST HOUSING SYSTEM - PROPERTIES REPORT'])
+    writer.writerow(['VOT HOUSE FINDING - PROPERTIES REPORT'])
     writer.writerow(['Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
     writer.writerow([])
     writer.writerow(['Property ID', 'Title', 'Landlord', 'Type', 'Location', 'Monthly Rent (TZS)', 
@@ -280,7 +280,7 @@ def export_properties_report(request):
             prop.get_property_type_display(),
             prop.location,
             prop.monthly_rent,
-            prop.distance_from_must_km,
+            prop.distance_from_center_km,
             prop.amenities or 'None',
             'Yes' if prop.is_available else 'No',
             prop.created_at.strftime('%Y-%m-%d')
@@ -307,7 +307,7 @@ def export_financial_report(request):
     response['Content-Disposition'] = 'attachment; filename="financial_report.csv"'
     writer = csv.writer(response)
     
-    writer.writerow(['MUST HOUSING SYSTEM - FINANCIAL REPORT'])
+    writer.writerow(['VOT HOUSE FINDING - FINANCIAL REPORT'])
     writer.writerow(['Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
     writer.writerow([])
     
@@ -362,7 +362,7 @@ def export_activity_report(request):
     response['Content-Disposition'] = 'attachment; filename="activity_report.csv"'
     writer = csv.writer(response)
     
-    writer.writerow(['MUST HOUSING SYSTEM - ACTIVITY REPORT'])
+    writer.writerow(['VOT HOUSE FINDING - ACTIVITY REPORT'])
     writer.writerow(['Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
     writer.writerow(['Report Period:', 'Last 30 Days'])
     writer.writerow([])

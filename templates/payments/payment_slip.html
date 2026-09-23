@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Payment Instruction Slip</title>
     <style>
-        @page { size: A4; margin: 12mm; }
+        @page { size: A4; margin: 10mm; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             font-size: 10.5pt;
@@ -12,99 +12,109 @@
             color: #1a1a1a;
             margin: 0;
             padding: 0;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
         }
-        .container { max-width: 185mm; margin: 0 auto; padding: 5px; }
-        
-        /* Header */
-        .header { text-align: center; border-bottom: 2px solid #00a651; padding-bottom: 8px; margin-bottom: 10px; }
-        .header h1 { font-size: 15pt; margin: 0; color: #00a651; letter-spacing: 0.5px; }
-        .header h2 { font-size: 11pt; margin: 2px 0 4px; font-weight: 400; color: #333; }
-        .header .doc-title { font-size: 12pt; font-weight: 700; text-transform: uppercase; background: #f0fdf4; display: inline-block; padding: 3px 12px; border-radius: 4px; border: 1px solid #00a651; }
+        .container { width: 100%; }
 
-        /* Grid Layout */
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-        .box { border: 1px solid #d1d5db; padding: 8px; border-radius: 5px; background: #fafafa; }
-        .box h3 { font-size: 10pt; margin: 0 0 5px 0; color: #00a651; border-bottom: 1px dashed #d1d5db; padding-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+        /* Header */
+        .header { text-align: center; border-bottom: 2px solid #14746c; padding-bottom: 8px; margin-bottom: 10px; }
+        .header .brand-logo { width: 40px; height: 40px; margin-bottom: 4px; }
+        .header h1 { font-size: 15pt; margin: 0; color: #14746c; letter-spacing: 0.5px; }
+        .header h2 { font-size: 11pt; margin: 2px 0 4px; font-weight: 400; color: #333; }
+        .header .doc-title { font-size: 12pt; font-weight: 700; text-transform: uppercase; background: #e4f2f0; display: inline-block; padding: 3px 12px; border: 1px solid #14746c; }
+
+        /* Layout tables. xhtml2pdf has no flexbox/grid support, and it also
+           paints a bordered <div>'s border/background around EACH block-level
+           child separately instead of as one box, so every "boxed" section
+           here is a single-cell <table><td> rather than a styled <div>. */
+        table.layout { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 10px; }
+        table.layout.split td { width: 50%; vertical-align: top; }
+        table.layout.split td.left { padding-right: 5px; }
+        table.layout.split td.right { padding-left: 5px; }
+
+        .box { border: 1px solid #d1d5db; padding: 6px 8px; background: #fafafa; }
+        .box h3 { font-size: 10pt; margin: 0 0 5px 0; color: #14746c; border-bottom: 1px dashed #d1d5db; padding-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
         .box p { margin: 3px 0; font-size: 10pt; }
         .box .label { font-weight: 600; display: inline-block; width: 75px; color: #4b5563; }
 
         /* Payment Highlight */
         .payment-banner {
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1.5px solid #00a651; padding: 10px 12px; border-radius: 6px;
-            background: #f0fdf4; margin-bottom: 10px;
+            border: 1.5px solid #14746c;
+            background: #e4f2f0; margin-bottom: 10px;
         }
-        .payment-banner .amount { font-size: 20pt; font-weight: 800; color: #00a651; }
+        .payment-banner td { padding: 7px 12px; }
+        .payment-banner .amount { font-size: 20pt; font-weight: 800; color: #14746c; }
         .payment-banner .meta { text-align: right; font-size: 9.5pt; }
         .payment-banner .meta p { margin: 2px 0; }
 
         /* Instructions */
         .instructions {
-            font-size: 9.5pt; background: #fffbeb; border: 1px solid #fcd34d; padding: 8px 10px;
-            border-radius: 5px; margin-bottom: 12px;
+            font-size: 9.5pt; background: #fffbeb; border: 1px solid #fcd34d; padding: 6px 10px;
+            margin-bottom: 8px;
         }
         .instructions ul { margin: 4px 0; padding-left: 16px; }
         .instructions .notice { color: #b91c1c; font-weight: 600; margin-top: 5px; font-size: 9pt; }
 
         /* Signatures */
-        .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 14px; }
-        .sig-line { border-top: 1.5px solid #333; padding-top: 4px; text-align: center; font-size: 9.5pt; }
-        .sig-line strong { display: block; margin-bottom: 2px; }
+        table.signatures { width: 100%; margin-top: 4px; }
+        table.signatures td { width: 50%; text-align: center; font-size: 9.5pt; padding-top: 3px; border-top: 1.5px solid #333; }
+        table.signatures .spacer td { border-top: none; height: 8px; padding: 0; }
+        table.signatures strong { display: block; margin-bottom: 2px; }
 
         /* Footer */
-        .footer { text-align: center; font-size: 8.5pt; color: #6b7280; margin-top: 10px; border-top: 1px dashed #d1d5db; padding-top: 5px; line-height: 1.3; }
+        .footer { text-align: center; font-size: 8pt; color: #6b7280; margin-top: 4px; border-top: 1px dashed #d1d5db; padding-top: 3px; line-height: 1.15; }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>MUST Housing Locator</h1>
-            <h2>Mbeya University of Science and Technology</h2>
+            {% if logo %}<img src="{{ logo }}" alt="VOT House Finding" class="brand-logo"><br>{% endif %}
+            <h1>VOT House Finding</h1>
+            <h2>VOT Mwanza Limited</h2>
             <div class="doc-title">Official Payment Instruction Slip</div>
         </div>
 
         <!-- Reference -->
-        <div class="box" style="margin-bottom: 10px;">
+        <table class="layout"><tr><td class="box">
             <h3>PAYMENT REFERENCE</h3>
-            <div class="grid" style="margin: 0; gap: 5px;">
-                <p><span class="label">Slip ID:</span> #{{ payment.id }}</p>
-                <p><span class="label">Booking Ref:</span> #{{ payment.booking.id|stringformat:"04d" }}</p>
-                <p><span class="label">Generated:</span> {{ now|date:"F d, Y H:i" }}</p>
-            </div>
-        </div>
+            <p><span class="label">Slip ID:</span> #{{ payment.id }}</p>
+            <p><span class="label">Booking Ref:</span> #{{ payment.booking.id|stringformat:"04d" }}</p>
+            <p><span class="label">Generated:</span> {{ now|date:"F d, Y H:i" }}</p>
+        </td></tr></table>
 
         <!-- Tenant & Property -->
-        <div class="grid">
-            <div class="box">
-                <h3>TENANT DETAILS</h3>
-                <p><span class="label">Name:</span> {{ payment.tenant.get_full_name|default:payment.tenant.username|upper }}</p>
-                <p><span class="label">Email:</span> {{ payment.tenant.email }}</p>
-                <p><span class="label">Phone:</span> {{ payment.tenant.phone|default:"N/A" }}</p>
-            </div>
-            <div class="box">
-                <h3>PROPERTY DETAILS</h3>
-                <p><span class="label">Property:</span> {{ payment.booking.property.title|upper }}</p>
-                <p><span class="label">Location:</span> {{ payment.booking.property.location|capfirst }}</p>
-                <p><span class="label">Type:</span> {{ payment.booking.property.get_property_type_display }}</p>
-                <p><span class="label">Landlord:</span> {{ payment.booking.property.landlord.username|capfirst }}</p>
-            </div>
-        </div>
+        <table class="layout split">
+            <tr>
+                <td class="left box">
+                    <h3>TENANT DETAILS</h3>
+                    <p><span class="label">Name:</span> {{ payment.tenant.get_full_name|default:payment.tenant.username|upper }}</p>
+                    <p><span class="label">Email:</span> {{ payment.tenant.email }}</p>
+                    <p><span class="label">Phone:</span> {{ payment.tenant.phone|default:"N/A" }}</p>
+                </td>
+                <td class="right box">
+                    <h3>PROPERTY DETAILS</h3>
+                    <p><span class="label">Property:</span> {{ payment.booking.property.title|upper }}</p>
+                    <p><span class="label">Location:</span> {{ payment.booking.property.location|capfirst }}</p>
+                    <p><span class="label">Type:</span> {{ payment.booking.property.get_property_type_display }}</p>
+                    <p><span class="label">Landlord:</span> {{ payment.booking.property.landlord.username|capfirst }}</p>
+                </td>
+            </tr>
+        </table>
 
         <!-- Payment Amount -->
-        <div class="payment-banner">
-            <div class="amount">TZS {{ payment.amount|floatformat:0 }}</div>
-            <div class="meta">
-                <p><strong>Due Date:</strong> {{ payment.due_date|date:"F d, Y" }}</p>
-                <p><strong>Late Fee:</strong> TZS {{ payment.late_fee|floatformat:0 }}</p>
-                <p><strong>Status:</strong> {{ payment.get_status_display|upper }}</p>
-            </div>
-        </div>
+        <table class="payment-banner layout">
+            <tr>
+                <td class="amount">TZS {{ payment.amount|floatformat:0 }}</td>
+                <td class="meta">
+                    <p><strong>Due Date:</strong> {{ payment.due_date|date:"F d, Y" }}</p>
+                    <p><strong>Late Fee:</strong> TZS {{ payment.late_fee|floatformat:0 }}</p>
+                    <p><strong>Status:</strong> {{ payment.get_status_display|upper }}</p>
+                </td>
+            </tr>
+        </table>
 
         <!-- How to Pay -->
-        <div class="instructions">
+        <table class="layout"><tr><td class="instructions">
             <strong>How to Pay</strong>
             <ul>
                 <li><strong>M-Pesa:</strong> Send to landlord's registered number</li>
@@ -113,23 +123,20 @@
             </ul>
             <p><strong>Important:</strong> After payment, contact your landlord immediately to confirm receipt.</p>
             <p class="notice">⚠️ Notice: This slip is for payment instruction only. Payment status is updated by your landlord after confirming receipt. Keep your M-Pesa/bank confirmation message as proof of payment.</p>
-        </div>
+        </td></tr></table>
 
         <!-- Signatures -->
-        <div class="signatures">
-            <div class="sig-line">
-                <div style="height: 25px;"></div>
-                <strong>Tenant Signature</strong>(Upon payment)
-            </div>
-            <div class="sig-line">
-                <div style="height: 25px;"></div>
-                <strong>Landlord Signature</strong>(Upon verification)
-            </div>
-        </div>
+        <table class="signatures">
+            <tr class="spacer"><td></td><td></td></tr>
+            <tr>
+                <td><strong>Tenant Signature</strong>(Upon payment)</td>
+                <td><strong>Landlord Signature</strong>(Upon verification)</td>
+            </tr>
+        </table>
 
         <!-- Footer -->
         <div class="footer">
-            MUST Housing Locator | housing@must.ac.tz | +255 693 446 111<br>
+            VOT House Finding | info@votmwanza.co.tz | +255 693 446 111<br>
             Official document generated on {{ now|date:"F d, Y" }} at {{ now|date:"H:i" }} | Slip ID: {{ payment.id }} | Booking: {{ payment.booking.id }}
         </div>
     </div>
