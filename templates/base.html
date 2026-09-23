@@ -1,16 +1,17 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{% block title %}MUST Housing{% endblock %}</title>
+    <title>{% block title %}VOT House Finding{% endblock %}</title>
     <style>
         /* ========================================
            🎨 GLOBAL VARIABLES
            ======================================== */
         :root {
-            --must-green: #00c853;
-            --must-green-dark: #009624;
+            --vot-teal: #14746c;
+            --vot-teal-dark: #0b5750;
             --sidebar-width: 260px;
             --header-height: 70px;
             --bg-color: #f4f6f9;
@@ -30,7 +31,7 @@
            🟢 HEADER
            ======================================== */
         .top-header {
-            background: var(--must-green);
+            background: var(--vot-teal);
             color: white;
             height: var(--header-height);
             display: flex;
@@ -43,13 +44,15 @@
             box-shadow: var(--shadow-md);
         }
         .header-brand { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-        .logo-box { 
-            width: 48px; height: 48px; 
-            background: white; border-radius: 10px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 800; color: var(--must-green); 
+        .logo-box {
+            width: 48px; height: 48px;
+            background: white; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; color: var(--vot-teal);
             flex-shrink: 0; font-size: 1.3rem;
+            overflow: hidden;
         }
+        .logo-box img { width: 100%; height: 100%; object-fit: cover; }
         .brand-text { min-width: 0; }
         .brand-text h1 { 
             font-size: 1.1rem; font-weight: 700; line-height: 1.2; 
@@ -117,11 +120,11 @@
             border-left: 4px solid transparent;
             font-size: 0.95rem;
         }
-        .nav-link:hover { background: #f8f9fa; color: var(--must-green); }
+        .nav-link:hover { background: #f8f9fa; color: var(--vot-teal); }
         .nav-link.active {
-            background: #e8f5e9;
-            color: var(--must-green);
-            border-left-color: var(--must-green);
+            background: #e4f2f0;
+            color: var(--vot-teal);
+            border-left-color: var(--vot-teal);
             font-weight: 600;
         }
         .nav-icon { font-size: 1.15rem; width: 24px; text-align: center; flex-shrink: 0; }
@@ -163,7 +166,7 @@
             overflow: hidden;
         }
         .card-header {
-            background: var(--must-green);
+            background: var(--vot-teal);
             color: white;
             padding: 16px 20px;
             font-size: 1.05rem;
@@ -181,7 +184,7 @@
             width: 100%; padding: 11px 14px; border: 1px solid #ddd; border-radius: 8px;
             font-size: 0.95rem; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .form-control:focus { border-color: var(--must-green); box-shadow: 0 0 0 3px rgba(0,200,83,0.15); }
+        .form-control:focus { border-color: var(--vot-teal); box-shadow: 0 0 0 3px rgba(20,116,108,0.15); }
         
         /* ========================================
            🔘 BUTTONS
@@ -192,8 +195,8 @@
             font-weight: 600; font-size: 0.95rem;
             cursor: pointer; border: none; transition: all 0.2s;
         }
-        .btn-green { background: var(--must-green); color: white; }
-        .btn-green:hover { background: var(--must-green-dark); transform: translateY(-1px); }
+        .btn-green { background: var(--vot-teal); color: white; }
+        .btn-green:hover { background: var(--vot-teal-dark); transform: translateY(-1px); }
         .btn-secondary { background: #6c757d; color: white; }
         .btn-secondary:hover { background: #5a6268; }
         .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
@@ -254,8 +257,8 @@
             border-bottom: 1px solid var(--border-color);
         }
         .recent-bookings-table th {
-            background: rgba(0, 200, 83, 0.1);
-            color: var(--must-green-dark);
+            background: rgba(20, 116, 108, 0.1);
+            color: var(--vot-teal-dark);
             font-weight: 600;
             font-size: 0.85rem;
             text-transform: uppercase;
@@ -268,15 +271,15 @@
             height: 8px;
         }
         .recent-bookings-wrapper::-webkit-scrollbar-track {
-            background: rgba(0, 200, 83, 0.1);
+            background: rgba(20, 116, 108, 0.1);
             border-radius: 10px;
         }
         .recent-bookings-wrapper::-webkit-scrollbar-thumb {
-            background: var(--must-green);
+            background: var(--vot-teal);
             border-radius: 10px;
         }
         .recent-bookings-wrapper::-webkit-scrollbar-thumb:hover {
-            background: var(--must-green-dark);
+            background: var(--vot-teal-dark);
         }
 
         /* ========================================
@@ -293,7 +296,7 @@
            🍞 BREADCRUMB
            ======================================== */
         .breadcrumb { margin-bottom: 20px; color: var(--text-grey); font-size: 0.9rem; }
-        .breadcrumb a { color: var(--must-green); font-weight: 500; }
+        .breadcrumb a { color: var(--vot-teal); font-weight: 500; }
         .breadcrumb a:hover { text-decoration: underline; }
 
         /* ========================================
@@ -308,7 +311,7 @@
             font-size: 0.85rem;
             color: var(--text-grey);
         }
-        .footer a { color: var(--must-green); text-decoration: none; font-weight: 500; }
+        .footer a { color: var(--vot-teal); text-decoration: none; font-weight: 500; }
 
         /* ========================================
            📱 RESPONSIVE BREAKPOINTS
@@ -425,10 +428,10 @@
     <header class="top-header">
         <div class="header-brand">
             <button class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Toggle navigation">☰</button>
-            <div class="logo-box">M</div>
+            <div class="logo-box"><img src="{% static 'img/vot_icon.png' %}" alt="VOT House Finding Logo"></div>
             <div class="brand-text">
-                <h1>MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</h1>
-                <p>HOUSING MANAGEMENT SYSTEM</p>
+                <h1>VOT HOUSE FINDING</h1>
+                <p>VOT MWANZA LIMITED</p>
             </div>
         </div>
         <div class="header-user">
@@ -556,7 +559,7 @@
             
             <!-- Footer -->
             <footer class="footer">
-                <p>© 2023-2026 <a href="#">MBEYA UNIVERSITY OF SCIENCE AND TECHNOLOGY</a></p>
+                <p>© 2023-2026 <a href="#">VOT MWANZA LIMITED</a></p>
                 <p>Designed and Developed by <a href="#">Shevi_Santos</a></p>
             </footer>
         </main>

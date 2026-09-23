@@ -1,4 +1,7 @@
+import base64
 import logging
+from functools import lru_cache
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -18,6 +21,23 @@ except ImportError:
     logging.warning("xhtml2pdf not installed. PDF generation will be disabled.")
 
 logger = logging.getLogger(__name__)
+
+
+@lru_cache(maxsize=1)
+def _get_logo_data_uri():
+    """
+    Base64-embed the logo instead of linking to /static/.
+    xhtml2pdf doesn't resolve Django static URLs on its own, so a plain
+    <img src="{% static %}"> tag would render as a broken image in the PDF.
+    """
+    logo_path = settings.STATICFILES_DIRS[0] / 'img' / 'vot_icon.png'
+    try:
+        with open(logo_path, 'rb') as f:
+            encoded = base64.b64encode(f.read()).decode('ascii')
+        return f'data:image/png;base64,{encoded}'
+    except OSError:
+        logger.warning("Logo file not found for PDF generation: %s", logo_path)
+        return ''
 
 # ==================== EXISTING VIEWS (Preserved) ====================
 
@@ -122,7 +142,8 @@ def download_payment_slip(request, payment_id):
         html_string = render_to_string('payments/payment_slip.html', {
             'payment': payment,
             'now': timezone.now(),
-            'user': request.user
+            'user': request.user,
+            'logo': _get_logo_data_uri(),
         })
         
         response = HttpResponse(content_type='application/pdf')
@@ -151,9 +172,10 @@ def download_payment_invoice(request, payment_id):
     
     try:
         html_string = render_to_string('payments/payment_invoice.html', {
-            'payment': payment, 
-            'user': request.user, 
-            'now': timezone.now()
+            'payment': payment,
+            'user': request.user,
+            'now': timezone.now(),
+            'logo': _get_logo_data_uri(),
         })
         
         response = HttpResponse(content_type='application/pdf')
@@ -190,7 +212,8 @@ def download_approved_payments_list(request):
             'payments': payments,
             'user': request.user,
             'now': timezone.now(),
-            'total_paid': total_paid
+            'total_paid': total_paid,
+            'logo': _get_logo_data_uri(),
         })
         
         response = HttpResponse(content_type='application/pdf')

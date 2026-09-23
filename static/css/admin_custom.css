@@ -1,12 +1,12 @@
 /* ========================================
-   🎨 MUST Housing Admin - Green Theme
+   🎨 VOT House Finding Admin - Teal Theme
    ======================================== */
 
 :root {
-    --must-green: #00c853;
-    --must-green-dark: #009624;
-    --must-green-light: #e8f5e9;
-    --must-green-glow: rgba(0, 200, 83, 0.3);
+    --vot-teal: #14746c;
+    --vot-teal-dark: #0b5750;
+    --vot-teal-light: #e4f2f0;
+    --vot-teal-glow: rgba(20, 116, 108, 0.3);
     --admin-bg: #f4f6f9;
     --card-bg: #ffffff;
     --text-primary: #2c3e50;
@@ -32,7 +32,7 @@ body {
 
 /* ===== HEADER ===== */
 #header {
-    background: linear-gradient(135deg, var(--must-green) 0%, var(--must-green-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--vot-teal) 0%, var(--vot-teal-dark) 100%) !important;
     color: white !important;
     border-bottom: 3px solid rgba(0,0,0,0.1) !important;
     box-shadow: var(--shadow-md) !important;
@@ -52,7 +52,7 @@ body {
 
 /* ===== MODULES (SECTIONS) ===== */
 .module h2, .module caption, .inline-group h2 {
-    background: linear-gradient(135deg, var(--must-green) 0%, var(--must-green-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--vot-teal) 0%, var(--vot-teal-dark) 100%) !important;
     color: white !important;
     font-weight: 600 !important;
     padding: 16px 20px !important;
@@ -77,20 +77,20 @@ body {
 
 /* ===== LINKS ===== */
 a:link, a:visited {
-    color: var(--must-green-dark) !important;
+    color: var(--vot-teal-dark) !important;
     text-decoration: none !important;
     font-weight: 500 !important;
 }
 
 a:hover {
-    color: var(--must-green) !important;
+    color: var(--vot-teal) !important;
     text-decoration: underline !important;
 }
 
 /* ===== BUTTONS ===== */
 .button, input[type=submit], input[type=button], .submit-row input, 
 .button.default, input[type=submit].default {
-    background: linear-gradient(135deg, var(--must-green) 0%, var(--must-green-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--vot-teal) 0%, var(--vot-teal-dark) 100%) !important;
     color: white !important;
     border: none !important;
     font-weight: 600 !important;
@@ -98,14 +98,14 @@ a:hover {
     padding: 11px 22px !important;
     font-size: 0.95rem !important;
     cursor: pointer !important;
-    box-shadow: 0 2px 8px rgba(0,200,83,0.3) !important;
+    box-shadow: 0 2px 8px rgba(20,116,108,0.3) !important;
     transition: all 0.3s ease !important;
 }
 
 .button:hover, input[type=submit]:hover, input[type=button]:hover,
 .button.default:hover, input[type=submit].default:hover {
-    background: linear-gradient(135deg, var(--must-green-dark) 0%, #007a1f 100%) !important;
-    box-shadow: 0 4px 12px rgba(0,200,83,0.4) !important;
+    background: linear-gradient(135deg, var(--vot-teal-dark) 0%, #08433e 100%) !important;
+    box-shadow: 0 4px 12px rgba(20,116,108,0.4) !important;
     transform: translateY(-1px) !important;
 }
 
@@ -118,21 +118,21 @@ a:hover {
 }
 
 .addlink {
-    background: var(--must-green-light) !important;
-    color: var(--must-green-dark) !important;
+    background: var(--vot-teal-light) !important;
+    color: var(--vot-teal-dark) !important;
 }
 
 .addlink:hover {
-    background: var(--must-green) !important;
+    background: var(--vot-teal) !important;
     color: white !important;
 }
 
 /* ===== TABLES ===== */
 thead th {
-    background: var(--must-green-light) !important;
-    color: var(--must-green-dark) !important;
+    background: var(--vot-teal-light) !important;
+    color: var(--vot-teal-dark) !important;
     font-weight: 600 !important;
-    border-bottom: 2px solid var(--must-green) !important;
+    border-bottom: 2px solid var(--vot-teal) !important;
     padding: 14px 16px !important;
     font-size: 0.9rem !important;
     text-transform: uppercase !important;
@@ -153,12 +153,12 @@ td, th {
 }
 
 tr:hover td {
-    background: var(--must-green-light) !important;
+    background: var(--vot-teal-light) !important;
 }
 
 tr.selected td {
-    background: var(--must-green-light) !important;
-    border-left: 3px solid var(--must-green) !important;
+    background: var(--vot-teal-light) !important;
+    border-left: 3px solid var(--vot-teal) !important;
 }
 
 /* ===== FORMS ===== */
@@ -175,28 +175,28 @@ textarea, select, .vTextField {
 
 input[type=text]:focus, input[type=password]:focus, 
 input[type=email]:focus, textarea:focus, select:focus {
-    border-color: var(--must-green) !important;
-    box-shadow: 0 0 0 4px var(--must-green-glow) !important;
+    border-color: var(--vot-teal) !important;
+    box-shadow: 0 0 0 4px var(--vot-teal-glow) !important;
     outline: none !important;
 }
 
 /* ===== BREADCRUMBS ===== */
 .breadcrumbs {
-    background: var(--must-green-light) !important;
-    color: var(--must-green-dark) !important;
-    border-bottom: 2px solid var(--must-green) !important;
+    background: var(--vot-teal-light) !important;
+    color: var(--vot-teal-dark) !important;
+    border-bottom: 2px solid var(--vot-teal) !important;
     padding: 15px 30px !important;
     font-weight: 500 !important;
 }
 
 .breadcrumbs a {
-    color: var(--must-green-dark) !important;
+    color: var(--vot-teal-dark) !important;
     text-decoration: none !important;
     transition: color 0.2s !important;
 }
 
 .breadcrumbs a:hover {
-    color: var(--must-green) !important;
+    color: var(--vot-teal) !important;
     text-decoration: none !important;
 }
 
@@ -210,8 +210,8 @@ input[type=email]:focus, textarea:focus, select:focus {
 }
 
 #content-related h2 {
-    background: var(--must-green-light) !important;
-    color: var(--must-green-dark) !important;
+    background: var(--vot-teal-light) !important;
+    color: var(--vot-teal-dark) !important;
     padding: 12px 16px !important;
     border-radius: 8px !important;
     font-size: 1rem !important;
@@ -244,9 +244,9 @@ input[type=email]:focus, textarea:focus, select:focus {
 
 /* ===== MESSAGES ===== */
 .messagelist li {
-    background: var(--must-green-light) !important;
-    border-left: 4px solid var(--must-green) !important;
-    color: var(--must-green-dark) !important;
+    background: var(--vot-teal-light) !important;
+    border-left: 4px solid var(--vot-teal) !important;
+    color: var(--vot-teal-dark) !important;
     padding: 14px 18px !important;
     border-radius: 8px !important;
     margin-bottom: 10px !important;
@@ -263,7 +263,7 @@ input[type=email]:focus, textarea:focus, select:focus {
 }
 
 .login #header {
-    background: linear-gradient(135deg, var(--must-green) 0%, var(--must-green-dark) 100%) !important;
+    background: linear-gradient(135deg, var(--vot-teal) 0%, var(--vot-teal-dark) 100%) !important;
     padding: 30px !important;
     border-radius: 16px 16px 0 0 !important;
     text-align: center !important;
@@ -289,7 +289,7 @@ input[type=email]:focus, textarea:focus, select:focus {
 }
 
 .object-tools li {
-    background: var(--must-green) !important;
+    background: var(--vot-teal) !important;
     border-radius: 8px !important;
     margin-left: 10px !important;
 }
@@ -302,7 +302,7 @@ input[type=email]:focus, textarea:focus, select:focus {
 }
 
 .object-tools a:hover {
-    background: var(--must-green-dark) !important;
+    background: var(--vot-teal-dark) !important;
 }
 
 /* ===== FILTERS ===== */
@@ -314,28 +314,28 @@ input[type=email]:focus, textarea:focus, select:focus {
 }
 
 #changelist-filter h2 {
-    background: var(--must-green-light) !important;
-    color: var(--must-green-dark) !important;
+    background: var(--vot-teal-light) !important;
+    color: var(--vot-teal-dark) !important;
     padding: 12px 16px !important;
     border-radius: 8px !important;
     margin-bottom: 15px !important;
 }
 
 #changelist-filter li.selected a {
-    color: var(--must-green) !important;
+    color: var(--vot-teal) !important;
     font-weight: 600 !important;
 }
 
 /* ===== PAGINATION ===== */
 .paginator {
-    background: var(--must-green-light) !important;
+    background: var(--vot-teal-light) !important;
     border: 2px solid var(--border-color) !important;
     border-radius: 10px !important;
     padding: 12px 18px !important;
 }
 
 .paginator a:link, .paginator .showall {
-    color: var(--must-green-dark) !important;
+    color: var(--vot-teal-dark) !important;
     padding: 8px 14px !important;
     border-radius: 6px !important;
     background: white !important;
@@ -343,7 +343,7 @@ input[type=email]:focus, textarea:focus, select:focus {
 }
 
 .paginator a:hover {
-    background: var(--must-green) !important;
+    background: var(--vot-teal) !important;
     color: white !important;
 }
 

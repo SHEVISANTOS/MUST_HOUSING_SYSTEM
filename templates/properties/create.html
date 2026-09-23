@@ -47,11 +47,11 @@
                 {% if form.location.errors %}<small class="text-danger">{{ form.location.errors }}</small>{% endif %}
             </div>
 
-            <!-- Distance from MUST -->
-            {% if form.distance_from_must_km %}
+            <!-- Distance from city center -->
+            {% if form.distance_from_center_km %}
             <div class="form-group" style="margin-bottom:20px;">
-                <label style="display:block; margin-bottom:6px; font-weight:500;">Distance from MUST (km)</label>
-                {{ form.distance_from_must_km }}
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Distance from city center (km)</label>
+                {{ form.distance_from_center_km }}
             </div>
             {% endif %}
             
@@ -73,8 +73,8 @@
             </div>
 
             <!-- ✅ NEW: Google Maps Location -->
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #00c853;">
-                <h5 style="margin-bottom: 12px; color: #00c853;">📍 Google Maps Location</h5>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #14746c;">
+                <h5 style="margin-bottom: 12px; color: #14746c;">📍 Google Maps Location</h5>
                 
                 <div class="form-group" style="margin-bottom:12px;">
                     <label style="display:block; margin-bottom:6px; font-weight:500;">Google Maps Link</label>

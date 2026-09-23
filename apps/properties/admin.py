@@ -31,7 +31,7 @@ class PropertyAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Details & Pricing', {
-            'fields': ('property_type', 'monthly_rent', 'distance_from_must_km', 'amenities'),
+            'fields': ('property_type', 'monthly_rent', 'distance_from_center_km', 'amenities'),
             'description': 'Specifications, rent, and amenities'
         }),
         ('Status & Timestamps', {
@@ -41,7 +41,7 @@ class PropertyAdmin(admin.ModelAdmin):
     )
     
     help_texts = {
-        'location': "Full area/address (e.g., 'Iyunga, Mbeya')",
+        'location': "Full area/address (e.g., 'Ilemela, Mwanza')",
         'amenities': "Separate with commas: water, electricity, wifi, parking",
-        'distance_from_must_km': "Distance from MUST campus in kilometers",
+        'distance_from_center_km': "Distance from city center in kilometers",
     }

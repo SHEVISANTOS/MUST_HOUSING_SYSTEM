@@ -27,7 +27,7 @@ class BookingApprovalTests(TestCase):
             location='Iyunga',
             property_type='BEDSITTER',
             monthly_rent=100000,
-            distance_from_must_km=1.2
+            distance_from_center_km=1.2
         )
         
         # 4. Create Booking for 3 months stay

@@ -5,11 +5,11 @@
 <div class="card" style="max-width: 700px; margin: 0 auto; border-radius: 12px; overflow: hidden;">
     
     <!-- ✅ GREEN HEADER WITH DYNAMIC STATUS BADGE -->
-    <div class="card-header d-flex justify-content-between align-items-center" style="background: var(--must-green); color: white; padding: 15px 20px;">
+    <div class="card-header d-flex justify-content-between align-items-center" style="background: var(--vot-teal); color: white; padding: 15px 20px;">
         <h5 class="mb-0 font-weight-bold">💳 Payment Details</h5>
         
         {% if payment.status == 'COMPLETED' %}
-            <span class="badge" style="background: #fff; color: var(--must-green); font-weight: bold;">✅ CONFIRMED</span>
+            <span class="badge" style="background: #fff; color: var(--vot-teal); font-weight: bold;">✅ CONFIRMED</span>
         {% elif payment.status == 'TENANT_PAID' %}
             <span class="badge" style="background: #fff3cd; color: #856404; font-weight: bold;">⏳ PENDING CONFIRMATION</span>
         {% elif payment.status == 'PENDING' %}
@@ -111,6 +111,18 @@
             {% if is_landlord %}
                 <a href="mailto:{{ payment.booking.tenant.email }}" class="btn btn-secondary flex-grow-1 text-center">
                     📞 Contact Tenant
+                </a>
+            {% endif %}
+
+            <!-- 3b. DOCUMENT DOWNLOADS (Tenant only) -->
+            {% if not is_landlord %}
+                {% if payment.status != 'COMPLETED' %}
+                    <a href="{% url 'payments:download_invoice' payment.id %}" class="btn btn-secondary flex-grow-1 text-center">
+                        🧾 Invoice
+                    </a>
+                {% endif %}
+                <a href="{% url 'payments:download_slip' payment.id %}" class="btn btn-secondary flex-grow-1 text-center">
+                    📥 Slip
                 </a>
             {% endif %}
 

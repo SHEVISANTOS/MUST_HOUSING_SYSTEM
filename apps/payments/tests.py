@@ -23,10 +23,10 @@ class PaymentTests(TestCase):
         self.property = Property.objects.create(
             landlord=self.landlord,
             title='Test Property',
-            location='Mbeya',
+            location='Mwanza',
             property_type='SINGLE',
             monthly_rent=50000,
-            distance_from_must_km=2.5
+            distance_from_center_km=2.5
         )
         
         # 4. Create Booking (Include move_out_date!)

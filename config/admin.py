@@ -1,16 +1,16 @@
 from django.contrib.admin import AdminSite
 from django.utils.translation import gettext_lazy as _
 
-class MUSTAdminSite(AdminSite):
-    """Custom admin site with MUST branding"""
-    site_header = _('MUST Housing Administration')
-    site_title = _('MUST Housing Admin')
+class VotAdminSite(AdminSite):
+    """Custom admin site with VOT House Finding branding"""
+    site_header = _('VOT House Finding Administration')
+    site_title = _('VOT House Finding Admin')
     index_title = _('Site Administration')
-    
+
     def each_context(self, request):
         context = super().each_context(request)
-        context['site_header'] = 'MUST Housing Administration'
+        context['site_header'] = 'VOT House Finding Administration'
         return context
 
 # Create custom admin site instance
-must_admin_site = MUSTAdminSite(name='must_admin')
+vot_admin_site = VotAdminSite(name='vot_admin')

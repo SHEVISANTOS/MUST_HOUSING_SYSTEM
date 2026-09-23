@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Manage Users - MUST Housing{% endblock %}
+{% block title %}Manage Users - VOT House Finding{% endblock %}
 
 {% block content %}
 <style>
@@ -32,9 +32,9 @@
         transition: all 0.2s;
     }
     .stat-card:hover {
-        border-color: var(--must-green);
+        border-color: var(--vot-teal);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,200,83,0.15);
+        box-shadow: 0 4px 12px rgba(20,116,108,0.15);
     }
     .stat-value {
         font-size: 1.5rem;
@@ -314,7 +314,7 @@
                     <tr>
                         <td class="user-cell">
                             <div class="d-flex align-items-center gap-2">
-                                <div class="avatar-circle" style="background: var(--must-green); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                                <div class="avatar-circle" style="background: var(--vot-teal); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">
                                     {{ user.username|first|upper }}
                                 </div>
                                 <div>

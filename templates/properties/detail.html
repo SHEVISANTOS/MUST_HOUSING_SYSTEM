@@ -21,14 +21,14 @@
         object-fit: cover;
     }
     .rental-card {
-        border: 2px solid #00c853;
+        border: 2px solid #14746c;
         border-radius: 12px;
         overflow: hidden;
         margin: 20px 0;
-        box-shadow: 0 4px 10px rgba(0,200,83,0.15);
+        box-shadow: 0 4px 10px rgba(20,116,108,0.15);
     }
     .rental-header {
-        background: #00c853;
+        background: #14746c;
         color: white;
         padding: 12px 15px;
         font-weight: 600;
@@ -48,7 +48,7 @@
         margin-bottom: 15px;
     }
     .book-btn {
-        background: linear-gradient(135deg, #00c853 0%, #69f0ae 100%);
+        background: linear-gradient(135deg, #14746c 0%, #4fa89e 100%);
         color: white;
         border: none;
         padding: 12px;
@@ -59,7 +59,7 @@
         text-decoration: none;
         display: block;
         margin-bottom: 10px;
-        box-shadow: 0 3px 6px rgba(0,200,83,0.3);
+        box-shadow: 0 3px 6px rgba(20,116,108,0.3);
     }
     .contact-item {
         display: flex;
@@ -134,8 +134,8 @@
     <!-- 3. Property Details -->
     <div class="card mb-3 shadow-sm">
         <div class="card-body">
-            <h2 class="mb-2" style="color: #00c853; font-weight: 700;">{{ property.title }}</h2>
-            <p class="text-muted mb-3">📍 {{ property.location }} | {{ property.distance_from_must_km }} km from MUST</p>
+            <h2 class="mb-2" style="color: #14746c; font-weight: 700;">{{ property.title }}</h2>
+            <p class="text-muted mb-3">📍 {{ property.location }} | {{ property.distance_from_center_km }} km from city center</p>
             
             <p><strong>Type:</strong> <span class="badge bg-secondary">{{ property.get_property_type_display }}</span></p>
             <p><strong>Amenities:</strong> {{ property.amenities_list|join:", " }}</p>

@@ -17,7 +17,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
                         <h5 class="mb-1">{{ prop.title }}</h5>
-                        <p class="text-muted mb-1">📍 {{ prop.location }} | {{ prop.distance_from_must_km }} km from MUST</p>
+                        <p class="text-muted mb-1">📍 {{ prop.location }} | {{ prop.distance_from_center_km }} km from city center</p>
                         <p class="mb-1"><strong>Type:</strong> {{ prop.get_property_type_display }} | <strong>Rent:</strong> TZS {{ prop.monthly_rent|floatformat:0 }}/month</p>
                         <p class="mb-0 text-muted">{{ prop.description|truncatewords:30 }}</p>
                     </div>

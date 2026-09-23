@@ -1,10 +1,10 @@
-# 🏠 MUST Housing Management System
+# 🏠 VOT House Finding
 
-A Django-based housing platform for **Mbeya University of Science and Technology (MUST)** students and staff. Browse properties, book rooms, manage payments, and handle tenant roles seamlessly.
+A Django-based house finding platform by **VOT Mwanza Limited**. Browse properties, book rooms, manage payments, and handle tenant roles seamlessly.
 
 ## 🚀 Features
 - Role-based access (Tenant, Landlord, Admin)
-- Property listings with rent (TZS), distance from campus, amenities & availability
+- Property listings with rent (TZS), distance from city center, amenities & availability
 - Booking flow & payment tracking
 - Responsive UI with Bootstrap 5 & Crispy Forms
 - MySQL backend
@@ -27,12 +27,12 @@ cp .env.example .env
 nano .env  # Fill in your MySQL credentials & SECRET_KEY
 
 # General Settings
-DJANGO_SECRET_KEY=django-insecure-must-housing-temp-key-change-later
+DJANGO_SECRET_KEY=django-insecure-vot-house-finding-temp-key-change-later
 DJANGO_DEBUG=True
 
 # Database Credentials (Matches what we created in MariaDB)
-DB_NAME=must_housing_db
-DB_USER=must_django
-DB_PASSWORD=MustHousing@2026!Secure
+DB_NAME=vot_house_finding_db
+DB_USER=vot_django
+DB_PASSWORD=VotHouseFinding@2026!Secure
 DB_HOST=localhost
 DB_PORT=3306

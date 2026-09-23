@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Payment Instruction Slip</title>
+    <title>Payment Invoice</title>
     <style>
         @page { size: A4; margin: 10mm; }
         body {
@@ -36,32 +36,28 @@
         .box p { margin: 3px 0; font-size: 10pt; }
         .box .label { font-weight: 600; display: inline-block; width: 75px; color: #4b5563; }
 
-        /* Payment Highlight */
+        /* Amount Due Highlight */
         .payment-banner {
             border: 1.5px solid #14746c;
             background: #e4f2f0; margin-bottom: 10px;
         }
         .payment-banner td { padding: 7px 12px; }
+        .payment-banner .amount-label { font-size: 8.5pt; color: #0b5750; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 2px; }
         .payment-banner .amount { font-size: 20pt; font-weight: 800; color: #14746c; }
         .payment-banner .meta { text-align: right; font-size: 9.5pt; }
         .payment-banner .meta p { margin: 2px 0; }
+        .overdue { color: #b91c1c; }
 
         /* Instructions */
         .instructions {
             font-size: 9.5pt; background: #fffbeb; border: 1px solid #fcd34d; padding: 6px 10px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .instructions ul { margin: 4px 0; padding-left: 16px; }
         .instructions .notice { color: #b91c1c; font-weight: 600; margin-top: 5px; font-size: 9pt; }
 
-        /* Signatures */
-        table.signatures { width: 100%; margin-top: 4px; }
-        table.signatures td { width: 50%; text-align: center; font-size: 9.5pt; padding-top: 3px; border-top: 1.5px solid #333; }
-        table.signatures .spacer td { border-top: none; height: 8px; padding: 0; }
-        table.signatures strong { display: block; margin-bottom: 2px; }
-
         /* Footer */
-        .footer { text-align: center; font-size: 8pt; color: #6b7280; margin-top: 4px; border-top: 1px dashed #d1d5db; padding-top: 3px; line-height: 1.15; }
+        .footer { text-align: center; font-size: 8pt; color: #6b7280; margin-top: 10px; border-top: 1px dashed #d1d5db; padding-top: 3px; line-height: 1.15; }
     </style>
 </head>
 <body>
@@ -71,22 +67,22 @@
             {% if logo %}<img src="{{ logo }}" alt="VOT House Finding" class="brand-logo"><br>{% endif %}
             <h1>VOT House Finding</h1>
             <h2>VOT Mwanza Limited</h2>
-            <div class="doc-title">Official Payment Instruction Slip</div>
+            <div class="doc-title">Payment Invoice</div>
         </div>
 
         <!-- Reference -->
         <table class="layout"><tr><td class="box">
-            <h3>PAYMENT REFERENCE</h3>
-            <p><span class="label">Slip ID:</span> #{{ payment.id }}</p>
+            <h3>INVOICE REFERENCE</h3>
+            <p><span class="label">Invoice ID:</span> #{{ payment.id }}</p>
             <p><span class="label">Booking Ref:</span> #{{ payment.booking.id|stringformat:"04d" }}</p>
-            <p><span class="label">Generated:</span> {{ now|date:"F d, Y H:i" }}</p>
+            <p><span class="label">Issued:</span> {{ now|date:"F d, Y H:i" }}</p>
         </td></tr></table>
 
         <!-- Tenant & Property -->
         <table class="layout split">
             <tr>
                 <td class="left box">
-                    <h3>TENANT DETAILS</h3>
+                    <h3>BILLED TO</h3>
                     <p><span class="label">Name:</span> {{ payment.tenant.get_full_name|default:payment.tenant.username|upper }}</p>
                     <p><span class="label">Email:</span> {{ payment.tenant.email }}</p>
                     <p><span class="label">Phone:</span> {{ payment.tenant.phone|default:"N/A" }}</p>
@@ -101,13 +97,16 @@
             </tr>
         </table>
 
-        <!-- Payment Amount -->
+        <!-- Amount Due -->
         <table class="payment-banner layout">
             <tr>
-                <td class="amount">TZS {{ payment.amount|floatformat:0 }}</td>
+                <td>
+                    <p class="amount-label">Amount Due</p>
+                    <div class="amount">TZS {{ payment.amount|floatformat:0 }}</div>
+                </td>
                 <td class="meta">
-                    <p><strong>Due Date:</strong> {{ payment.due_date|date:"F d, Y" }}</p>
-                    <p><strong>Late Fee:</strong> TZS {{ payment.late_fee|floatformat:0 }}</p>
+                    <p><strong>Due Date:</strong> {% if payment.is_overdue %}<span class="overdue">{{ payment.due_date|date:"F d, Y" }} (Overdue)</span>{% else %}{{ payment.due_date|date:"F d, Y" }}{% endif %}</p>
+                    {% if payment.late_fee %}<p><strong>Late Fee:</strong> TZS {{ payment.late_fee|floatformat:0 }}</p>{% endif %}
                     <p><strong>Status:</strong> {{ payment.get_status_display|upper }}</p>
                 </td>
             </tr>
@@ -121,23 +120,14 @@
                 <li><strong>Bank Transfer:</strong> Use landlord's account details</li>
                 <li><strong>Cash:</strong> Pay directly to landlord with receipt</li>
             </ul>
-            <p><strong>Important:</strong> After payment, contact your landlord immediately to confirm receipt.</p>
-            <p class="notice">⚠️ Notice: This slip is for payment instruction only. Payment status is updated by your landlord after confirming receipt. Keep your M-Pesa/bank confirmation message as proof of payment.</p>
+            <p><strong>Important:</strong> After payment, mark it as paid in your account and contact your landlord to confirm receipt.</p>
+            <p class="notice">⚠️ Notice: This invoice is a request for payment, not proof of payment. Keep your M-Pesa/bank confirmation message once you pay.</p>
         </td></tr></table>
-
-        <!-- Signatures -->
-        <table class="signatures">
-            <tr class="spacer"><td></td><td></td></tr>
-            <tr>
-                <td><strong>Tenant Signature</strong>(Upon payment)</td>
-                <td><strong>Landlord Signature</strong>(Upon verification)</td>
-            </tr>
-        </table>
 
         <!-- Footer -->
         <div class="footer">
             VOT House Finding | info@votmwanza.co.tz | +255 693 446 111<br>
-            Official document generated on {{ now|date:"F d, Y" }} at {{ now|date:"H:i" }} | Slip ID: {{ payment.id }} | Booking: {{ payment.booking.id }}
+            Official document generated on {{ now|date:"F d, Y" }} at {{ now|date:"H:i" }} | Invoice ID: {{ payment.id }} | Booking: {{ payment.booking.id }}
         </div>
     </div>
 </body>

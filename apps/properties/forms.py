@@ -8,15 +8,15 @@ class PropertyForm(forms.ModelForm):
         model = Property
         fields = [
             'title', 'description', 'property_type', 'location',
-            'distance_from_must_km', 'monthly_rent', 'amenities',
+            'distance_from_center_km', 'monthly_rent', 'amenities',
             'latitude', 'longitude', 'google_maps_link', 'is_available'
         ]
         widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Spacious 2BR near MUST'}),
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Spacious 2BR near city center'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe your property...'}),
             'property_type': forms.Select(attrs={'class': 'form-control'}),
-            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Iyunga, Mbeya'}),
-            'distance_from_must_km': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Ilemela, Mwanza'}),
+            'distance_from_center_km': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'monthly_rent': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 150000'}),
             'amenities': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'water, electricity, wifi, parking'}),
             'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any', 'placeholder': 'e.g., -8.9094'}),

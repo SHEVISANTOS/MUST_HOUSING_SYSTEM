@@ -7,8 +7,19 @@ class Property(models.Model):
     PROPERTY_TYPES = [
         ('SINGLE', 'Single Room'),
         ('BEDSITTER', 'Bedsitter'),
+        ('SELFCON', 'Self Contained'),
         ('1BR', '1 Bedroom'),
         ('2BR', '2 Bedroom'),
+        ('3BR', '3 Bedroom'),
+        ('4BR', '4+ Bedroom'),
+        ('SQ', 'Servant Quarter (SQ)'),
+        ('STANDALONE', 'Standalone House'),
+        ('APARTMENT', 'Apartment/Flat'),
+        ('MAISONETTE', 'Maisonette'),
+        ('SHOP', 'Shop/Commercial Space'),
+        ('OFFICE', 'Office Space'),
+        ('GODOWN', 'Godown/Warehouse'),
+        ('GUESTHOUSE', 'Guest House'),
     ]
     
     landlord = models.ForeignKey(User, on_delete=models.CASCADE, related_name='properties')
@@ -16,7 +27,7 @@ class Property(models.Model):
     description = models.TextField()
     property_type = models.CharField(max_length=10, choices=PROPERTY_TYPES)
     location = models.CharField(max_length=100)
-    distance_from_must_km = models.FloatField(help_text="Distance in km from MUST campus")
+    distance_from_center_km = models.FloatField(help_text="Distance in km from city center")
     monthly_rent = models.DecimalField(max_digits=10, decimal_places=2)
     amenities = models.TextField(help_text="Separate with commas", blank=True, null=True)
     is_available = models.BooleanField(default=True)

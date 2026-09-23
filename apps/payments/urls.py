@@ -17,6 +17,7 @@ urlpatterns = [
     path('my-payments/', views.my_payments, name='my_payments'),
     path('slip/<uuid:payment_id>/download/', views.download_payment_slip, name='download_slip'),
     path('invoice/<uuid:payment_id>/download/', views.download_payment_invoice, name='download_invoice'),
+    path('receipts/download/', views.download_approved_payments_list, name='download_receipts'),
     
     # Payment workflow actions (booking_id stays int, payment_id is uuid)
     path('booking/<int:booking_id>/pay/', views.mark_payment_made, name='mark_payment'),
