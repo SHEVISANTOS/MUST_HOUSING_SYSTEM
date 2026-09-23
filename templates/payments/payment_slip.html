@@ -4,7 +4,16 @@
     <meta charset="UTF-8">
     <title>Payment Instruction Slip</title>
     <style>
-        @page { size: A4; margin: 10mm; }
+        @page {
+            size: A4; margin: 10mm;
+            /* Renders the #watermark_content block (see _pdf_watermark.html)
+               on every page, behind the content frame. */
+            @frame watermark_frame {
+                -pdf-frame-content: watermark_content;
+                left: 0mm; top: 0mm; width: 210mm; height: 297mm;
+                -pdf-frame-border: 0;
+            }
+        }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             font-size: 10.5pt;
@@ -65,6 +74,7 @@
     </style>
 </head>
 <body>
+    {% include 'payments/_pdf_watermark.html' %}
     <div class="container">
         <!-- Header -->
         <div class="header">
