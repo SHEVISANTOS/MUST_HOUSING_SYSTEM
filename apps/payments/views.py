@@ -1,4 +1,5 @@
 import base64
+import io
 import logging
 from functools import lru_cache
 from django.conf import settings
@@ -37,6 +38,55 @@ def _get_logo_data_uri():
         return f'data:image/png;base64,{encoded}'
     except OSError:
         logger.warning("Logo file not found for PDF generation: %s", logo_path)
+        return ''
+
+
+@lru_cache(maxsize=1)
+def _get_watermark_data_uri():
+    """
+    Pre-render a full-page, diagonally-tiled, low-opacity watermark from the
+    logo and base64-embed it as one image (used via xhtml2pdf's @frame
+    mechanism so it repeats on every page - see the PDF templates).
+
+    Built once per process (lru_cache) since the Pillow tiling work is the
+    same every time; only the resulting data URI is reused per request.
+    Never raises - any failure (missing Pillow, missing/corrupt logo file)
+    just logs a warning and disables the watermark for this run.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        logger.warning("Pillow not installed. PDF watermark will be disabled.")
+        return ''
+
+    logo_path = settings.STATICFILES_DIRS[0] / 'img' / 'vot_icon.png'
+    try:
+        logo = Image.open(logo_path).convert('RGBA')
+
+        dpi = 150
+        page_w, page_h = int(8.27 * dpi), int(11.69 * dpi)  # A4 in px
+        canvas = Image.new('RGBA', (page_w, page_h), (0, 0, 0, 0))
+
+        tile = logo.copy()
+        tile.thumbnail((110, 110), Image.LANCZOS)
+        alpha = tile.split()[3].point(lambda a: int(a * 0.10))  # ~10% opacity
+        tile.putalpha(alpha)
+        tile = tile.rotate(45, expand=True, resample=Image.BICUBIC)
+
+        step_x, step_y = 200, 200
+        row = 0
+        for y in range(-tile.height, page_h + tile.height, step_y):
+            x_offset = (step_x // 2) if (row % 2) else 0
+            for x in range(-tile.width, page_w + tile.width, step_x):
+                canvas.alpha_composite(tile, (x + x_offset, y))
+            row += 1
+
+        buf = io.BytesIO()
+        canvas.save(buf, format='PNG', optimize=True)
+        encoded = base64.b64encode(buf.getvalue()).decode('ascii')
+        return f'data:image/png;base64,{encoded}'
+    except Exception:
+        logger.warning("Could not build PDF watermark from %s", logo_path, exc_info=True)
         return ''
 
 # ==================== EXISTING VIEWS (Preserved) ====================
@@ -144,6 +194,7 @@ def download_payment_slip(request, payment_id):
             'now': timezone.now(),
             'user': request.user,
             'logo': _get_logo_data_uri(),
+            'watermark': _get_watermark_data_uri(),
         })
         
         response = HttpResponse(content_type='application/pdf')
@@ -176,6 +227,7 @@ def download_payment_invoice(request, payment_id):
             'user': request.user,
             'now': timezone.now(),
             'logo': _get_logo_data_uri(),
+            'watermark': _get_watermark_data_uri(),
         })
         
         response = HttpResponse(content_type='application/pdf')
@@ -214,6 +266,7 @@ def download_approved_payments_list(request):
             'now': timezone.now(),
             'total_paid': total_paid,
             'logo': _get_logo_data_uri(),
+            'watermark': _get_watermark_data_uri(),
         })
         
         response = HttpResponse(content_type='application/pdf')
