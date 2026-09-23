@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.db import transaction
+from django.db.models import Q
 from .models import Payment
 from .forms import TenantPaymentForm, LandlordConfirmForm
 
@@ -182,8 +183,12 @@ def verify_payment(request, payment_id):
 
 @login_required
 def download_payment_slip(request, payment_id):
-    """Generate payment slip PDF for a completed payment."""
-    payment = get_object_or_404(Payment, id=payment_id, booking__tenant=request.user)
+    """Generate payment slip PDF. Accessible to the tenant on the booking or the property's landlord."""
+    payment = get_object_or_404(
+        Payment,
+        Q(booking__tenant=request.user) | Q(booking__property__landlord=request.user),
+        id=payment_id,
+    )
     
     if not PDF_AVAILABLE:
         return HttpResponse('PDF generation service is currently unavailable.', status=503)
@@ -215,8 +220,12 @@ def download_payment_slip(request, payment_id):
 
 @login_required
 def download_payment_invoice(request, payment_id):
-    """Generate invoice PDF for a pending payment."""
-    payment = get_object_or_404(Payment, id=payment_id, booking__tenant=request.user)
+    """Generate invoice PDF. Accessible to the tenant on the booking or the property's landlord."""
+    payment = get_object_or_404(
+        Payment,
+        Q(booking__tenant=request.user) | Q(booking__property__landlord=request.user),
+        id=payment_id,
+    )
     
     if not PDF_AVAILABLE:
         return HttpResponse('PDF generation service is currently unavailable.', status=503)
@@ -248,29 +257,42 @@ def download_payment_invoice(request, payment_id):
 
 @login_required
 def download_approved_payments_list(request):
-    """Generate PDF list of all approved/completed payments."""
-    payments = Payment.objects.filter(
-        booking__tenant=request.user,
-        status='COMPLETED'
-    ).select_related('booking', 'booking__property').order_by('-paid_date')
-    
+    """
+    Generate a PDF list of completed payments: a tenant's own payment
+    receipts, or - for a landlord - the collected income across all of
+    their properties (which may span multiple tenants).
+    """
+    is_landlord = (request.user.role == 'LANDLORD')
+    if is_landlord:
+        payments = Payment.objects.filter(
+            booking__property__landlord=request.user,
+            status='COMPLETED'
+        ).select_related('booking', 'booking__property', 'booking__tenant').order_by('-paid_date')
+    else:
+        payments = Payment.objects.filter(
+            booking__tenant=request.user,
+            status='COMPLETED'
+        ).select_related('booking', 'booking__property').order_by('-paid_date')
+
     total_paid = sum(p.amount for p in payments)
-    
+
     if not PDF_AVAILABLE:
         return HttpResponse('PDF generation service is currently unavailable.', status=503)
-    
+
     try:
         html_string = render_to_string('payments/approved_payments_list.html', {
             'payments': payments,
             'user': request.user,
+            'is_landlord': is_landlord,
             'now': timezone.now(),
             'total_paid': total_paid,
             'logo': _get_logo_data_uri(),
             'watermark': _get_watermark_data_uri(),
         })
-        
+
         response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="receipts_{request.user.username}.pdf"'
+        doc_kind = 'income' if is_landlord else 'receipts'
+        response['Content-Disposition'] = f'attachment; filename="{doc_kind}_{request.user.username}.pdf"'
         
         # Generate PDF using xhtml2pdf
         pisa_status = pisa.CreatePDF(html_string, dest=response)

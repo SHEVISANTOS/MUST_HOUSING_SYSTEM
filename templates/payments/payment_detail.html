@@ -114,17 +114,15 @@
                 </a>
             {% endif %}
 
-            <!-- 3b. DOCUMENT DOWNLOADS (Tenant only) -->
-            {% if not is_landlord %}
-                {% if payment.status != 'COMPLETED' %}
-                    <a href="{% url 'payments:download_invoice' payment.id %}" class="btn btn-secondary flex-grow-1 text-center">
-                        🧾 Invoice
-                    </a>
-                {% endif %}
-                <a href="{% url 'payments:download_slip' payment.id %}" class="btn btn-secondary flex-grow-1 text-center">
-                    📥 Slip
+            <!-- 3b. DOCUMENT DOWNLOADS (Tenant and landlord both have a stake in this payment) -->
+            {% if payment.status != 'COMPLETED' %}
+                <a href="{% url 'payments:download_invoice' payment.id %}" class="btn btn-secondary flex-grow-1 text-center">
+                    🧾 Invoice
                 </a>
             {% endif %}
+            <a href="{% url 'payments:download_slip' payment.id %}" class="btn btn-secondary flex-grow-1 text-center">
+                📥 Slip
+            </a>
 
             <!-- 4. BACK BUTTON -->
             <a href="{% if is_landlord %}{% url 'payments:landlord_payments' %}{% else %}{% url 'payments:my_payments' %}{% endif %}" 

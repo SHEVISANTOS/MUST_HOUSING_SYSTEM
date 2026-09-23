@@ -110,13 +110,13 @@
         {% if logo %}<img src="{{ logo }}" alt="VOT House Finding" class="brand-logo"><br>{% endif %}
         <h1>VOT House Finding</h1>
         <p>VOT Mwanza Limited</p>
-        <p>Payment Receipts History</p>
+        <p>{% if is_landlord %}Landlord Income Statement{% else %}Payment Receipts History{% endif %}</p>
     </div>
 
-    <div class="title">APPROVED PAYMENTS RECEIPT</div>
+    <div class="title">{% if is_landlord %}CONFIRMED INCOME REPORT{% else %}APPROVED PAYMENTS RECEIPT{% endif %}</div>
 
     <table class="layout"><tr><td class="summary">
-        <h3>Tenant: {{ user.get_full_name|default:user.username }}</h3>
+        <h3>{% if is_landlord %}Landlord{% else %}Tenant{% endif %}: {{ user.get_full_name|default:user.username }}</h3>
         <p><strong>Email:</strong> {{ user.email }}</p>
         <p><strong>Total Completed Payments:</strong> {{ payments.count }}</p>
         <p><strong>Generated:</strong> {{ now|date:"F d, Y H:i" }}</p>
@@ -127,6 +127,7 @@
         <thead>
             <tr>
                 <th>Payment ID</th>
+                {% if is_landlord %}<th>Tenant</th>{% endif %}
                 <th>Property</th>
                 <th>Booking #</th>
                 <th>Amount (TZS)</th>
@@ -137,6 +138,7 @@
             {% for payment in payments %}
             <tr>
                 <td>#{{ payment.id }}</td>
+                {% if is_landlord %}<td>{{ payment.booking.tenant.username }}</td>{% endif %}
                 <td>{{ payment.booking.property.title }}</td>
                 <td>{{ payment.booking.id }}</td>
                 <td>{{ payment.amount|floatformat:0 }}</td>
@@ -144,7 +146,7 @@
             </tr>
             {% endfor %}
             <tr class="total-row">
-                <td colspan="3" style="text-align: right;">TOTAL PAID:</td>
+                <td colspan="{% if is_landlord %}4{% else %}3{% endif %}" style="text-align: right;">TOTAL PAID:</td>
                 <td colspan="2">TZS {{ total_paid|floatformat:0 }}</td>
             </tr>
         </tbody>
@@ -152,15 +154,19 @@
     {% else %}
     <div class="no-payments">
         <p>No approved payments found.</p>
+        {% if is_landlord %}
+        <p>Confirmed income will appear here once you verify a tenant's payment.</p>
+        {% else %}
         <p>Your payment history will appear here once payments are verified by your landlord.</p>
+        {% endif %}
     </div>
     {% endif %}
 
     <div class="footer">
-        <strong>This is an official payment receipt from VOT House Finding.</strong><br>
+        <strong>This is an official {% if is_landlord %}income statement{% else %}payment receipt{% endif %} from VOT House Finding.</strong><br>
         For inquiries: info@votmwanza.co.tz | Phone: +255 XXX XXX XXX<br>
         Generated on {{ now|date:"F d, Y" }} at {{ now|date:"H:i" }}<br>
-        Document ID: RECEIPTS-{{ user.username }}-{{ now|date:"Ymd" }}
+        Document ID: {% if is_landlord %}INCOME{% else %}RECEIPTS{% endif %}-{{ user.username }}-{{ now|date:"Ymd" }}
     </div>
 </body>
 </html>

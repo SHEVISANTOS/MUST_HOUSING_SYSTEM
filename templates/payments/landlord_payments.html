@@ -3,9 +3,16 @@
 
 {% block content %}
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span>💰 Verify Tenant Payments</span>
-        <span class="badge badge-success">Total Confirmed: {{ total_confirmed|floatformat:0 }} TZS</span>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge badge-success">Total Confirmed: {{ total_confirmed|floatformat:0 }} TZS</span>
+            {% if completed_count %}
+            <a href="{% url 'payments:download_receipts' %}" class="btn btn-sm" style="background:#fff; color:var(--vot-teal);">
+                🧾 Download Income Report
+            </a>
+            {% endif %}
+        </div>
     </div>
     <div class="card-body">
         
@@ -93,13 +100,23 @@
                                 <span class="text-success fw-bold" style="display:block; text-align:center; padding: 6px 0;">
                                     ✅ Verified
                                 </span>
-                            
+                                <a href="{% url 'payments:download_slip' payment.id %}"
+                                   class="btn btn-sm"
+                                   style="background:#f8f9fa; color:#333; display:inline-block; width:100%; text-align:center;">
+                                    📥 Slip
+                                </a>
+
                             {% else %}
-                                <!-- For PENDING or CANCELLED, just view details -->
-                                <a href="{% url 'payments:payment_detail' payment.id %}" 
+                                <!-- For PENDING or CANCELLED, view details + a printable invoice to hand the tenant -->
+                                <a href="{% url 'payments:payment_detail' payment.id %}"
                                    class="btn btn-sm btn-secondary"
-                                   style="display:inline-block; width:100%; text-align:center;">
+                                   style="display:inline-block; margin-bottom:4px; width:100%; text-align:center;">
                                     📄 View Details
+                                </a>
+                                <a href="{% url 'payments:download_invoice' payment.id %}"
+                                   class="btn btn-sm"
+                                   style="background:#fffbeb; color:#92400e; display:inline-block; width:100%; text-align:center;">
+                                    🧾 Invoice
                                 </a>
                             {% endif %}
                         </td>
