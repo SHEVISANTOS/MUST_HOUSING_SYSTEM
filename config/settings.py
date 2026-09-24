@@ -115,6 +115,14 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Use the modern Django 4.2+ storage setting
 STORAGES = {
+    # Django 4.2+ requires an explicit "default" entry (used for FileField/
+    # ImageField uploads, e.g. property photos) once STORAGES is set at all -
+    # there's no implicit fallback to the built-in default. Without this key,
+    # every image upload fails with "Could not find config for 'default' in
+    # settings.STORAGES", which is what was happening here.
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },

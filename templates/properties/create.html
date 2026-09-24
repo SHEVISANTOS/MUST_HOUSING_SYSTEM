@@ -50,8 +50,9 @@
             <!-- Distance from city center -->
             {% if form.distance_from_center_km %}
             <div class="form-group" style="margin-bottom:20px;">
-                <label style="display:block; margin-bottom:6px; font-weight:500;">Distance from city center (km)</label>
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Distance from city center (km) *</label>
                 {{ form.distance_from_center_km }}
+                {% if form.distance_from_center_km.errors %}<small class="text-danger">{{ form.distance_from_center_km.errors }}</small>{% endif %}
             </div>
             {% endif %}
             
