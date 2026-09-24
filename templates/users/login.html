@@ -529,7 +529,8 @@
                 
                 <form method="post" id="login-form" novalidate>
                     {% csrf_token %}
-                    
+                    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
                     <div class="form-group">
                         <label for="id_username">Username <span style="color: #ef4444;">*</span></label>
                         <div class="input-wrapper">
@@ -579,7 +580,7 @@
                 </div>
                 
                 <div class="register-link">
-                    Don't have an account? <a href="{% url 'users:register' %}">Register here</a>
+                    Don't have an account? <a href="{% url 'users:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Register here</a>
                 </div>
                 
                 <div class="admin-link">
@@ -591,10 +592,10 @@
     
     <!-- Footer -->
     <div class="footer">
-        <span>© 2023 - 2026 VOT MWANZA LIMITED</span>
+        <span>© 2023 - 2026 <a href="https://volunteertotanzania.com" target="_blank" rel="noopener noreferrer" style="color:inherit;">VOT MWANZA LIMITED</a></span>
         <div>
             
-            <span>Designed and Developed by: Shevi Santos</span>
+            <span>Designed and Developed by: <a href="https://shevisantos.netlify.app" target="_blank" rel="noopener noreferrer" style="color:inherit;">Shevi Santos</a></span>
         </div>
     </div>
     

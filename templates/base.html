@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}VOT House Finding{% endblock %}</title>
+    {% block meta_tags %}{% endblock %}
     <style>
         /* ========================================
            🎨 GLOBAL VARIABLES
@@ -454,16 +455,21 @@
             </div>
         </div>
         <div class="header-user">
-            <div class="user-badge">
-                <div class="avatar-circle">{{ user.username|first|upper }}</div>
-                <span>{{ user.username }}</span>
-            </div>
-            <form method="post" action="{% url 'users:logout' %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="logout-btn" aria-label="Log out">
-                    <span>Log out</span>
-                </button>
-            </form>
+            {% if user.is_authenticated %}
+                <div class="user-badge">
+                    <div class="avatar-circle">{{ user.username|first|upper }}</div>
+                    <span>{{ user.username }}</span>
+                </div>
+                <form method="post" action="{% url 'users:logout' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn" aria-label="Log out">
+                        <span>Log out</span>
+                    </button>
+                </form>
+            {% else %}
+                <a href="{% url 'users:login' %}" class="logout-btn" style="border:1px solid rgba(255,255,255,0.4);"><span>Sign In</span></a>
+                <a href="{% url 'users:register' %}" class="logout-btn" style="background:rgba(255,255,255,0.15);"><span>Register</span></a>
+            {% endif %}
         </div>
     </header>
 
@@ -472,8 +478,26 @@
         <!-- ✅ ROLE-BASED SIDEBAR NAVIGATION -->
         <aside class="sidebar" id="sidebar">
             <ul class="nav-menu">
+                <!-- 👋 VISITOR MENU (not signed in) -->
+                {% if not user.is_authenticated %}
+                <li class="nav-item">
+                    <a href="{% url 'properties:list' %}" class="nav-link {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
+                        <span class="nav-icon">🔍</span> Browse Houses
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'users:login' %}" class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}">
+                        <span class="nav-icon">🔑</span> Sign In
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'users:register' %}" class="nav-link {% if request.resolver_match.url_name == 'register' %}active{% endif %}">
+                        <span class="nav-icon">📝</span> Register
+                    </a>
+                </li>
+
                 <!-- 🔐 ADMIN MENU -->
-                {% if user.is_superuser or user.role == 'ADMIN' %}
+                {% elif user.is_superuser or user.role == 'ADMIN' %}
                 <li class="nav-item">
                     <a href="{% url 'core:admin_dashboard' %}" class="nav-link {% if 'admin-dashboard' in request.path %}active{% endif %}">
                         <span class="nav-icon">🔐</span> Admin Dashboard
@@ -557,8 +581,9 @@
                     </a>
                 </li>
                 {% endif %}
-                
-                <!-- 🔹 COMMON: Profile & Logout (for all roles) -->
+
+                <!-- 🔹 COMMON: Profile & Logout (for signed-in users of any role) -->
+                {% if user.is_authenticated %}
                 <li class="nav-item" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
                     <a href="{% url 'core:profile' %}" class="nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
                         <span class="nav-icon">👤</span> My Profile
@@ -569,6 +594,7 @@
                         <span class="nav-icon">🚪</span> Logout
                     </a>
                 </li>
+                {% endif %}
             </ul>
         </aside>
 
@@ -588,8 +614,8 @@
             
             <!-- Footer -->
             <footer class="footer">
-                <p>© 2023-2026 <a href="#">VOT MWANZA LIMITED</a></p>
-                <p>Designed and Developed by <a href="#">Shevi_Santos</a></p>
+                <p>© 2023-2026 <a href="https://volunteertotanzania.com" target="_blank" rel="noopener noreferrer">VOT MWANZA LIMITED</a></p>
+                <p>Designed and Developed by <a href="https://shevisantos.netlify.app" target="_blank" rel="noopener noreferrer">Shevi_Santos</a></p>
             </footer>
         </main>
     </div>
