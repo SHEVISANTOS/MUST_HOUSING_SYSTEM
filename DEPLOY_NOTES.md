@@ -4,6 +4,32 @@ Notes for deploying the tenancy/contract feature (models, approval hook,
 renewal, daily status sync, and the tenant/landlord/seeker UI built across
 this feature's steps 1–7).
 
+## 0. ⚠️ Required Vercel env vars (`.env` is no longer committed)
+
+`config/settings.py` calls `load_dotenv()`, which loads a `.env` file *if
+one is present in the working directory*. Until a recent security fix,
+`.env` was committed to this repo — so every Vercel deploy cloned it along
+with the code, and `load_dotenv()` quietly sourced production's real
+`DATABASE_URL` (and `DJANGO_DEBUG=True`) from that committed file. Now that
+`.env` is correctly git-ignored, a fresh clone has nothing for
+`load_dotenv()` to load, and the build **fails outright**
+(`django.core.exceptions.ImproperlyConfigured: settings.DATABASES is
+improperly configured`) unless these are set as real environment variables
+in the Vercel project (Project → Settings → Environment Variables,
+Production scope):
+
+- **`DATABASE_URL`** — required, no fallback. Use the Neon connection
+  string (the *rotated* one, if the password exposure was already
+  remediated — it should be).
+- **`DJANGO_SECRET_KEY`** — has a fallback (`fallback-dev-key-replace-in-
+  vercel`), so it won't crash the build, but that fallback is a public,
+  hardcoded value. If this isn't already set, generate and set a real one:
+  `python -c "import secrets; print(secrets.token_urlsafe(50))"`.
+- **`CRON_SECRET`** — see §1 below; not required for the build to succeed,
+  but required for the daily status sync to actually run.
+- `DJANGO_DEBUG` — no action needed. It now correctly falls back to
+  `False` since the committed `.env` (which had it as `True`) is gone.
+
 ## 1. `CRON_SECRET` environment variable
 
 The daily status sync (`update_tenancy_statuses`) runs via a Vercel Cron
