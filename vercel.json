@@ -10,5 +10,11 @@
       "src": "/(.*)",
       "dest": "api/index.py"
     }
+  ],
+  "crons": [
+    {
+      "path": "/bookings/tasks/update-tenancy-statuses/",
+      "schedule": "0 3 * * *"
+    }
   ]
 }

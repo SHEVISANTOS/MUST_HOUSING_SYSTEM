@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 
 {% block title %}Search Houses - VOT House Finding{% endblock %}
 
@@ -33,6 +34,21 @@
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">Filter</button>
             </div>
+
+            <!-- Availability filters -->
+            <div class="col-md-3">
+                <div class="form-check pt-2">
+                    <input class="form-check-input" type="checkbox" name="available_now" value="1"
+                           id="availableNow" {% if available_now %}checked{% endif %}
+                           onchange="this.form.available_by.disabled = this.checked; this.form.submit();">
+                    <label class="form-check-label" for="availableNow">🟢 Available now only</label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-0">Available by</label>
+                <input type="date" name="available_by" class="form-control" value="{{ available_by }}"
+                       {% if available_now %}disabled{% endif %}>
+            </div>
         </form>
     </div>
 </div>
@@ -44,15 +60,16 @@
         <div class="col-md-4 mb-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <h5 class="card-title">{{ property.title }}</h5>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ property.title }}</h5>
+                        {% include 'bookings/_tenancy_status_badge.html' with tenancy=property.get_current_tenancy %}
+                    </div>
                     <p class="card-text text-muted">
                         <small>📍 {{ property.location }} ({{ property.distance_from_center_km }} km from city center)</small>
                     </p>
                     <p class="card-text">
                         <strong>Type:</strong> {{ property.get_property_type_display }}<br>
-                        <strong>Rent:</strong> TZS {{ property.monthly_rent|floatformat:0 }}/month<br>
-                        
-                        
+                        <strong>Rent:</strong> TZS {{ property.monthly_rent|floatformat:0|intcomma }}/month<br>
                         <strong>Amenities:</strong> {{ property.amenities }}
                     </p>
                     <p class="card-text">{{ property.description|truncatewords:20 }}</p>

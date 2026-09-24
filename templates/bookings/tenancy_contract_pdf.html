@@ -1,0 +1,120 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Contract Summary</title>
+    <style>
+        @page {
+            size: A4; margin: 10mm;
+            @frame watermark_frame {
+                -pdf-frame-content: watermark_content;
+                left: 0mm; top: 0mm; width: 210mm; height: 297mm;
+                -pdf-frame-border: 0;
+            }
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 10.5pt;
+            line-height: 1.25;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+        }
+        .container { width: 100%; }
+
+        .header { text-align: center; border-bottom: 2px solid #14746c; padding-bottom: 8px; margin-bottom: 10px; }
+        .header .brand-logo { width: 40px; height: 40px; margin-bottom: 4px; }
+        .header h1 { font-size: 15pt; margin: 0; color: #14746c; letter-spacing: 0.5px; }
+        .header h2 { font-size: 11pt; margin: 2px 0 4px; font-weight: 400; color: #333; }
+        .header .doc-title { font-size: 12pt; font-weight: 700; text-transform: uppercase; background: #e4f2f0; display: inline-block; padding: 3px 12px; border: 1px solid #14746c; }
+
+        /* Every "boxed" section is a single-cell <table><td>, not a styled
+           <div> - xhtml2pdf paints a bordered div's border/background
+           around each block-level child separately instead of as one box. */
+        table.layout { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 10px; }
+        table.layout.split td { width: 50%; vertical-align: top; }
+        table.layout.split td.left { padding-right: 5px; }
+        table.layout.split td.right { padding-left: 5px; }
+
+        .box { border: 1px solid #d1d5db; padding: 6px 8px; background: #fafafa; }
+        .box h3 { font-size: 10pt; margin: 0 0 5px 0; color: #14746c; border-bottom: 1px dashed #d1d5db; padding-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .box p { margin: 3px 0; font-size: 10pt; }
+        .box .label { font-weight: 600; display: inline-block; width: 90px; color: #4b5563; }
+
+        .summary-banner { border: 1.5px solid #14746c; background: #e4f2f0; margin-bottom: 10px; }
+        .summary-banner td { padding: 8px 12px; text-align: center; }
+        .summary-banner .figure-label { font-size: 8.5pt; color: #0b5750; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 2px; }
+        .summary-banner .figure { font-size: 15pt; font-weight: 800; color: #14746c; }
+        .summary-banner .figure.owed { color: #b91c1c; }
+
+        .footer { text-align: center; font-size: 8pt; color: #6b7280; margin-top: 10px; border-top: 1px dashed #d1d5db; padding-top: 3px; line-height: 1.15; }
+    </style>
+</head>
+<body>
+    {% include 'payments/_pdf_watermark.html' %}
+    <div class="container">
+        <div class="header">
+            {% if logo %}<img src="{{ logo }}" alt="VOT House Finding" class="brand-logo"><br>{% endif %}
+            <h1>VOT House Finding</h1>
+            <h2>VOT Mwanza Limited</h2>
+            <div class="doc-title">Tenancy Contract Summary</div>
+        </div>
+
+        <table class="layout"><tr><td class="box">
+            <h3>CONTRACT REFERENCE</h3>
+            <p><span class="label">Contract ID:</span> #{{ tenancy.id }}</p>
+            <p><span class="label">Period:</span> {{ tenancy.start_date|date:"j M Y" }} &rarr; {{ tenancy.end_date|date:"j M Y" }} ({{ tenancy.duration_months }} month{{ tenancy.duration_months|pluralize }})</p>
+            <p><span class="label">Status:</span> {{ tenancy.display_status|upper }}</p>
+            <p><span class="label">Generated:</span> {{ now|date:"j M Y H:i" }}</p>
+        </td></tr></table>
+
+        <table class="layout split">
+            <tr>
+                <td class="left box">
+                    <h3>TENANT</h3>
+                    <p><span class="label">Name:</span> {{ tenancy.tenant.get_full_name|default:tenancy.tenant.username|upper }}</p>
+                    <p><span class="label">Email:</span> {{ tenancy.tenant.email }}</p>
+                    <p><span class="label">Phone:</span> {{ tenancy.tenant.phone|default:"N/A" }}</p>
+                </td>
+                <td class="right box">
+                    <h3>PROPERTY &amp; LANDLORD</h3>
+                    <p><span class="label">Property:</span> {{ tenancy.property.title|upper }}</p>
+                    <p><span class="label">Location:</span> {{ tenancy.property.location|capfirst }}</p>
+                    <p><span class="label">Landlord:</span> {{ tenancy.property.landlord.username|capfirst }}</p>
+                </td>
+            </tr>
+        </table>
+
+        <table class="summary-banner layout">
+            <tr>
+                <td>
+                    <p class="figure-label">Monthly Rent</p>
+                    <div class="figure">TZS {{ tenancy.property.monthly_rent|floatformat:0|intcomma }}</div>
+                </td>
+                <td>
+                    <p class="figure-label">Paid to Date</p>
+                    <div class="figure">TZS {{ total_paid|floatformat:0|intcomma }}</div>
+                </td>
+                <td>
+                    <p class="figure-label">Outstanding</p>
+                    <div class="figure {% if total_outstanding %}owed{% endif %}">TZS {{ total_outstanding|floatformat:0|intcomma }}</div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="layout"><tr><td class="box">
+            <h3>PROGRESS</h3>
+            <p><span class="label">Elapsed:</span> Month {{ tenancy.current_month_number }} of {{ tenancy.duration_months }} ({{ tenancy.progress_percent }}%)</p>
+            <p><span class="label">Days remaining:</span> {{ tenancy.days_remaining }}</p>
+            {% if tenancy.notice_given_at %}<p><span class="label">Notice given:</span> {{ tenancy.notice_given_at|date:"j M Y" }}</p>{% endif %}
+            {% if tenancy.termination_reason %}<p><span class="label">Termination:</span> {{ tenancy.termination_reason }}</p>{% endif %}
+        </td></tr></table>
+
+        <div class="footer">
+            VOT House Finding | info@votmwanza.co.tz | +255 693 446 111<br>
+            This is a summary for reference purposes, not a legal tenancy agreement. Generated on {{ now|date:"j M Y" }} at {{ now|date:"H:i" }} | Contract ID: {{ tenancy.id }}
+        </div>
+    </div>
+</body>
+</html>
