@@ -13,7 +13,6 @@ from .forms import PropertyForm
 _LIVE_TENANCY_STATUSES = ['upcoming', 'active', 'ending_soon']
 
 
-@login_required
 def property_list(request):
     """
     Display list of available properties with search/filter.
@@ -81,16 +80,17 @@ def property_list(request):
         'available_by': available_by,
     })
 
-@login_required
 def property_detail(request, pk):
     """
-    Display property details with images & map.
+    Display property details with images & map. Public - no login required
+    (see apps.bookings.views.create_booking for where sign-in is enforced).
 
     Seeker privacy: `current_tenancy` and `timeline_tenancies` are only ever
     used in the template for their dates/status - see the note in
     _availability_timeline.html about never adding tenant fields there.
     """
     from apps.bookings.models import Tenancy  # local import, see property_list
+    from django.templatetags.static import static
     from django.utils import timezone
     import datetime as dt
 
@@ -128,12 +128,25 @@ def property_detail(request, pk):
             'is_ending_soon': t.display_status == 'ending_soon',
         })
 
+    # og:image deliberately always uses the site logo, never a property
+    # photo: this deployment has no cloud storage configured (no
+    # django-storages/S3/Cloudinary), MEDIA_ROOT is local disk, and nothing
+    # serves /media/ in production (Django's own media serving is wrapped
+    # in `if settings.DEBUG`, and vercel.json has no /media/ route). A
+    # property-photo og:image would work when previewed locally and break
+    # silently in production - the logo is the one image guaranteed to be
+    # reachable (served via whitenoise from /static/).
+    og_image_url = request.build_absolute_uri(static('img/vot_logo.png'))
+    og_url = request.build_absolute_uri(request.path)
+
     return render(request, 'properties/detail.html', {
         'property': prop,
         'current_tenancy': current_tenancy,
         'timeline_blocks': timeline_blocks,
         'timeline_start': today,
         'timeline_end': window_end,
+        'og_image_url': og_image_url,
+        'og_url': og_url,
     })
 
 @login_required

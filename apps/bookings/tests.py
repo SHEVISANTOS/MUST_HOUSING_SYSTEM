@@ -428,3 +428,40 @@ class AccessControlTests(TenancyTestBase):
         response = client.get(reverse('bookings:my_contract'))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.property.title)
+
+
+class CreateBookingAccessTests(TenancyTestBase):
+    """Booking requires sign-in; a signed-in non-tenant gets a friendly
+    redirect, never a 403/500. See apps.bookings.views.create_booking."""
+
+    def setUp(self):
+        super().setUp()
+        self.booking_url = reverse('bookings:create_booking', kwargs={'property_id': self.property.id})
+
+    def test_anonymous_get_redirects_to_login_with_next(self):
+        response = Client().get(self.booking_url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('users:login'), response.url)
+        self.assertIn(self.booking_url, response.url)
+
+    def test_anonymous_post_redirects_to_login_with_next_not_500_or_403(self):
+        response = Client().post(self.booking_url, {
+            'move_in_date': '2027-01-01', 'move_out_date': '2027-06-01',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('users:login'), response.url)
+        self.assertIn(self.booking_url, response.url)
+
+    def test_signed_in_landlord_gets_friendly_message_not_error_page(self):
+        client = Client()
+        client.login(username='landlord1', password='pw')
+        response = client.post(self.booking_url, {
+            'move_in_date': '2027-01-01', 'move_out_date': '2027-06-01',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)  # not 403/500
+        self.assertRedirects(
+            response, reverse('properties:detail', kwargs={'pk': self.property.id})
+        )
+        messages = [str(m) for m in response.context[-1]['messages']]
+        self.assertTrue(any('tenant' in m.lower() for m in messages))
+        self.assertFalse(Booking.objects.filter(property=self.property, tenant=self.landlord).exists())

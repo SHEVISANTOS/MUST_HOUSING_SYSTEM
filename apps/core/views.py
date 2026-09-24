@@ -20,9 +20,15 @@ from apps.payments.models import Payment
 # 📊 DASHBOARD & PROFILE
 # ==========================================
 
-@login_required
 def dashboard(request):
-    """Role-based dashboard for tenants and landlords"""
+    """
+    Role-based dashboard for tenants and landlords. This is the root URL
+    ('/') - an anonymous visitor lands here first, so it sends them to the
+    public property listing instead of forcing a login just to browse.
+    """
+    if not request.user.is_authenticated:
+        return redirect('properties:list')
+
     context = {
         'user': request.user,
         'today': timezone.now(),
@@ -455,4 +461,4 @@ def custom_logout(request):
     """Handle logout - accepts both GET and POST"""
     logout(request)
     messages.success(request, 'You have been successfully logged out.')
-    return redirect('users:login')
+    return redirect('properties:list')

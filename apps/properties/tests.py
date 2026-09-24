@@ -116,3 +116,86 @@ class ListingQueryCountTests(TestCase):
             self.client.get(reverse('properties:list'))
 
         self.assertEqual(baseline, len(ctx_large.captured_queries))
+
+
+class PublicBrowsingTests(TestCase):
+    """Anyone, including visitors without an account, can browse listings
+    and property detail pages; booking still requires sign-in."""
+
+    def setUp(self):
+        self.landlord = User.objects.create_user(
+            username='pub_landlord', password='pw', role='LANDLORD',
+            email='landlord@example.com', phone='0711223344',
+        )
+        self.tenant = User.objects.create_user(username='pub_tenant', password='pw', role='TENANT')
+        self.other_landlord = User.objects.create_user(username='pub_landlord2', password='pw', role='LANDLORD')
+        self.property = Property.objects.create(
+            landlord=self.landlord, title='Public Browsing Property', location='Mwanza',
+            property_type='2BR', monthly_rent=150000, distance_from_center_km=1.0,
+        )
+        self.delisted_property = Property.objects.create(
+            landlord=self.landlord, title='Delisted Property', location='Mwanza',
+            property_type='1BR', monthly_rent=100000, distance_from_center_km=1.0,
+            is_available=False,
+        )
+        self.anon = Client()
+
+    def test_anonymous_gets_200_on_listing(self):
+        self.assertEqual(self.anon.get(reverse('properties:list')).status_code, 200)
+
+    def test_anonymous_gets_200_on_filtered_listing(self):
+        response = self.anon.get(reverse('properties:list'), {'available_now': '1', 'q': 'Public'})
+        self.assertEqual(response.status_code, 200)
+
+    def test_anonymous_gets_200_on_detail(self):
+        response = self.anon.get(reverse('properties:detail', kwargs={'pk': self.property.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_anonymous_detail_shows_sign_in_to_book_not_contact_info(self):
+        response = self.anon.get(reverse('properties:detail', kwargs={'pk': self.property.pk}))
+        body = response.content.decode()
+        self.assertIn('Sign in to Book', body)
+        self.assertNotIn('0711223344', body)
+        self.assertNotIn('landlord@example.com', body)
+
+    def test_signed_in_tenant_sees_booking_form_and_contact_details(self):
+        client = Client()
+        client.login(username='pub_tenant', password='pw')
+        response = client.get(reverse('properties:detail', kwargs={'pk': self.property.pk}))
+        body = response.content.decode()
+        self.assertIn('Book This Property', body)
+        self.assertIn('0711223344', body)
+        self.assertIn('landlord@example.com', body)
+
+    def test_landlord_sees_no_booking_button(self):
+        client = Client()
+        client.login(username='pub_landlord2', password='pw')  # a landlord, not this property's owner
+        response = client.get(reverse('properties:detail', kwargs={'pk': self.property.pk}))
+        body = response.content.decode()
+        self.assertIn('Booking is for student accounts', body)
+        self.assertNotIn('class="book-btn"', body)
+
+    def test_delisted_property_shows_no_booking_option_to_anyone(self):
+        for client, label in [(self.anon, 'anonymous'), (None, 'tenant')]:
+            c = client or Client()
+            if client is None:
+                c.login(username='pub_tenant', password='pw')
+            response = c.get(reverse('properties:detail', kwargs={'pk': self.delisted_property.pk}))
+            body = response.content.decode()
+            self.assertNotIn('class="book-btn"', body, f'booking option leaked for {label}')
+            self.assertIn('Not Active', body)
+
+    def test_listing_query_count_same_for_anonymous_and_signed_in(self):
+        tenant_client = Client()
+        tenant_client.login(username='pub_tenant', password='pw')
+
+        with CaptureQueriesContext(connection) as anon_ctx:
+            self.anon.get(reverse('properties:list'))
+        with CaptureQueriesContext(connection) as auth_ctx:
+            tenant_client.get(reverse('properties:list'))
+
+        # Signed-in adds exactly 2 queries (session lookup + loading the
+        # user, both from AuthenticationMiddleware, verified empirically -
+        # not assumed) on top of the anonymous baseline; the property-
+        # listing work itself must be identical either way.
+        self.assertEqual(len(anon_ctx.captured_queries) + 2, len(auth_ctx.captured_queries))
