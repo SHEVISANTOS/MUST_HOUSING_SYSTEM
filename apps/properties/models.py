@@ -1,6 +1,7 @@
 # apps/properties/models.py
 
 from django.db import models
+from django.utils import timezone
 from apps.users.models import User
 
 class Property(models.Model):
@@ -52,6 +53,46 @@ class Property(models.Model):
         if isinstance(self.amenities, str):
             return [item.strip() for item in self.amenities.split(',') if item.strip()]
         return []
+
+    def get_current_tenancy(self):
+        """
+        The Tenancy (apps.bookings.models.Tenancy) occupying this property
+        today, if any. Availability is derived from Tenancy dates rather than
+        a stored flag, so this - not `is_available` - is the source of truth
+        for whether a property is actually occupied right now. Uses the
+        reverse `tenancies` relation instead of importing Tenancy directly,
+        since apps.bookings.models already imports Property (would be a
+        circular import otherwise).
+
+        Prefetch-aware: on a listing page showing many properties, calling
+        this naively would be an N+1 query per card. A view can instead do
+        `.prefetch_related(Prefetch('tenancies', queryset=..., to_attr=
+        'prefetched_tenancies'))` (see apps.properties.views.property_list)
+        and this method will filter that already-fetched list in Python
+        instead of issuing a new query.
+        """
+        today = timezone.localdate()
+        if hasattr(self, 'prefetched_tenancies'):
+            live = [
+                t for t in self.prefetched_tenancies
+                if t.status not in ('terminated', 'renewed')
+                and t.start_date <= today <= t.end_date
+            ]
+            return min(live, key=lambda t: t.start_date) if live else None
+        return self.tenancies.exclude(
+            status__in=['terminated', 'renewed']
+        ).filter(
+            start_date__lte=today, end_date__gte=today
+        ).order_by('start_date').first()
+
+    def get_next_available_date(self):
+        """The date this property frees up, or None if it's free today."""
+        current = self.get_current_tenancy()
+        return current.available_from if current else None
+
+    @property
+    def is_occupied_now(self):
+        return self.get_current_tenancy() is not None
 
     def __str__(self):
         return f"{self.title} - {self.landlord.username}"

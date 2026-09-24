@@ -10,6 +10,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ⬇️ CRITICAL FIX: Tell Python to look inside the 'apps' folder
 sys.path.insert(0, str(BASE_DIR / 'apps'))
+# KNOWN ISSUE (not fixed here - out of scope, would need a wider audit):
+# this makes each app importable BOTH as its short name (e.g. `bookings`,
+# which is what INSTALLED_APPS below uses) AND as `apps.<name>` (which is
+# what every AppConfig.name in apps/*/apps.py is set to, and what the rest
+# of the codebase uses for imports/urls, e.g. config/urls.py's
+# include('apps.bookings.urls')). Both paths resolve to the same file but
+# are DIFFERENT module identities to Python, so anything imported via the
+# short path is a distinct, separately-registered copy of that module. This
+# is normally invisible, but bit us once already: see the comment in
+# apps/bookings/apps.py's ready() for the concrete failure it caused.
+# Proper fix would be to either drop this sys.path hack and use `apps.X`
+# everywhere, or set every AppConfig.name to match INSTALLED_APPS' short
+# names - either way it touches all 4 apps, so deferred rather than done
+# as a side effect of an unrelated feature.
 
 # ⬇️ CRITICAL FIX: Add a fallback so it never crashes as None
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-dev-key-replace-in-vercel')
@@ -26,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',  # {% load humanize %} / |intcomma - TZS thousand separators
     
     # Third party
     'crispy_bootstrap5',
@@ -112,6 +127,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# Tenancy contract tracking
+ENDING_SOON_DAYS = int(os.getenv('ENDING_SOON_DAYS', '30'))
+
+# Shared secret Vercel Cron sends as "Authorization: Bearer <CRON_SECRET>"
+# when calling scheduled task endpoints. Empty by default so the endpoint
+# fails closed (rejects everything) until explicitly configured.
+CRON_SECRET = os.getenv('CRON_SECRET', '')
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'core:post_login_redirect' # Ensure 'core' app exists, or change to 'users:dashboard' etc.

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Occupancy - VOT House Finding{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">🏘️ Occupancy</div>
+    <div class="card-body">
+        {% if tenancies %}
+        <div class="table-wrapper">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Tenant</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Progress</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tenancy in tenancies %}
+                    <tr {% if tenancy.is_ending_soon %}style="background:#fffbeb;"{% endif %}>
+                        <td data-label="Property">{{ tenancy.property.title|truncatewords:4 }}</td>
+                        <td data-label="Tenant">
+                            {{ tenancy.tenant.username|upper }}
+                            {% if tenancy.tenant.phone %}<br><small class="text-muted">📞 {{ tenancy.tenant.phone }}</small>{% endif %}
+                        </td>
+                        <td data-label="Start">{{ tenancy.start_date|date:"j M Y" }}</td>
+                        <td data-label="End">{{ tenancy.end_date|date:"j M Y" }}</td>
+                        <td data-label="Progress" style="min-width:160px;">
+                            {% include 'bookings/_tenancy_progress.html' with tenancy=tenancy %}
+                        </td>
+                        <td data-label="Status">
+                            {% include 'bookings/_tenancy_status_badge.html' with tenancy=tenancy mode="contract" %}
+                            {% if tenancy.renewal_requested %}<br><span class="badge badge-info mt-1">🔄 Renewal Requested</span>{% endif %}
+                        </td>
+                        <td data-label="Action">
+                            {% if tenancy.renewal_requested %}
+                                <a href="{% url 'bookings:approve_renewal' tenancy.id %}"
+                                   class="btn btn-sm btn-green" style="display:block; margin-bottom:4px; text-align:center;">
+                                    ✅ Approve Renewal
+                                </a>
+                                <a href="{% url 'bookings:decline_renewal' tenancy.id %}"
+                                   class="btn btn-sm btn-secondary" style="display:block; margin-bottom:4px; text-align:center;"
+                                   onclick="return confirm('Decline this renewal request?');">
+                                    ❌ Decline Renewal
+                                </a>
+                            {% endif %}
+                            {% if tenancy.display_status == 'upcoming' or tenancy.display_status == 'active' or tenancy.display_status == 'ending_soon' %}
+                                <a href="{% url 'bookings:terminate_tenancy' tenancy.id %}"
+                                   class="btn btn-sm btn-danger" style="display:block; margin-bottom:4px; text-align:center;">
+                                    ⛔ Terminate
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'bookings:download_contract_pdf' tenancy.id %}"
+                               class="btn btn-sm" style="background:#f8f9fa; color:#333; display:block; text-align:center;">
+                                📥 Contract
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5" style="color: var(--text-grey);">
+            <div style="font-size: 3rem; margin-bottom: 15px;">🏘️</div>
+            <p class="mb-2">No tenancies yet.</p>
+            <p class="small text-muted">They'll appear here once you approve a booking.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

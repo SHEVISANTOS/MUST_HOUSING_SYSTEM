@@ -1,0 +1,35 @@
+{% comment %}
+Renders a status badge. Two modes:
+
+- seeker (default): `tenancy` is the property's *current occupant* (or None
+  if free). Only ever shows "Available now" / "Available from <date>" -
+  never the tenancy's own lifecycle status, and never any tenant field.
+  Usage: {% include 'bookings/_tenancy_status_badge.html' with tenancy=current_tenancy %}
+
+- contract (mode="contract"): shows the tenancy's own lifecycle badge
+  (upcoming/active/ending soon/ended/terminated/renewed), for the tenant's
+  "My Contract" and the landlord's "Occupancy" pages.
+  Usage: {% include 'bookings/_tenancy_status_badge.html' with tenancy=tenancy mode="contract" %}
+
+Privacy: this partial never reads tenancy.tenant. Do not add it here -
+seekers must never see who is renting a property.
+{% endcomment %}
+{% if mode == "contract" and tenancy %}
+    {% if tenancy.display_status == 'upcoming' %}
+        <span class="badge badge-info">🔵 Upcoming</span>
+    {% elif tenancy.display_status == 'active' %}
+        <span class="badge badge-success">🟢 Active</span>
+    {% elif tenancy.display_status == 'ending_soon' %}
+        <span class="badge badge-warning">🟡 Ending Soon</span>
+    {% elif tenancy.display_status == 'ended' %}
+        <span class="badge badge-secondary">⚪ Ended</span>
+    {% elif tenancy.display_status == 'terminated' %}
+        <span class="badge badge-danger">🔴 Terminated</span>
+    {% elif tenancy.display_status == 'renewed' %}
+        <span class="badge badge-secondary">🔁 Renewed</span>
+    {% endif %}
+{% elif tenancy %}
+    <span class="badge badge-warning">🟡 Available from {{ tenancy.available_from|date:"j M Y" }}</span>
+{% else %}
+    <span class="badge badge-success">🟢 Available Now</span>
+{% endif %}

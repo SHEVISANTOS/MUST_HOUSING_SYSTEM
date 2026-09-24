@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block title %}{{ property.title }}{% endblock %}
 
 {% block content %}
@@ -134,16 +135,27 @@
     <!-- 3. Property Details -->
     <div class="card mb-3 shadow-sm">
         <div class="card-body">
-            <h2 class="mb-2" style="color: #14746c; font-weight: 700;">{{ property.title }}</h2>
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                <h2 class="mb-0" style="color: #14746c; font-weight: 700;">{{ property.title }}</h2>
+                {% if not property.is_available %}
+                    <span class="badge badge-secondary">⚫ Not Listed</span>
+                {% else %}
+                    {% include 'bookings/_tenancy_status_badge.html' with tenancy=current_tenancy %}
+                {% endif %}
+            </div>
             <p class="text-muted mb-3">📍 {{ property.location }} | {{ property.distance_from_center_km }} km from city center</p>
-            
+
             <p><strong>Type:</strong> <span class="badge bg-secondary">{{ property.get_property_type_display }}</span></p>
             <p><strong>Amenities:</strong> {{ property.amenities_list|join:", " }}</p>
             <p><strong>Description:</strong> {{ property.description }}</p>
-            
+
             {% if property.google_maps_link %}
             <a href="{{ property.google_maps_link }}" target="_blank" class="btn btn-sm btn-outline-primary mb-3">📍 View on Google Maps</a>
             {% endif %}
+
+            <hr class="my-3">
+            <div class="small text-muted mb-2 fw-bold">📅 Availability - next 12 months</div>
+            {% include 'bookings/_availability_timeline.html' with timeline_blocks=timeline_blocks timeline_start=timeline_start timeline_end=timeline_end %}
         </div>
     </div>
 
@@ -151,15 +163,18 @@
     <div class="rental-card">
         <div class="rental-header">💰 Rental Details</div>
         <div class="rental-body">
-            <div class="price-display">TZS {{ property.monthly_rent|floatformat:0 }}</div>
+            <div class="price-display">TZS {{ property.monthly_rent|floatformat:0|intcomma }}</div>
             <div class="price-period">per month</div>
-            
-            {% if user.role == 'TENANT' and property.is_available %}
+
+            {% if not property.is_available %}
+                <button class="btn btn-secondary w-100 py-2 mb-2" disabled style="font-weight:600;">❌ Listing Not Active</button>
+            {% elif user.role == 'TENANT' %}
                 <a href="{% url 'bookings:create_booking' property.id %}" class="book-btn">
-                    ✅ Book This Property
+                    {% if current_tenancy %}📅 Request a Booking{% else %}✅ Book This Property{% endif %}
                 </a>
-            {% elif not property.is_available %}
-                <button class="btn btn-secondary w-100 py-2 mb-2" disabled style="font-weight:600;">❌ Not Available</button>
+                {% if current_tenancy %}
+                    <p class="text-center small text-muted mb-2">Currently occupied - free from {{ current_tenancy.available_from|date:"j M Y" }}. You can still request a booking for after that date.</p>
+                {% endif %}
             {% else %}
                 <div class="alert alert-info text-center p-2 mb-2 small">Please login as tenant to book</div>
             {% endif %}
@@ -182,10 +197,10 @@
             {% endif %}
 
             <div class="text-center mt-3">
-                {% if property.is_available %}
-                    <span class="availability-badge">✅ Available Now</span>
+                {% if not property.is_available %}
+                    <span class="badge badge-secondary">⚫ Not Listed</span>
                 {% else %}
-                    <span class="availability-badge" style="background:#f8d7da; color:#721c24;">❌ Rented</span>
+                    {% include 'bookings/_tenancy_status_badge.html' with tenancy=current_tenancy %}
                 {% endif %}
             </div>
         </div>

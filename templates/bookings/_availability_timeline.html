@@ -1,0 +1,30 @@
+{% comment %}
+A 12-month horizontal availability timeline for a property. Occupied
+periods are shown as blocks with NO tenant details - only start/end dates -
+since seekers view this too.
+
+Usage (see apps.properties.views.property_detail for how timeline_blocks is
+built - as plain dicts with left_pct/width_pct/start_date/end_date/
+is_ending_soon, never a Tenancy object, so there is nothing here that could
+leak a tenant's name/phone/etc even by accident):
+  {% include 'bookings/_availability_timeline.html' with timeline_blocks=timeline_blocks timeline_start=timeline_start timeline_end=timeline_end %}
+{% endcomment %}
+<div class="availability-timeline-wrap">
+    <div class="d-flex justify-content-between" style="font-size:0.78rem; color:var(--text-grey); margin-bottom:4px;">
+        <span>{{ timeline_start|date:"j M Y" }}</span>
+        <span>{{ timeline_end|date:"j M Y" }}</span>
+    </div>
+    <div class="availability-timeline">
+        {% for block in timeline_blocks %}
+        <div class="timeline-block{% if block.is_ending_soon %} ending-soon{% endif %}"
+             style="left: {{ block.left_pct }}%; width: {{ block.width_pct }}%;"
+             title="Occupied {{ block.start_date|date:'j M Y' }} - {{ block.end_date|date:'j M Y' }}">
+        </div>
+        {% endfor %}
+    </div>
+    <div class="timeline-legend">
+        <span><span class="swatch" style="background:var(--vot-gold);"></span> Occupied</span>
+        <span><span class="swatch" style="background:var(--vot-teal);"></span> Ending soon</span>
+        <span><span class="swatch" style="background:#f1f3f5; border:1px solid #ddd;"></span> Available</span>
+    </div>
+</div>
