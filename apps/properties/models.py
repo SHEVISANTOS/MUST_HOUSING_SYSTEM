@@ -97,6 +97,9 @@ class Property(models.Model):
     def __str__(self):
         return f"{self.title} - {self.landlord.username}"
 
+    class Meta:
+        verbose_name_plural = "Properties"
+
 
 # Property Images Model
 class PropertyImage(models.Model):
