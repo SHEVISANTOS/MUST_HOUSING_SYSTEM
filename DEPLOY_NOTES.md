@@ -1,4 +1,43 @@
-# Deploy Notes — Tenancy Contract Status & Availability Timeline
+# Deploy Notes
+
+## Media storage (Cloudflare R2)
+
+Property image uploads used plain local-disk storage (`FileSystemStorage`),
+which doesn't persist on Vercel's ephemeral filesystem - images uploaded in
+production were never actually retrievable afterwards. Fixed by adding
+optional Cloudflare R2 support (S3-compatible, via `django-storages`) in
+`config/settings.py`. It's **opt-in via environment variables** - with none
+of the `R2_*` vars set, the app falls back to local disk exactly as before
+(fine for local dev).
+
+**One-time setup in the Cloudflare dashboard:**
+1. R2 → Create bucket (lowercase name, no spaces, e.g. `vot-house-finding-media`).
+2. Open the bucket → Settings → **Public Access** → allow it. This gives you
+   a public `pub-xxxxxxxx.r2.dev` URL - required so generated image URLs are
+   plain, permanent public links rather than short-lived signed ones
+   (`querystring_auth` is set to `False` in settings.py on that assumption).
+   A custom domain works the same way if you'd rather use one.
+3. R2 → Manage API Tokens → create a token with **Object Read & Write**,
+   scoped to this bucket if possible. Copy the Access Key ID and Secret
+   Access Key immediately - R2 only shows the secret once.
+4. Your Account ID is in the R2 dashboard sidebar (also visible in the S3
+   API endpoint URL Cloudflare shows you: `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`).
+
+**Set these as environment variables** (both locally in `.env` and on the
+Vercel project, same pattern as `DATABASE_URL`/`CRON_SECRET`):
+
+    R2_ACCOUNT_ID=<your account id>
+    R2_ACCESS_KEY_ID=<from the API token>
+    R2_SECRET_ACCESS_KEY=<from the API token>
+    R2_BUCKET_NAME=<the bucket name you chose>
+    R2_PUBLIC_URL=<the pub-xxxxxxxx.r2.dev host, or your custom domain - no scheme>
+
+Once all five are set, `config/settings.py` automatically switches
+`STORAGES["default"]` to R2; leaving any of them blank keeps local disk
+storage active. Static files (CSS/JS/whitenoise) are untouched by this -
+only media uploads move to R2.
+
+## Tenancy Contract Status & Availability Timeline
 
 Notes for deploying the tenancy/contract feature (models, approval hook,
 renewal, daily status sync, and the tenant/landlord/seeker UI built across
