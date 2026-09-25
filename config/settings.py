@@ -128,6 +128,39 @@ STORAGES = {
     },
 }
 
+# Cloudflare R2 (S3-compatible) for media uploads - Vercel's filesystem is
+# ephemeral, so property images saved to local disk in production never
+# persist. Falls back to the local FileSystemStorage above when the R2
+# env vars aren't set (e.g. on a machine doing local dev without R2
+# credentials configured), so nothing breaks if these are left unset.
+R2_ACCOUNT_ID = os.getenv('R2_ACCOUNT_ID', '')
+R2_ACCESS_KEY_ID = os.getenv('R2_ACCESS_KEY_ID', '')
+R2_SECRET_ACCESS_KEY = os.getenv('R2_SECRET_ACCESS_KEY', '')
+R2_BUCKET_NAME = os.getenv('R2_BUCKET_NAME', '')
+# Public base URL for the bucket (its r2.dev URL, or a custom domain) -
+# required for generated image URLs to be plain, permanent public links
+# rather than short-lived signed ones. Set after enabling "Public Access"
+# on the bucket in the R2 dashboard. Passed without a scheme, e.g.
+# "pub-xxxxxxxx.r2.dev" or "media.votmwanza.co.tz".
+R2_PUBLIC_URL = os.getenv('R2_PUBLIC_URL', '')
+
+if R2_ACCOUNT_ID and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY and R2_BUCKET_NAME:
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "access_key": R2_ACCESS_KEY_ID,
+            "secret_key": R2_SECRET_ACCESS_KEY,
+            "bucket_name": R2_BUCKET_NAME,
+            "endpoint_url": f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+            "region_name": "auto",
+            "signature_version": "s3v4",
+            "default_acl": None,        # R2 doesn't support S3 ACLs
+            "querystring_auth": False,  # plain public URLs, not signed/expiring ones
+            "file_overwrite": False,    # don't clobber an existing file with the same name
+            "custom_domain": R2_PUBLIC_URL or None,
+        },
+    }
+
 MEDIA_URL = '/media/'              
 MEDIA_ROOT = BASE_DIR / 'media'    
 

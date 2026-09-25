@@ -696,13 +696,6 @@
                 }, 500);
             });
         }, 5000);
-        
-        // Add enter key support for better UX
-        document.getElementById('id_password').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('login-form').dispatchEvent(new Event('submit'));
-            }
-        });
     </script>
 </body>
 </html>
