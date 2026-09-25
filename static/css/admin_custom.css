@@ -1,4 +1,57 @@
 /* ========================================
+   🔒 FORCE LIGHT THEME
+   Django admin auto-switches to a dark palette when the visitor's OS/browser
+   prefers dark mode (and via a manual toggle, though ours is removed below).
+   Our brand is designed for a light background, so pin every admin CSS
+   variable back to Django's light-mode defaults regardless of the visitor's
+   system preference - without this, rows/cells that rely on these variables
+   (e.g. odd table rows, thead/tfoot) render near-black with barely-visible
+   text, since our overrides below don't touch every selector that uses them.
+   ======================================== */
+:root,
+html[data-theme="dark"],
+html[data-theme="auto"] {
+    --primary: #79aec8;
+    --secondary: #417690;
+    --accent: #f5dd5d;
+    --primary-fg: #fff;
+
+    --body-fg: #333;
+    --body-bg: #fff;
+    --body-quiet-color: #666;
+    --body-loud-color: #000;
+
+    --header-color: #ffc;
+    --header-branding-color: var(--accent);
+    --header-bg: var(--secondary);
+    --header-link-color: var(--primary-fg);
+
+    --breadcrumbs-fg: #c4dce8;
+    --breadcrumbs-link-fg: var(--body-bg);
+    --breadcrumbs-bg: #264b5d;
+
+    --link-fg: #417893;
+    --link-hover-color: #036;
+    --link-selected-fg: var(--secondary);
+
+    --hairline-color: #e8e8e8;
+    --border-color: #ccc;
+
+    --error-fg: #ba2121;
+
+    --message-success-bg: #dfd;
+    --message-warning-bg: #ffc;
+    --message-error-bg: #ffefef;
+
+    --darkened-bg: #f8f8f8;
+    --selected-bg: #e4e4e4;
+    --selected-row: #ffc;
+
+    --close-button-bg: #747474;
+    --close-button-hover-bg: #333;
+}
+
+/* ========================================
    🎨 VOT House Finding Admin - Teal Theme
    ======================================== */
 
@@ -73,6 +126,91 @@ body {
 .module:hover {
     box-shadow: var(--shadow-md) !important;
     transform: translateY(-2px) !important;
+}
+
+/* ===== DASHBOARD APP LIST (admin index page) ===== */
+/* Django hardcodes the dashboard's #content to 600px wide, which is why the
+   app-list cards are squeezed into one narrow column with the rest of the
+   screen left empty - override it so the grid below has room to breathe. */
+.dashboard #content {
+    width: auto !important;
+    max-width: 1300px !important;
+}
+
+.dashboard #content-main {
+    float: none !important;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+    gap: 22px !important;
+    align-items: start !important;
+}
+
+.dashboard #content-main .module {
+    margin-bottom: 0 !important;
+}
+
+.dashboard h1 {
+    font-size: 1.6rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    margin-bottom: 22px !important;
+    padding-bottom: 12px !important;
+    border-bottom: 3px solid var(--vot-teal-light) !important;
+}
+
+/* Per-app icon in each module header. Note: the app-list header is a
+   <caption>, not an <h2> - and the app-<label> class lives on the SAME div
+   as .module (not an ancestor of it), so these must be compound selectors. */
+.dashboard .module caption::before {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 1rem;
+    margin-right: 10px;
+}
+
+.app-auth.module caption::before { content: "\f3ed"; }       /* shield-alt */
+.app-bookings.module caption::before { content: "\f073"; }   /* calendar-check */
+.app-payments.module caption::before { content: "\f555"; }   /* money-bill-wave */
+.app-properties.module caption::before { content: "\f015"; } /* home */
+.app-users.module caption::before { content: "\f0c0"; }      /* users */
+
+.dashboard .module table {
+    width: 100% !important;
+}
+
+.dashboard .module table tr {
+    background: var(--card-bg) !important;
+}
+
+.dashboard .module table th {
+    padding: 14px 20px !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+.dashboard .module table th a {
+    color: var(--text-primary) !important;
+}
+
+.dashboard .module table tr:last-child th,
+.dashboard .module table tr:last-child td {
+    border-bottom: none !important;
+}
+
+.dashboard .module table td {
+    text-align: right !important;
+    padding: 10px 12px !important;
+    white-space: nowrap !important;
+}
+
+.dashboard .module table td a.addlink,
+.dashboard .module table td a.changelink {
+    display: inline-block !important;
+}
+
+#content-related {
+    margin-top: 25px !important;
 }
 
 /* ===== LINKS ===== */

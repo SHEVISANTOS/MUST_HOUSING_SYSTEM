@@ -113,6 +113,7 @@ class Tenancy(models.Model):
         indexes = [
             models.Index(fields=['property', 'status']),
         ]
+        verbose_name_plural = "Tenancies"
 
     def __str__(self):
         return f"Tenancy #{self.id} - {self.property.title} ({self.tenant.username})"

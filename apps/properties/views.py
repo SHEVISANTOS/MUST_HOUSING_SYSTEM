@@ -156,31 +156,40 @@ def property_create(request):
         messages.error(request, "Only landlords can list properties.")
         return redirect('core:dashboard')
     
+    MAX_IMAGES = 10
+    MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024  # 2MB
+
     if request.method == 'POST':
         form = PropertyForm(request.POST, request.FILES)
         if form.is_valid():
-            try:
-                # 1️⃣ Save property (without committing to DB yet)
-                prop = form.save(commit=False)
-                prop.landlord = request.user
-                prop.is_available = True 
-                prop.save()
-                
-                # 2️⃣ Handle multiple image uploads
-                images = request.FILES.getlist('property_images')
-                if images:
-                    for i, image in enumerate(images):
-                        PropertyImage.objects.create(
-                            property=prop,
-                            image=image,
-                            is_primary=(i == 0)  # First uploaded image = primary
-                        )
-                
-                messages.success(request, f"✅ Property '{prop.title}' listed successfully with {len(images)} image(s)!")
-                return redirect('properties:detail', pk=prop.id)
-                
-            except Exception as e:
-                messages.error(request, f"Error creating property: {str(e)}")
+            images = request.FILES.getlist('property_images')
+            oversized = [img.name for img in images if img.size > MAX_IMAGE_SIZE_BYTES]
+            if len(images) > MAX_IMAGES:
+                messages.error(request, f"You can upload up to {MAX_IMAGES} images only ({len(images)} selected).")
+            elif oversized:
+                messages.error(request, f"Each image must be 2MB or smaller. Too large: {', '.join(oversized)}")
+            else:
+                try:
+                    # 1️⃣ Save property (without committing to DB yet)
+                    prop = form.save(commit=False)
+                    prop.landlord = request.user
+                    prop.is_available = True
+                    prop.save()
+
+                    # 2️⃣ Handle multiple image uploads
+                    if images:
+                        for i, image in enumerate(images):
+                            PropertyImage.objects.create(
+                                property=prop,
+                                image=image,
+                                is_primary=(i == 0)  # First uploaded image = primary
+                            )
+
+                    messages.success(request, f"✅ Property '{prop.title}' listed successfully with {len(images)} image(s)!")
+                    return redirect('properties:detail', pk=prop.id)
+
+                except Exception as e:
+                    messages.error(request, f"Error creating property: {str(e)}")
         else:
             messages.error(request, "Please correct the errors below.")
     else:

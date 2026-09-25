@@ -18,17 +18,134 @@
         margin: 0 auto;
         padding: 15px;
     }
-    .property-image {
-        width: 100%;
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: 6px;
+        height: 300px;
         border-radius: 12px;
         overflow: hidden;
-        margin-bottom: 20px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .property-image img {
+    .gallery-grid.gallery-count-1 {
+        grid-template-columns: 1fr;
+    }
+    .gallery-main {
+        grid-row: 1 / span 2;
+        grid-column: 1;
+        cursor: pointer;
+    }
+    .gallery-count-1 .gallery-main {
+        grid-row: 1;
+        grid-column: 1;
+        cursor: default;
+    }
+    .gallery-thumb {
+        position: relative;
+        cursor: pointer;
+    }
+    .gallery-grid img {
         width: 100%;
-        height: 300px;
+        height: 100%;
         object-fit: cover;
+        display: block;
+        transition: filter 0.2s;
+    }
+    .gallery-main:hover img,
+    .gallery-thumb:hover img {
+        filter: brightness(0.92);
+    }
+    .gallery-more-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    .gallery-viewall-btn {
+        display: inline-block;
+        background: white;
+        border: 1.5px solid #14746c;
+        color: #14746c;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin: 10px 0 20px;
+    }
+    .gallery-viewall-btn:hover {
+        background: #14746c;
+        color: white;
+    }
+    .gallery-lightbox {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.92);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+    }
+    .gallery-lightbox.show {
+        display: flex;
+    }
+    .gallery-lightbox img {
+        max-width: 90vw;
+        max-height: 85vh;
+        object-fit: contain;
+        border-radius: 6px;
+    }
+    .lightbox-close {
+        position: absolute;
+        top: 18px;
+        right: 24px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+        line-height: 1;
+    }
+    .lightbox-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255,255,255,0.15);
+        border: none;
+        color: white;
+        font-size: 1.4rem;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+    .lightbox-prev { left: 20px; }
+    .lightbox-next { right: 20px; }
+    .lightbox-counter {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-size: 0.9rem;
+        background: rgba(0,0,0,0.5);
+        padding: 4px 12px;
+        border-radius: 12px;
+    }
+    @media (max-width: 767px) {
+        .gallery-grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: none;
+            height: 260px;
+        }
+        .gallery-thumb { display: none; }
+        .gallery-main { grid-row: 1; grid-column: 1; }
     }
     .rental-card {
         border: 2px solid #14746c;
@@ -88,7 +205,7 @@
         margin-top: 10px;
     }
     @media (min-width: 768px) {
-        .property-image img {
+        .gallery-grid {
             height: 450px;
         }
         .price-display {
@@ -98,15 +215,83 @@
 </style>
 
 <div class="property-detail-container">
-    
-    <!-- 1. Property Image (TOP) -->
-    <div class="property-image">
-        {% if property.images.all %}
-            <img src="{{ property.images.first.image.url }}" alt="{{ property.title }}">
-        {% else %}
-            <img src="/static/images/no-image.jpg" alt="No Image" style="background:#eee;">
+
+    <!-- 1. Property Image Gallery (TOP) -->
+    {% with property_images=property.images.all %}
+    {% if property_images %}
+        <div class="gallery-grid {% if property_images|length == 1 %}gallery-count-1{% endif %}">
+            <div class="gallery-main" {% if property_images|length > 1 %}onclick="openLightbox(0)"{% endif %}>
+                <img src="{{ property_images.0.image.url }}" alt="{{ property.title }}">
+            </div>
+            {% for img in property_images|slice:"1:5" %}
+            <div class="gallery-thumb" onclick="openLightbox({{ forloop.counter }})">
+                <img src="{{ img.image.url }}" alt="{{ property.title }}">
+                {% if forloop.last and property_images|length > 5 %}
+                <div class="gallery-more-overlay">+{{ property_images|length|add:"-5" }} photos</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% if property_images|length > 1 %}
+        <button type="button" class="gallery-viewall-btn" onclick="openLightbox(0)">🖼️ View all {{ property_images|length }} photos</button>
         {% endif %}
-    </div>
+
+        <div id="galleryLightbox" class="gallery-lightbox">
+            <button type="button" class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
+            {% if property_images|length > 1 %}
+            <button type="button" class="lightbox-nav lightbox-prev" onclick="navLightbox(-1)" aria-label="Previous">&#10094;</button>
+            {% endif %}
+            <img id="lightboxImg" src="" alt="{{ property.title }}">
+            {% if property_images|length > 1 %}
+            <button type="button" class="lightbox-nav lightbox-next" onclick="navLightbox(1)" aria-label="Next">&#10095;</button>
+            <div class="lightbox-counter"><span id="lightboxCounter"></span></div>
+            {% endif %}
+        </div>
+
+        <script>
+        (function() {
+            const galleryImages = [
+                {% for img in property_images %}"{{ img.image.url|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}
+            ];
+            let lightboxIndex = 0;
+
+            window.openLightbox = function(index) {
+                if (!galleryImages.length) return;
+                lightboxIndex = index;
+                updateLightbox();
+                document.getElementById('galleryLightbox').classList.add('show');
+                document.body.style.overflow = 'hidden';
+            };
+            window.closeLightbox = function() {
+                document.getElementById('galleryLightbox').classList.remove('show');
+                document.body.style.overflow = '';
+            };
+            window.navLightbox = function(dir) {
+                lightboxIndex = (lightboxIndex + dir + galleryImages.length) % galleryImages.length;
+                updateLightbox();
+            };
+            function updateLightbox() {
+                document.getElementById('lightboxImg').src = galleryImages[lightboxIndex];
+                const counter = document.getElementById('lightboxCounter');
+                if (counter) counter.textContent = (lightboxIndex + 1) + ' / ' + galleryImages.length;
+            }
+            document.addEventListener('keydown', function(e) {
+                const lb = document.getElementById('galleryLightbox');
+                if (!lb.classList.contains('show')) return;
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') navLightbox(-1);
+                if (e.key === 'ArrowRight') navLightbox(1);
+            });
+        })();
+        </script>
+    {% else %}
+        <div class="gallery-grid gallery-count-1">
+            <div class="gallery-main">
+                <img src="/static/images/no-image.jpg" alt="No Image" style="background:#eee;">
+            </div>
+        </div>
+    {% endif %}
+    {% endwith %}
 
     <!-- 2. Property Location (Google Map) -->
     {% if property.latitude and property.longitude %}
