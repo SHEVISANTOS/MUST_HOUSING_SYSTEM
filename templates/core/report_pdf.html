@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ report_title }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 12mm 10mm;
+            @frame watermark_frame {
+                -pdf-frame-content: watermark_content;
+                left: 0mm; top: 0mm; width: 210mm; height: 297mm;
+                -pdf-frame-border: 0;
+            }
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 9pt;
+            line-height: 1.25;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+        }
+        .container { width: 100%; }
+
+        .header { text-align: center; border-bottom: 2px solid #14746c; padding-bottom: 8px; margin-bottom: 12px; }
+        .header .brand-logo { width: 38px; height: 38px; margin-bottom: 4px; }
+        .header h1 { font-size: 14pt; margin: 0; color: #14746c; letter-spacing: 0.5px; }
+        .header h2 { font-size: 9.5pt; margin: 2px 0 6px; font-weight: 400; color: #333; }
+        .header .doc-title { font-size: 11pt; font-weight: 700; text-transform: uppercase; background: #e4f2f0; display: inline-block; padding: 3px 14px; border: 1px solid #14746c; color: #0b5750; }
+        .header .meta { font-size: 8pt; color: #6b7280; margin-top: 5px; }
+
+        .section-title { background: #14746c; color: white; font-size: 9.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; padding: 6px 10px; margin: 16px 0 0; }
+
+        /* Stat boxes: a single-cell-per-stat table, not a styled div - xhtml2pdf
+           paints a bordered div's border around each block child separately
+           rather than as one box, so each figure is its own <td>. */
+        table.stats-row { width: 100%; border-collapse: separate; border-spacing: 6px 0; margin: 8px 0 0; }
+        table.stats-row td { border: 1.5px solid #14746c; background: #e4f2f0; text-align: center; padding: 8px 6px; }
+        table.stats-row .stat-label { font-size: 7.5pt; color: #0b5750; text-transform: uppercase; letter-spacing: 0.4px; margin: 0 0 2px; }
+        table.stats-row .stat-value { font-size: 12pt; font-weight: 800; color: #14746c; }
+
+        table.data-table { width: 100%; border-collapse: collapse; margin: 8px 0 4px; }
+        table.data-table thead th { background: #14746c; color: white; text-align: left; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.3px; padding: 6px 8px; }
+        table.data-table tbody td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; font-size: 8.3pt; }
+        table.data-table tbody tr.alt-row td { background: #f8fafb; }
+
+        .footer { text-align: center; font-size: 8pt; color: #6b7280; margin-top: 14px; border-top: 1px dashed #d1d5db; padding-top: 3px; line-height: 1.15; }
+    </style>
+</head>
+<body>
+    {% include 'payments/_pdf_watermark.html' %}
+
+    <div class="container">
+        <div class="header">
+            {% if logo %}<img src="{{ logo }}" alt="VOT House Finding" class="brand-logo"><br>{% endif %}
+            <h1>VOT House Finding</h1>
+            <h2>VOT Mwanza Limited</h2>
+            <div class="doc-title">{{ report_title }}</div>
+            <div class="meta">Generated {{ generated_at|date:"j M Y \a\t H:i" }}{% if report_period %} &bull; {{ report_period }}{% endif %}</div>
+        </div>
+
+        {% for section in sections %}
+            {% if section.heading %}<div class="section-title">{{ section.heading }}</div>{% endif %}
+
+            {% if section.stats %}
+            <table class="stats-row"><tr>
+                {% for label, value in section.stats %}
+                <td>
+                    <p class="stat-label">{{ label }}</p>
+                    <div class="stat-value">{{ value }}</div>
+                </td>
+                {% endfor %}
+            </tr></table>
+            {% endif %}
+
+            {% if section.columns %}
+            <table class="data-table">
+                <thead>
+                    <tr>{% for col in section.columns %}<th{% if col.width %} style="width:{{ col.width }}%;"{% endif %}>{{ col.label }}</th>{% endfor %}</tr>
+                </thead>
+                <tbody>
+                    {% for row in section.rows %}
+                    <tr{% if forloop.counter|divisibleby:2 %} class="alt-row"{% endif %}>
+                        {% for cell in row %}<td>{{ cell }}</td>{% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="{{ section.columns|length }}" style="text-align:center; color:#9ca3af; padding:12px;">No records</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        {% endfor %}
+
+        <div class="footer">
+            VOT House Finding | info@votmwanza.co.tz | +255 693 446 111<br>
+            {{ report_title }} &mdash; generated on {{ generated_at|date:"j M Y" }} at {{ generated_at|date:"H:i" }}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,12 +1,14 @@
-from django.shortcuts import render, redirect  
+import logging
+
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages 
+from django.contrib import messages
 from django.utils import timezone
 from django.http import HttpResponse
 from django.db.models import Sum, Count, Q
 from django.contrib.auth import authenticate, login, logout
+from django.template.loader import render_to_string
 from datetime import timedelta
-import csv
 import django
 from django.conf import settings
 
@@ -14,6 +16,8 @@ from apps.users.models import User
 from apps.properties.models import Property
 from apps.bookings.models import Booking
 from apps.payments.models import Payment
+
+logger = logging.getLogger(__name__)
 
 
 # ==========================================
@@ -126,13 +130,60 @@ def admin_dashboard(request):
 # 📊 REPORTS SYSTEM
 # ==========================================
 
+def _cols(*label_width_pairs):
+    """
+    Build a report_pdf.html columns list with per-column width hints (percent
+    of table width). xhtml2pdf's table layout doesn't honor table-layout or
+    word-break, so without explicit widths a long value (e.g. an email
+    address) overflows into the next column instead of wrapping - passing
+    (label, width) pairs here is what actually keeps columns contained.
+    """
+    return [{'label': label, 'width': width} for label, width in label_width_pairs]
+
+
+def _render_report_pdf(filename, report_title, sections, report_period=None):
+    """
+    Shared renderer for the admin PDF reports below - builds the same
+    branded letterhead (logo, watermark, teal styling) used for payment
+    slips/invoices and tenancy contracts elsewhere in the app. `sections` is
+    a list of dicts, each optionally with a 'heading', a 'stats' list of
+    (label, value) pairs rendered as a figure strip, and/or a 'columns' +
+    'rows' data table - see templates/core/report_pdf.html.
+    """
+    from apps.payments.views import PDF_AVAILABLE, _get_logo_data_uri, _get_watermark_data_uri
+
+    if not PDF_AVAILABLE:
+        return HttpResponse('PDF generation service is currently unavailable.', status=503)
+
+    from xhtml2pdf import pisa
+
+    html_string = render_to_string('core/report_pdf.html', {
+        'report_title': report_title,
+        'report_period': report_period,
+        'generated_at': timezone.now(),
+        'sections': sections,
+        'logo': _get_logo_data_uri(),
+        'watermark': _get_watermark_data_uri(),
+    })
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}.pdf"'
+
+    pisa_status = pisa.CreatePDF(html_string, dest=response)
+    if pisa_status.err:
+        logger.error("PDF generation failed for report: %s", report_title)
+        return HttpResponse('Error generating report.', status=500)
+
+    return response
+
+
 @login_required
 def reports_page(request):
     """Admin reports dashboard page"""
     if not _is_admin(request.user):
         messages.error(request, "Access denied. Administrator privileges required.")
         return redirect('core:dashboard')
-    
+
     return render(request, 'core/reports.html')
 
 
@@ -180,242 +231,274 @@ def manage_users(request):
 
 @login_required
 def export_payments_report(request):
-    """Generate CSV report of all payments"""
+    """Generate a branded PDF report of all payments"""
     if not _is_admin(request.user):
         return HttpResponse("Unauthorized", status=403)
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="payments_report.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['Payment ID', 'Tenant', 'Property', 'Amount (TZS)', 'Status', 'Date'])
+    payments = Payment.objects.select_related('booking__tenant', 'booking__property').order_by('-created_at')
+    total_amount = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+    completed_count = payments.filter(status='COMPLETED').count()
 
-    for p in Payment.objects.select_related('booking__tenant', 'booking__property'):
-        writer.writerow([
-            str(p.id)[:8],
-            p.booking.tenant.username,
-            p.booking.property.title,
-            p.amount,
-            p.status,
-            p.created_at.strftime('%Y-%m-%d')
-        ])
-    return response
+    sections = [
+        {
+            'stats': [
+                ('Total Payments', payments.count()),
+                ('Completed', completed_count),
+                ('Total Amount', f'TZS {total_amount:,.0f}'),
+            ],
+        },
+        {
+            'heading': 'All Payments',
+            'columns': _cols(
+                ('Payment ID', 12), ('Tenant', 16), ('Property', 26),
+                ('Amount (TZS)', 16), ('Status', 14), ('Date', 16),
+            ),
+            'rows': [
+                [
+                    str(p.id)[:8],
+                    p.booking.tenant.username,
+                    p.booking.property.title,
+                    f'{p.amount:,.0f}',
+                    p.get_status_display(),
+                    p.created_at.strftime('%d %b %Y'),
+                ]
+                for p in payments
+            ],
+        },
+    ]
+    return _render_report_pdf('payments_report', 'Payments Report', sections)
 
 
 @login_required
 def export_bookings_report(request):
-    """Generate CSV report of all bookings"""
+    """Generate a branded PDF report of all bookings"""
     if not _is_admin(request.user):
         return HttpResponse("Unauthorized", status=403)
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="bookings_report.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['Booking ID', 'Tenant', 'Property', 'Status', 'Move-In', 'Move-Out'])
+    bookings = Booking.objects.select_related('tenant', 'property').order_by('-created_at')
 
-    for b in Booking.objects.select_related('tenant', 'property'):
-        writer.writerow([
-            f"BK/{b.id:04d}",
-            b.tenant.username,
-            b.property.title,
-            b.status,
-            b.move_in_date,
-            b.move_out_date
-        ])
-    return response
+    sections = [
+        {
+            'stats': [
+                ('Total Bookings', bookings.count()),
+                ('Confirmed', bookings.filter(status='CONFIRMED').count()),
+                ('Pending', bookings.filter(status='PENDING').count()),
+            ],
+        },
+        {
+            'heading': 'All Bookings',
+            'columns': _cols(
+                ('Booking ID', 14), ('Tenant', 16), ('Property', 28),
+                ('Status', 14), ('Move-In', 14), ('Move-Out', 14),
+            ),
+            'rows': [
+                [
+                    f"BK/{b.id:04d}",
+                    b.tenant.username,
+                    b.property.title,
+                    b.get_status_display(),
+                    b.move_in_date,
+                    b.move_out_date,
+                ]
+                for b in bookings
+            ],
+        },
+    ]
+    return _render_report_pdf('bookings_report', 'Bookings Report', sections)
 
 
 @login_required
 def export_users_report(request):
-    """Generate CSV report of all users"""
+    """Generate a branded PDF report of all users"""
     if not _is_admin(request.user):
         return HttpResponse("Unauthorized", status=403)
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="users_report.csv"'
-    writer = csv.writer(response)
-    
-    writer.writerow(['VOT HOUSE FINDING - USERS REPORT'])
-    writer.writerow(['Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
-    writer.writerow([])
-    writer.writerow(['Username', 'Email', 'Role', 'Phone', 'Is Verified', 'Is Active', 'Date Joined', 'Last Login'])
-    
-    for user in User.objects.all().order_by('date_joined'):
-        writer.writerow([
-            user.username,
-            user.email,
-            user.role,
-            user.phone or 'N/A',
-            'Yes' if user.is_verified else 'No',
-            'Yes' if user.is_active else 'No',
-            user.date_joined.strftime('%Y-%m-%d'),
-            user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Never'
-        ])
-    
-    writer.writerow([])
-    writer.writerow(['SUMMARY'])
-    writer.writerow(['Total Users:', User.objects.count()])
-    writer.writerow(['Tenants:', User.objects.filter(role='TENANT').count()])
-    writer.writerow(['Landlords:', User.objects.filter(role='LANDLORD').count()])
-    writer.writerow(['Admins:', User.objects.filter(role='ADMIN').count()])
-    writer.writerow(['Verified Users:', User.objects.filter(is_verified=True).count()])
-    
-    return response
+    users = User.objects.all().order_by('date_joined')
+
+    sections = [
+        {
+            'stats': [
+                ('Total Users', User.objects.count()),
+                ('Tenants', User.objects.filter(role='TENANT').count()),
+                ('Landlords', User.objects.filter(role='LANDLORD').count()),
+                ('Verified', User.objects.filter(is_verified=True).count()),
+            ],
+        },
+        {
+            'heading': 'All Users',
+            'columns': _cols(
+                ('Username', 14), ('Email', 26), ('Role', 10), ('Phone', 14),
+                ('Verified', 10), ('Active', 10), ('Joined', 16),
+            ),
+            'rows': [
+                [
+                    user.username,
+                    user.email,
+                    user.get_role_display(),
+                    user.phone or 'N/A',
+                    'Yes' if user.is_verified else 'No',
+                    'Yes' if user.is_active else 'No',
+                    user.date_joined.strftime('%d %b %Y'),
+                ]
+                for user in users
+            ],
+        },
+    ]
+    return _render_report_pdf('users_report', 'Users Report', sections)
 
 
 @login_required
 def export_properties_report(request):
-    """Generate CSV report of all properties"""
+    """Generate a branded PDF report of all properties"""
     if not _is_admin(request.user):
         return HttpResponse("Unauthorized", status=403)
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="properties_report.csv"'
-    writer = csv.writer(response)
-    
-    writer.writerow(['VOT HOUSE FINDING - PROPERTIES REPORT'])
-    writer.writerow(['Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
-    writer.writerow([])
-    writer.writerow(['Property ID', 'Title', 'Landlord', 'Type', 'Location', 'Monthly Rent (TZS)', 
-                     'Distance (km)', 'Amenities', 'Is Available', 'Created Date'])
-    
-    for prop in Property.objects.select_related('landlord').all().order_by('-created_at'):
-        writer.writerow([
-            prop.id,
-            prop.title,
-            prop.landlord.username,
-            prop.get_property_type_display(),
-            prop.location,
-            prop.monthly_rent,
-            prop.distance_from_center_km,
-            prop.amenities or 'None',
-            'Yes' if prop.is_available else 'No',
-            prop.created_at.strftime('%Y-%m-%d')
-        ])
-    
-    writer.writerow([])
-    writer.writerow(['SUMMARY'])
-    writer.writerow(['Total Properties:', Property.objects.count()])
-    writer.writerow(['Available Properties:', Property.objects.filter(is_available=True).count()])
-    writer.writerow(['Occupied Properties:', Property.objects.filter(is_available=False).count()])
-    avg_rent = Property.objects.aggregate(avg=Sum('monthly_rent')/Count('id'))['avg'] if Property.objects.exists() else 0
-    writer.writerow(['Average Rent:', f"TZS {avg_rent:,.0f}"])
-    
-    return response
+    properties = Property.objects.select_related('landlord').all().order_by('-created_at')
+    avg_rent = Property.objects.aggregate(avg=Sum('monthly_rent') / Count('id'))['avg'] if Property.objects.exists() else 0
+
+    sections = [
+        {
+            'stats': [
+                ('Total Properties', Property.objects.count()),
+                ('Available', Property.objects.filter(is_available=True).count()),
+                ('Occupied', Property.objects.filter(is_available=False).count()),
+                ('Average Rent', f'TZS {avg_rent:,.0f}'),
+            ],
+        },
+        {
+            'heading': 'All Properties',
+            'columns': _cols(
+                ('Title', 20), ('Landlord', 14), ('Type', 12), ('Location', 20),
+                ('Rent (TZS)', 14), ('Available', 10), ('Listed', 10),
+            ),
+            'rows': [
+                [
+                    prop.title,
+                    prop.landlord.username,
+                    prop.get_property_type_display(),
+                    prop.location,
+                    f'{prop.monthly_rent:,.0f}',
+                    'Yes' if prop.is_available else 'No',
+                    prop.created_at.strftime('%d %b %Y'),
+                ]
+                for prop in properties
+            ],
+        },
+    ]
+    return _render_report_pdf('properties_report', 'Properties Report', sections)
 
 
 @login_required
 def export_financial_report(request):
-    """Generate comprehensive financial report"""
+    """Generate a branded, comprehensive PDF financial report"""
     if not _is_admin(request.user):
         return HttpResponse("Unauthorized", status=403)
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="financial_report.csv"'
-    writer = csv.writer(response)
-    
-    writer.writerow(['VOT HOUSE FINDING - FINANCIAL REPORT'])
-    writer.writerow(['Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
-    writer.writerow([])
-    
     total_revenue = Payment.objects.filter(status='COMPLETED').aggregate(Sum('amount'))['amount__sum'] or 0
     pending_revenue = Payment.objects.filter(status='PENDING').aggregate(Sum('amount'))['amount__sum'] or 0
-    
-    writer.writerow(['REVENUE SUMMARY'])
-    writer.writerow(['Total Completed Revenue:', f'TZS {total_revenue:,.0f}'])
-    writer.writerow(['Pending Revenue:', f'TZS {pending_revenue:,.0f}'])
-    writer.writerow(['Total Expected Revenue:', f'TZS {total_revenue + pending_revenue:,.0f}'])
-    writer.writerow([])
-    
-    writer.writerow(['REVENUE BY PROPERTY TYPE'])
-    writer.writerow(['Property Type', 'Total Revenue (TZS)', 'Number of Payments'])
-    
-    for prop_type in Property.PROPERTY_TYPES:
-        type_code, type_name = prop_type
-        payments = Payment.objects.filter(
+
+    by_type_rows = []
+    for type_code, type_name in Property.PROPERTY_TYPES:
+        type_payments = Payment.objects.filter(
             booking__property__property_type=type_code,
             status='COMPLETED'
         )
-        total = payments.aggregate(Sum('amount'))['amount__sum'] or 0
-        count = payments.count()
-        writer.writerow([type_name, f'TZS {total:,.0f}', count])
-    
-    writer.writerow([])
-    writer.writerow(['RECENT TRANSACTIONS (Last 50)'])
-    writer.writerow(['Payment ID', 'Tenant', 'Property', 'Amount (TZS)', 'Status', 'Payment Method', 'Date'])
-    
+        total = type_payments.aggregate(Sum('amount'))['amount__sum'] or 0
+        count = type_payments.count()
+        if count:
+            by_type_rows.append([type_name, f'{total:,.0f}', count])
+
     recent_payments = Payment.objects.select_related('booking__tenant', 'booking__property').order_by('-created_at')[:50]
-    for p in recent_payments:
-        writer.writerow([
-            str(p.id)[:8],
-            p.booking.tenant.username,
-            p.booking.property.title,
-            p.amount,
-            p.status,
-            p.payment_method or 'N/A',
-            p.created_at.strftime('%Y-%m-%d')
-        ])
-    
-    return response
+
+    sections = [
+        {
+            'heading': 'Revenue Summary',
+            'stats': [
+                ('Completed Revenue', f'TZS {total_revenue:,.0f}'),
+                ('Pending Revenue', f'TZS {pending_revenue:,.0f}'),
+                ('Total Expected', f'TZS {total_revenue + pending_revenue:,.0f}'),
+            ],
+        },
+        {
+            'heading': 'Revenue by Property Type',
+            'columns': _cols(('Property Type', 40), ('Total Revenue (TZS)', 40), ('Payments', 20)),
+            'rows': by_type_rows,
+        },
+        {
+            'heading': 'Recent Transactions (Last 50)',
+            'columns': _cols(
+                ('Payment ID', 12), ('Tenant', 14), ('Property', 22), ('Amount (TZS)', 14),
+                ('Status', 14), ('Method', 12), ('Date', 12),
+            ),
+            'rows': [
+                [
+                    str(p.id)[:8],
+                    p.booking.tenant.username,
+                    p.booking.property.title,
+                    f'{p.amount:,.0f}',
+                    p.get_status_display(),
+                    p.get_payment_method_display() if p.payment_method else 'N/A',
+                    p.created_at.strftime('%d %b %Y'),
+                ]
+                for p in recent_payments
+            ],
+        },
+    ]
+    return _render_report_pdf('financial_report', 'Financial Report', sections)
 
 
 @login_required
 def export_activity_report(request):
-    """Generate system activity report (Last 30 Days)"""
+    """Generate a branded PDF system activity report (last 30 days)"""
     if not _is_admin(request.user):
         return HttpResponse("Unauthorized", status=403)
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="activity_report.csv"'
-    writer = csv.writer(response)
-    
-    writer.writerow(['VOT HOUSE FINDING - ACTIVITY REPORT'])
-    writer.writerow(['Generated:', timezone.now().strftime('%Y-%m-%d %H:%M:%S')])
-    writer.writerow(['Report Period:', 'Last 30 Days'])
-    writer.writerow([])
-    
     now = timezone.now()
     last_30_days = now - timedelta(days=30)
-    
-    writer.writerow(['USER ACTIVITY'])
-    writer.writerow(['New Users:', User.objects.filter(date_joined__gte=last_30_days).count()])
-    writer.writerow(['Active Users (logged in):', User.objects.filter(last_login__gte=last_30_days).count()])
-    writer.writerow([])
-    
-    writer.writerow(['PROPERTY ACTIVITY'])
-    writer.writerow(['New Properties Listed:', Property.objects.filter(created_at__gte=last_30_days).count()])
-    writer.writerow(['Properties Updated:', Property.objects.filter(updated_at__gte=last_30_days).count()])
-    writer.writerow([])
-    
-    writer.writerow(['BOOKING ACTIVITY'])
-    writer.writerow(['New Bookings:', Booking.objects.filter(created_at__gte=last_30_days).count()])
-    writer.writerow(['Confirmed:', Booking.objects.filter(created_at__gte=last_30_days, status='CONFIRMED').count()])
-    writer.writerow(['Completed:', Booking.objects.filter(created_at__gte=last_30_days, status='PAID').count()])
-    writer.writerow([])
-    
-    writer.writerow(['PAYMENT ACTIVITY'])
-    writer.writerow(['New Payments:', Payment.objects.filter(created_at__gte=last_30_days).count()])
-    writer.writerow(['Completed Payments:', Payment.objects.filter(created_at__gte=last_30_days, status='COMPLETED').count()])
-    
-    revenue_30 = Payment.objects.filter(created_at__gte=last_30_days, status='COMPLETED').aggregate(Sum('amount'))['amount__sum'] or 0
-    writer.writerow(['Revenue (Last 30 Days):', f'TZS {revenue_30:,.0f}'])
-    writer.writerow([])
-    
-    writer.writerow(['TOP LANDLORDS (By Revenue)'])
-    writer.writerow(['Landlord', 'Properties', 'Total Revenue (TZS)'])
-    
+
+    revenue_30 = Payment.objects.filter(
+        created_at__gte=last_30_days, status='COMPLETED'
+    ).aggregate(Sum('amount'))['amount__sum'] or 0
+
     landlords = User.objects.filter(role='LANDLORD').annotate(
-        prop_count=Count('properties'),
-        total_revenue=Sum('properties__booking__payment__amount', filter=Q(properties__booking__payment__status='COMPLETED'))
+        prop_count=Count('properties', distinct=True),
+        total_revenue=Sum('properties__bookings__payments__amount', filter=Q(properties__bookings__payments__status='COMPLETED'))
     ).order_by('-total_revenue')[:5]
-    
-    for landlord in landlords:
-        writer.writerow([
-            landlord.username,
-            landlord.prop_count,
-            f'TZS {landlord.total_revenue or 0:,.0f}'
-        ])
-    
-    return response
+
+    sections = [
+        {
+            'heading': 'User Activity',
+            'stats': [
+                ('New Users', User.objects.filter(date_joined__gte=last_30_days).count()),
+                ('Active Users', User.objects.filter(last_login__gte=last_30_days).count()),
+            ],
+        },
+        {
+            'heading': 'Property & Booking Activity',
+            'stats': [
+                ('New Listings', Property.objects.filter(created_at__gte=last_30_days).count()),
+                ('New Bookings', Booking.objects.filter(created_at__gte=last_30_days).count()),
+                ('Confirmed', Booking.objects.filter(created_at__gte=last_30_days, status='CONFIRMED').count()),
+            ],
+        },
+        {
+            'heading': 'Payment Activity',
+            'stats': [
+                ('New Payments', Payment.objects.filter(created_at__gte=last_30_days).count()),
+                ('Completed', Payment.objects.filter(created_at__gte=last_30_days, status='COMPLETED').count()),
+                ('Revenue (30d)', f'TZS {revenue_30:,.0f}'),
+            ],
+        },
+        {
+            'heading': 'Top Landlords by Revenue',
+            'columns': _cols(('Landlord', 34), ('Properties', 26), ('Total Revenue (TZS)', 40)),
+            'rows': [
+                [landlord.username, landlord.prop_count, f'{landlord.total_revenue or 0:,.0f}']
+                for landlord in landlords
+            ],
+        },
+    ]
+    return _render_report_pdf('activity_report', 'Activity Report', sections, report_period='Last 30 Days')
 
 
 # ==========================================
