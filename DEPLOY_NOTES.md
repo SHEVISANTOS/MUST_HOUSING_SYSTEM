@@ -9,11 +9,21 @@ Config files referenced below live in `deploy/` and `scripts/deploy_ubuntu.sh`.
 
 This assumes Ubuntu 22.04+, a non-root user with `sudo`, and that you're
 deploying from a git clone of this repo. Paths below assume the app lives at
-`/opt/vot-house-finding`, owned by a dedicated `deploy` user - adjust
-`deploy/vot-house-finding.service`, `deploy/vot-tenancy-sync.service` and
-`deploy/nginx_vot_house_finding.conf` if you use different paths/usernames.
+`/srv/must_housing`, run as the `santos` user, and that nginx listens on
+**port 8080** rather than 80/443 - adjust `deploy/vot-house-finding.service`,
+`deploy/vot-tenancy-sync.service` and `deploy/nginx_vot_house_finding.conf`
+if you use a different path/user/port.
+
+If this server already hosts another app (e.g. its own nginx site on
+80/443, like this deployment does alongside "VOT Stays"), do **not** touch
+that app's nginx config, systemd services, firewall rules for 80/443, or
+database - everything below is scoped to this app only, using its own port
+(8080), its own systemd unit names (`vot-house-finding*`), and its own
+Postgres database/user.
 
 ### 1. System packages
+
+Skip anything already installed (check with e.g. `nginx -v`, `psql --version`):
 
     sudo apt update
     sudo apt install -y python3-venv python3-pip postgresql postgresql-contrib \
@@ -21,14 +31,10 @@ deploying from a git clone of this repo. Paths below assume the app lives at
 
 ### 2. Get the code onto the server
 
-    sudo mkdir -p /opt/vot-house-finding
-    sudo chown "$USER":www-data /opt/vot-house-finding
-    git clone <your-repo-url> /opt/vot-house-finding
-    cd /opt/vot-house-finding
-
-(If you're deploying as a dedicated `deploy` user rather than your own
-login, create it first with `sudo adduser deploy` and run the above as
-that user instead.)
+    sudo mkdir -p /srv/must_housing
+    sudo chown "$USER":www-data /srv/must_housing
+    git clone <your-repo-url> /srv/must_housing
+    cd /srv/must_housing
 
 ### 3. Local Postgres database
 
@@ -46,7 +52,7 @@ database Vercel uses (see the callout below).
 
 ### 5. Configure `.env`
 
-Create `/opt/vot-house-finding/.env` (git-ignored, never committed - see
+Create `/srv/must_housing/.env` (git-ignored, never committed - see
 `.env.example` for the full list of variables):
 
     DJANGO_SECRET_KEY=<generate: python -c "import secrets; print(secrets.token_urlsafe(50))">
@@ -86,7 +92,7 @@ here has no effect on the Vercel deployment.
     sudo systemctl status vot-house-finding
 
 Edit the `User=`/paths in `/etc/systemd/system/vot-house-finding.service`
-first if your deploy user or install path differs from the defaults.
+first if your user or install path differs from the defaults above.
 
 ### 8. Daily tenancy status sync (replaces Vercel Cron for this deployment)
 
@@ -101,25 +107,30 @@ command directly on a timer instead:
 
 ### 9. Nginx
 
+This only adds a new site on port 8080 - it does not touch whatever's
+already in `sites-enabled` for other apps on this server (no `default` site
+removal, no edits to existing site files):
+
     sudo cp deploy/nginx_vot_house_finding.conf /etc/nginx/sites-available/vot-house-finding
     sudo ln -s /etc/nginx/sites-available/vot-house-finding /etc/nginx/sites-enabled/
-    sudo rm -f /etc/nginx/sites-enabled/default
     sudo nginx -t && sudo systemctl reload nginx
 
 ### 10. Firewall
 
-    sudo ufw allow OpenSSH
-    sudo ufw allow 80/tcp
-    sudo ufw enable
+If `ufw` is already managing this server's firewall (check with
+`sudo ufw status`), just add the new port - don't re-run `ufw enable` or
+touch existing rules:
+
+    sudo ufw allow 8080/tcp
 
 ### 11. Verify
 
-Visit `http://<your-server-ip>/` - you should see the property listing
+Visit `http://<your-server-ip>:8080/` - you should see the property listing
 page. `/admin/` should log in with the superuser created in step 6.
 
 ### 12. Redeploying after future changes
 
-    /opt/vot-house-finding/scripts/deploy_ubuntu.sh
+    /srv/must_housing/scripts/deploy_ubuntu.sh
 
 Pulls the latest code, reinstalls dependencies, migrates, collects static
 files, and restarts Gunicorn. Requires passwordless (or prompted) `sudo` for
@@ -127,12 +138,18 @@ the `systemctl restart` step.
 
 ### Adding HTTPS later (once a domain is pointed at this server)
 
+Pick a domain/subdomain distinct from whatever other apps on this server
+already answer to (e.g. `housing.yourdomain.com`), point its DNS A record
+at the server, then switch `deploy/nginx_vot_house_finding.conf` from
+`listen 8080;`/`server_name _;` to `listen 80;`/`server_name housing.yourdomain.com;`,
+reload nginx, and run certbot:
+
     sudo apt install -y certbot python3-certbot-nginx
-    sudo certbot --nginx -d yourdomain.com
+    sudo certbot --nginx -d housing.yourdomain.com
 
 Certbot edits the Nginx config in place to add the TLS block and redirect.
-Afterwards, add the `https://yourdomain.com` origin to `CSRF_TRUSTED_ORIGINS`
-in `.env` and restart the service.
+Afterwards, add the `https://housing.yourdomain.com` origin to
+`CSRF_TRUSTED_ORIGINS` in `.env` and restart the service.
 
 ### ⚠️ Separate database from Vercel
 
