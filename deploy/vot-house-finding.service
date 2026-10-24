@@ -1,0 +1,25 @@
+[Unit]
+Description=VOT House Finding - Gunicorn application server
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+# Adjust User/Group and the paths below to match your server. The
+# deployment walkthrough in DEPLOY_NOTES.md assumes a dedicated "deploy"
+# user owning /opt/vot-house-finding - change both consistently if you use
+# a different layout.
+User=deploy
+Group=www-data
+WorkingDirectory=/opt/vot-house-finding
+EnvironmentFile=/opt/vot-house-finding/.env
+RuntimeDirectory=vot-house-finding
+LogsDirectory=vot-house-finding
+ExecStart=/opt/vot-house-finding/venv/bin/gunicorn \
+    --config /opt/vot-house-finding/deploy/gunicorn.conf.py \
+    config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

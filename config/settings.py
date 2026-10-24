@@ -32,6 +32,21 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-dev-key-replace-in-vercel'
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11']
+# Extra hosts for non-Vercel deployments (e.g. a bare Ubuntu server's IP or
+# domain) - additive, comma-separated, so it doesn't disturb the Vercel list
+# above. Unset by default (no effect unless explicitly configured).
+ALLOWED_HOSTS += [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
+
+# Needed once DEBUG=False and the site is served over plain HTTP from an
+# IP/domain Django doesn't already trust by default for POST/CSRF - e.g. the
+# Ubuntu server before a domain + HTTPS is set up. Empty by default (no
+# effect unless explicitly configured); scheme defaults to http:// since
+# that's the only thing an IP-only deployment without a domain/TLS cert can
+# serve - override with a full "https://..." origin once HTTPS is in place.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() if '://' in o.strip() else f'http://{o.strip()}'
+    for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
