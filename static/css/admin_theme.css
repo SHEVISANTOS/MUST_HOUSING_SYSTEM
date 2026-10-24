@@ -213,3 +213,45 @@ ul.messagelist li { border-radius: 10px; margin: 0 0 8px; }
 
 .object-tools a.addlink:link, .object-tools a.addlink:visited { padding-right: 30px; background-position: right 10px center; }
 #content-related .module h2 { font-size: 13px; padding: 12px 16px; }
+
+/* --- Green MUST Housing menu on admin pages (same as the main site sidebar) --- */
+.sidebar {
+  position: fixed; top: 0; bottom: 0; left: 0; z-index: 1001; width: 256px;
+  background: var(--vs-forest); color: var(--vs-leaf);
+  display: flex; flex-direction: column; overflow-y: auto; transition: transform 0.25s ease;
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+.sidebar a, .sidebar a:link, .sidebar a:visited { text-decoration: none; }
+.sidebar-brand { display: flex; align-items: center; gap: 12px; padding: 20px 20px 12px; color: #ffffff !important; }
+.sidebar .logo-box { width: 40px; height: 40px; border-radius: 10px; background: #ffffff; overflow: hidden; flex-shrink: 0; display: flex; }
+.sidebar .logo-box img { width: 100%; height: 100%; object-fit: cover; }
+.sidebar .brand-text { display: flex; flex-direction: column; line-height: 1.2; }
+.sidebar .brand-text strong { font-family: "Manrope", "DM Sans", sans-serif; font-size: 1rem; font-weight: 800; color: #ffffff; }
+.sidebar .brand-text small { font-size: 0.72rem; color: rgb(217 239 228 / 70%); letter-spacing: 0.04em; }
+.sidebar .nav-group-title { margin: 14px 0 6px; padding: 0 24px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; color: rgb(217 239 228 / 70%); }
+.sidebar .nav-menu { list-style: none; margin: 0; padding: 0 12px 16px; flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.sidebar .nav-item { margin: 0; padding: 0; list-style: none; }
+.sidebar .nav-link { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; color: var(--vs-leaf) !important; font-weight: 600; transition: background 0.15s, color 0.15s; }
+.sidebar .nav-link:hover { background: rgb(255 255 255 / 10%); color: #ffffff !important; }
+.sidebar .nav-link.active { background: var(--vs-paper); color: var(--vs-forest) !important; box-shadow: var(--vs-shadow); }
+.sidebar .nav-icon { width: 20px; height: 20px; flex-shrink: 0; }
+.sidebar .nav-divider { margin-top: auto !important; padding-top: 12px; border-top: 1px solid rgb(255 255 255 / 10%); }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgb(23 42 37 / 50%); z-index: 1000; }
+.sidebar-overlay.active { display: block; }
+body:has(.sidebar) #container { margin-left: 256px; width: auto; min-width: 0; }
+body:has(.sidebar) #header { padding-left: 32px; }
+#header .vs-menu-btn { display: none; }
+@media (max-width: 991px) {
+  body:has(.sidebar) #container { margin-left: 0; }
+  .sidebar { transform: translateX(-100%); box-shadow: var(--vs-shadow); }
+  .sidebar.open { transform: translateX(0); }
+  #header .vs-menu-btn { display: inline-flex; margin-right: 10px; padding: 6px; border: 1px solid rgb(255 255 255 / 30%); border-radius: 8px; background: transparent; color: #ffffff; cursor: pointer; }
+  #header .vs-menu-btn svg { width: 20px; height: 20px; }
+  #branding { display: flex; align-items: center; }
+}
+html[data-theme="dark"] .sidebar .nav-link.active { background: rgb(255 255 255 / 92%); }
+/* The sidebar already shows the logo and name on wide screens. */
+@media (min-width: 992px) {
+  body:has(.sidebar) #branding .vs-mark, body:has(.sidebar) #branding .vs-name { display: none; }
+  body:has(.sidebar) #branding .vs-label { font-size: 12px; opacity: 1; }
+}
