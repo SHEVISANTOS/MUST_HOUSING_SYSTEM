@@ -32,6 +32,12 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-dev-key-replace-in-vercel'
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11']
+# Extra hosts for VPS deploys, comma-separated, e.g. "housing.162-35-28-34.sslip.io"
+ALLOWED_HOSTS += [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+
+# Behind nginx: trust its X-Forwarded-Proto so Django knows requests are HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -97,7 +103,7 @@ DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('NEON_DATABASE_URL'),
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=os.getenv('DB_SSL_REQUIRE', 'True') == 'True'
     )
 }
 
