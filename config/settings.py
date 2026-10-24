@@ -32,11 +32,21 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-dev-key-replace-in-vercel'
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11']
-# Extra hosts for VPS deploys, comma-separated, e.g. "housing.162-35-28-34.sslip.io"
+# Extra hosts for non-Vercel deployments (VPS IP or domain), comma-separated,
+# e.g. "housing.162-35-28-34.sslip.io". Unset by default (no effect).
 ALLOWED_HOSTS += [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+
+# Origins allowed to submit forms (POST/CSRF). Reads DJANGO_CSRF_TRUSTED_ORIGINS,
+# or CSRF_TRUSTED_ORIGINS. An entry without a scheme gets http:// (plain-HTTP IP
+# deployments); use a full "https://..." origin once HTTPS is in place.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() if '://' in o.strip() else f'http://{o.strip()}'
+    for o in (os.getenv('DJANGO_CSRF_TRUSTED_ORIGINS') or os.getenv('CSRF_TRUSTED_ORIGINS', '')).split(',')
+    if o.strip()
+]
 
 # Behind nginx: trust its X-Forwarded-Proto so Django knows requests are HTTPS
+# (nginx must set it, and gunicorn must listen on 127.0.0.1 only).
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [

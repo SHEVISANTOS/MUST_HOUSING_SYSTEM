@@ -1,5 +1,149 @@
 # Deploy Notes
 
+## Ubuntu Server Deployment (Gunicorn + Nginx + systemd)
+
+A second, independent deployment target alongside Vercel: Gunicorn behind
+Nginx, managed by systemd, with its own local Postgres database (separate
+from Vercel's Neon database - see the callout at the end of this section).
+Config files referenced below live in `deploy/` and `scripts/deploy_ubuntu.sh`.
+
+This assumes Ubuntu 22.04+, a non-root user with `sudo`, and that you're
+deploying from a git clone of this repo. Paths below assume the app lives at
+`/opt/vot-house-finding`, owned by a dedicated `deploy` user - adjust
+`deploy/vot-house-finding.service`, `deploy/vot-tenancy-sync.service` and
+`deploy/nginx_vot_house_finding.conf` if you use different paths/usernames.
+
+### 1. System packages
+
+    sudo apt update
+    sudo apt install -y python3-venv python3-pip postgresql postgresql-contrib \
+        nginx git build-essential libpq-dev
+
+### 2. Get the code onto the server
+
+    sudo mkdir -p /opt/vot-house-finding
+    sudo chown "$USER":www-data /opt/vot-house-finding
+    git clone <your-repo-url> /opt/vot-house-finding
+    cd /opt/vot-house-finding
+
+(If you're deploying as a dedicated `deploy` user rather than your own
+login, create it first with `sudo adduser deploy` and run the above as
+that user instead.)
+
+### 3. Local Postgres database
+
+This server gets its **own** Postgres database - it is not the same
+database Vercel uses (see the callout below).
+
+    sudo -u postgres psql -c "CREATE USER vot_user WITH PASSWORD 'choose-a-strong-password';"
+    sudo -u postgres psql -c "CREATE DATABASE vot_house_finding OWNER vot_user;"
+
+### 4. Python environment
+
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+
+### 5. Configure `.env`
+
+Create `/opt/vot-house-finding/.env` (git-ignored, never committed - see
+`.env.example` for the full list of variables):
+
+    DJANGO_SECRET_KEY=<generate: python -c "import secrets; print(secrets.token_urlsafe(50))">
+    DJANGO_DEBUG=False
+    DATABASE_URL=postgresql://vot_user:choose-a-strong-password@localhost:5432/vot_house_finding
+
+    # No domain yet - allow the server's bare IP. Add a domain here too once
+    # one is pointed at this server (both can be listed, comma-separated).
+    DJANGO_ALLOWED_HOSTS=<your-server-ip>
+    CSRF_TRUSTED_ORIGINS=<your-server-ip>
+
+    # Optional: reuse the same R2 bucket Vercel uses so both deployments
+    # serve the same property images, or leave all five blank to fall back
+    # to local-disk storage under media/ (this server has a persistent
+    # filesystem, unlike Vercel, so that fallback is actually viable here).
+    R2_ACCOUNT_ID=
+    R2_ACCESS_KEY_ID=
+    R2_SECRET_ACCESS_KEY=
+    R2_BUCKET_NAME=
+    R2_PUBLIC_URL=
+
+`DJANGO_ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS` are additive on top of the
+hardcoded Vercel-oriented defaults in `config/settings.py` - setting them
+here has no effect on the Vercel deployment.
+
+### 6. Migrate, collect static, create an admin user
+
+    python manage.py migrate
+    python manage.py collectstatic --noinput
+    python manage.py createsuperuser
+
+### 7. Gunicorn as a systemd service
+
+    sudo cp deploy/vot-house-finding.service /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now vot-house-finding
+    sudo systemctl status vot-house-finding
+
+Edit the `User=`/paths in `/etc/systemd/system/vot-house-finding.service`
+first if your deploy user or install path differs from the defaults.
+
+### 8. Daily tenancy status sync (replaces Vercel Cron for this deployment)
+
+Vercel Cron hits an HTTP endpoint guarded by `CRON_SECRET` because that's
+the only mechanism Vercel offers; a real server can just run the management
+command directly on a timer instead:
+
+    sudo cp deploy/vot-tenancy-sync.service deploy/vot-tenancy-sync.timer /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now vot-tenancy-sync.timer
+    sudo systemctl list-timers vot-tenancy-sync.timer
+
+### 9. Nginx
+
+    sudo cp deploy/nginx_vot_house_finding.conf /etc/nginx/sites-available/vot-house-finding
+    sudo ln -s /etc/nginx/sites-available/vot-house-finding /etc/nginx/sites-enabled/
+    sudo rm -f /etc/nginx/sites-enabled/default
+    sudo nginx -t && sudo systemctl reload nginx
+
+### 10. Firewall
+
+    sudo ufw allow OpenSSH
+    sudo ufw allow 80/tcp
+    sudo ufw enable
+
+### 11. Verify
+
+Visit `http://<your-server-ip>/` - you should see the property listing
+page. `/admin/` should log in with the superuser created in step 6.
+
+### 12. Redeploying after future changes
+
+    /opt/vot-house-finding/scripts/deploy_ubuntu.sh
+
+Pulls the latest code, reinstalls dependencies, migrates, collects static
+files, and restarts Gunicorn. Requires passwordless (or prompted) `sudo` for
+the `systemctl restart` step.
+
+### Adding HTTPS later (once a domain is pointed at this server)
+
+    sudo apt install -y certbot python3-certbot-nginx
+    sudo certbot --nginx -d yourdomain.com
+
+Certbot edits the Nginx config in place to add the TLS block and redirect.
+Afterwards, add the `https://yourdomain.com` origin to `CSRF_TRUSTED_ORIGINS`
+in `.env` and restart the service.
+
+### ⚠️ Separate database from Vercel
+
+Because this deployment uses its own local Postgres (rather than the same
+Neon database Vercel uses), **it starts with an empty database** - no
+users, properties, bookings or payments from the Vercel/Neon deployment
+carry over automatically. The two deployments are independent until/unless
+you deliberately migrate data between them (e.g. `pg_dump` from Neon,
+`pg_restore` into the local Postgres instance) or point this server's
+`DATABASE_URL` at Neon instead of a local database.
+
 ## Media storage (Cloudflare R2)
 
 Property image uploads used plain local-disk storage (`FileSystemStorage`),
