@@ -249,48 +249,36 @@
 
     <!-- ── SYSTEM USAGE ── -->
     <div class="adash-section-label">📊 System Usage Overview</div>
-    <div class="adash-stats row mb-4">
-      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
-        <div class="adash-stat" style="--sc:#3b82f6">
-          <span class="adash-stat-icon">👥</span>
-          <div class="adash-stat-value">{{ stats.total_users }}</div>
-          <div class="adash-stat-label">Total Users</div>
-        </div>
+    <div class="adash-stats mb-4">
+      <div class="adash-stat" style="--sc:#3b82f6">
+        <span class="adash-stat-icon">👥</span>
+        <div class="adash-stat-value">{{ stats.total_users }}</div>
+        <div class="adash-stat-label">Total Users</div>
       </div>
-      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
-        <div class="adash-stat" style="--sc:#22c55e">
-          <span class="adash-stat-icon">🏠</span>
-          <div class="adash-stat-value">{{ stats.properties }}</div>
-          <div class="adash-stat-label">Properties</div>
-        </div>
+      <div class="adash-stat" style="--sc:#22c55e">
+        <span class="adash-stat-icon">🏠</span>
+        <div class="adash-stat-value">{{ stats.properties }}</div>
+        <div class="adash-stat-label">Properties</div>
       </div>
-      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
-        <div class="adash-stat" style="--sc:#06b6d4">
-          <span class="adash-stat-icon">📋</span>
-          <div class="adash-stat-value">{{ stats.bookings }}</div>
-          <div class="adash-stat-label">Bookings</div>
-        </div>
+      <div class="adash-stat" style="--sc:#06b6d4">
+        <span class="adash-stat-icon">📋</span>
+        <div class="adash-stat-value">{{ stats.bookings }}</div>
+        <div class="adash-stat-label">Bookings</div>
       </div>
-      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
-        <div class="adash-stat" style="--sc:#f59e0b">
-          <span class="adash-stat-icon">💳</span>
-          <div class="adash-stat-value">{{ stats.completed_payments }}</div>
-          <div class="adash-stat-label">Payments</div>
-        </div>
+      <div class="adash-stat" style="--sc:#f59e0b">
+        <span class="adash-stat-icon">💳</span>
+        <div class="adash-stat-value">{{ stats.completed_payments }}</div>
+        <div class="adash-stat-label">Payments</div>
       </div>
-      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
-        <div class="adash-stat" style="--sc:#e8a020">
-          <span class="adash-stat-icon">💰</span>
-          <div class="adash-stat-value revenue">TZS {{ stats.total_revenue|floatformat:0 }}</div>
-          <div class="adash-stat-label">Revenue</div>
-        </div>
+      <div class="adash-stat" style="--sc:#e8a020">
+        <span class="adash-stat-icon">💰</span>
+        <div class="adash-stat-value revenue">TZS {{ stats.total_revenue|floatformat:0 }}</div>
+        <div class="adash-stat-label">Revenue</div>
       </div>
-      <div class="col-md-2 col-6 mb-3" style="padding:0 7px;">
-        <div class="adash-stat" style="--sc:#a78bfa">
-          <span class="adash-stat-icon">🤝</span>
-          <div class="adash-stat-value">{{ stats.landlords }}<span style="font-size:1rem;opacity:0.5;font-weight:400;">/{{ stats.tenants }}</span></div>
-          <div class="adash-stat-label">Landlords / Tenants</div>
-        </div>
+      <div class="adash-stat" style="--sc:#a78bfa">
+        <span class="adash-stat-icon">🤝</span>
+        <div class="adash-stat-value">{{ stats.landlords }}<span style="font-size:1rem;opacity:0.5;font-weight:400;">/{{ stats.tenants }}</span></div>
+        <div class="adash-stat-label">Landlords / Tenants</div>
       </div>
     </div>
 
