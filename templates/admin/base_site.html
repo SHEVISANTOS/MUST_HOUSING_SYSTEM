@@ -3,62 +3,26 @@
 
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | VOT House Finding{% endblock %}
 
+{% block extrastyle %}{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap">
+<link rel="stylesheet" href="{% static 'css/admin_theme.css' %}">
+{% endblock %}
+
+{% block extrahead %}{{ block.super }}
+<link rel="icon" type="image/png" href="{% static 'img/vot_icon.png' %}">
+{% endblock %}
+
 {% block branding %}
-<h1 id="site-name">
-    <a href="{% url 'admin:index' %}" style="display: inline-flex; align-items: center; gap: 12px; text-decoration: none;">
-        <img src="{% static 'img/vot_icon.png' %}" alt="VOT House Finding Logo" style="width: 48px; height: 48px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); object-fit: cover;">
-        <div>
-            <div style="font-size: 1.2rem; font-weight: 700; color: white; margin-bottom: 2px;">VOT HOUSE FINDING</div>
-            <div style="font-size: 0.85rem; font-weight: 400; opacity: 0.95;">VOT Mwanza Limited - Admin Portal</div>
-        </div>
-    </a>
-</h1>
-{% endblock %}
-
-{% block nav-global %}{% endblock %}
-
-{% block extrastyle %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-{% endblock %}
-
-{% block extrahead %}
-{{ block.super }}
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    body { font-family: 'Inter', system-ui, -apple-system, sans-serif !important; }
-</style>
-{% endblock %}
-
-{% block usertools %}
-{% if has_permission %}
-<div id="user-tools" style="display: flex; align-items: center; gap: 15px;">
-    <div style="background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; display: flex; align-items: center; gap: 8px;">
-        <span style="width: 32px; height: 32px; background: white; color: #14746c; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold;">{{ user.username|first|upper }}</span>
-        <span style="font-weight: 600;">{{ user.username|upper }}</span>
-    </div>
-    <a href="{% url 'core:admin_dashboard' %}" style="color: white; text-decoration: none; padding: 8px 15px; background: rgba(255,255,255,0.15); border-radius: 6px; font-weight: 500; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
-        <i class="fas fa-chart-line"></i> Dashboard
-    </a>
-    
-    <!-- ✅ FIXED: POST form for secure logout -->
-    <form method="post" action="{% url 'admin:logout' %}" style="display: inline;">
-        {% csrf_token %}
-        <button type="submit" style="color: white; text-decoration: none; padding: 8px 15px; background: rgba(220,53,69,0.8); border: none; border-radius: 6px; font-weight: 500; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 6px;" onmouseover="this.style.background='rgba(220,53,69,1)'" onmouseout="this.style.background='rgba(220,53,69,0.8)'">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-    </form>
-</div>
+<div id="site-name"><a href="{% url 'admin:index' %}"><img class="vs-mark" src="{% static 'img/vot_icon.png' %}" alt="" width="38" height="38"><span class="vs-name">VOT House Finding</span><span class="vs-label">Data admin</span></a></div>
+{% if user.is_anonymous %}
+  {% include "admin/color_theme_toggle.html" %}
 {% endif %}
 {% endblock %}
 
-{% block breadcrumbs %}
-<div class="breadcrumbs" style="padding: 15px 30px; font-size: 0.95rem;">
-    <a href="{% url 'admin:index' %}" style="text-decoration: none;">
-        <i class="fas fa-home"></i> Home
-    </a>
-    {% if title %} › <span style="font-weight: 500;">{{ title }}</span>{% endif %}
-</div>
-{% endblock %}
+{% block userlinks %}<a class="vs-console" href="{% url 'core:admin_dashboard' %}">Admin dashboard</a> / {{ block.super }}{% endblock %}
+
+{% block footer %}<div id="footer">VOT House Finding · Data admin: for corrections only. Day-to-day work belongs in the admin dashboard.</div>{% endblock %}
+
+{% block nav-global %}{% endblock %}
