@@ -48,6 +48,13 @@ CSRF_TRUSTED_ORIGINS = [
     for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()
 ]
 
+# Behind nginx: trust its X-Forwarded-Proto header so Django knows a
+# request arrived over HTTPS even though nginx terminates TLS and forwards
+# to Gunicorn over plain HTTP. Only meaningful once nginx is actually
+# setting that header (see deploy/nginx_vot_house_finding.conf) - harmless
+# no-op on Vercel, which sets its own equivalent forwarded-proto handling.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -112,7 +119,7 @@ DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('NEON_DATABASE_URL'),
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=os.getenv('DB_SSL_REQUIRE', 'True') == 'True'
     )
 }
 
