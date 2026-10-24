@@ -4,18 +4,15 @@ After=network.target postgresql.service
 Wants=postgresql.service
 
 [Service]
-# Adjust User/Group and the paths below to match your server. The
-# deployment walkthrough in DEPLOY_NOTES.md assumes a dedicated "deploy"
-# user owning /opt/vot-house-finding - change both consistently if you use
-# a different layout.
-User=deploy
+# Adjust User/Group and the paths below to match your server if different.
+User=santos
 Group=www-data
-WorkingDirectory=/opt/vot-house-finding
-EnvironmentFile=/opt/vot-house-finding/.env
+WorkingDirectory=/srv/must_housing
+EnvironmentFile=/srv/must_housing/.env
 RuntimeDirectory=vot-house-finding
 LogsDirectory=vot-house-finding
-ExecStart=/opt/vot-house-finding/venv/bin/gunicorn \
-    --config /opt/vot-house-finding/deploy/gunicorn.conf.py \
+ExecStart=/srv/must_housing/venv/bin/gunicorn \
+    --config /srv/must_housing/deploy/gunicorn.conf.py \
     config.wsgi:application
 ExecReload=/bin/kill -s HUP $MAINPID
 Restart=on-failure
