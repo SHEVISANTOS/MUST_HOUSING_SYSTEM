@@ -14,7 +14,26 @@
 <link rel="icon" type="image/png" href="{% static 'img/vot_icon.png' %}">
 {% endblock %}
 
+{% block header %}
+{% include "partials/_sidebar.html" %}
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+{{ block.super }}
+<script>
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.getElementById('sidebar').classList.contains('open')) { toggleSidebar(); }
+    });
+</script>
+{% endblock %}
+
+{# The green menu above replaces Django's own left list. #}
+{% block nav-sidebar %}{% endblock %}
+
 {% block branding %}
+<button class="vs-menu-btn" type="button" onclick="toggleSidebar()" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
 <div id="site-name"><a href="{% url 'admin:index' %}"><img class="vs-mark" src="{% static 'img/vot_icon.png' %}" alt="" width="38" height="38"><span class="vs-name">VOT House Finding</span><span class="vs-label">Data admin</span></a></div>
 {% if user.is_anonymous %}
   {% include "admin/color_theme_toggle.html" %}
