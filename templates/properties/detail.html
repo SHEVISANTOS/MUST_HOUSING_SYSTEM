@@ -297,7 +297,7 @@
     {% endwith %}
 
     <!-- 2. Property Location (Google Map) -->
-    {% if property.latitude and property.longitude %}
+    {% if property.latitude and property.longitude and google_maps_api_key %}
     <div class="card mb-3 shadow-sm">
         <div class="card-header bg-success text-white">
             <h5 class="mb-0">📍 Property Location</h5>
@@ -306,19 +306,19 @@
             <div id="property-map" style="height: 400px; width: 100%;"></div>
         </div>
     </div>
-    
+
     <script>
         function initMap() {
             const propertyLocation = {
                 lat: {{ property.latitude }},
                 lng: {{ property.longitude }}
             };
-            
+
             const map = new google.maps.Map(document.getElementById("property-map"), {
                 zoom: 15,
                 center: propertyLocation,
             });
-            
+
             new google.maps.Marker({
                 position: propertyLocation,
                 map: map,
@@ -326,7 +326,7 @@
             });
         }
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY_REDACTED&callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap"></script>
     {% endif %}
 
     <!-- 3. Property Details -->

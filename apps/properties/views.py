@@ -1,6 +1,7 @@
 # apps/properties/views.py
 from datetime import datetime
 
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -147,6 +148,7 @@ def property_detail(request, pk):
         'timeline_end': window_end,
         'og_image_url': og_image_url,
         'og_url': og_url,
+        'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
     })
 
 @login_required
