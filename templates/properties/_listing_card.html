@@ -16,6 +16,13 @@ Prefetch('tenancies', to_attr='prefetched_tenancies')):
         <span class="badge {% if tenancy %}badge-warning{% else %}badge-success{% endif %} listing-card-status">
             {% if tenancy %}Free from {{ tenancy.available_from|date:"j M" }}{% else %}Available now{% endif %}
         </span>
+        {% if user.is_authenticated %}
+        <button type="button" class="listing-card-save {% if property.pk in saved_property_ids %}saved{% endif %}"
+                data-save-url="{% url 'properties:toggle_saved' property.pk %}"
+                onclick="toggleSaveProperty(event, this)" aria-label="Save property" aria-pressed="{% if property.pk in saved_property_ids %}true{% else %}false{% endif %}">
+            ♥
+        </button>
+        {% endif %}
     </div>
     <div class="listing-card-body">
         <h3 class="listing-card-title">{{ property.get_property_type_display }} · {{ property.location }}</h3>

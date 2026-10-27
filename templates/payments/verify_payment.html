@@ -93,6 +93,7 @@
 
             <div class="d-flex gap-2 justify-content-end">
                 <a href="{% url 'payments:landlord_payments' %}" class="btn btn-secondary">← Back to Payments</a>
+                <a href="{% url 'payments:reject_payment' payment.id %}" class="btn btn-danger">❌ Not Received</a>
                 <button type="submit" class="btn btn-green btn-lg" id="verify_btn" disabled style="font-weight: bold;">
                     ✅ Confirm & Verify Payment
                 </button>

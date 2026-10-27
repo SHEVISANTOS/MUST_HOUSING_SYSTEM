@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Payment Not Received{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <div class="card-header" style="background: var(--coral-deep, #b8432f); color: white;">
+        <h5 class="mb-0">❌ Mark Payment as Not Received</h5>
+    </div>
+    <div class="card-body" style="padding: 25px;">
+        <p class="text-muted">
+            This sends the payment back to <strong>{{ payment.booking.tenant.username|title }}</strong> so they can
+            check the transaction code or resubmit proof. They'll see the note below.
+        </p>
+
+        <div class="card" style="background: var(--paper); border: none; margin-bottom: 20px;">
+            <div class="card-body" style="padding: 14px 16px;">
+                <div class="d-flex justify-content-between py-1"><span>Property</span><strong>{{ payment.booking.property.title }}</strong></div>
+                <div class="d-flex justify-content-between py-1"><span>Amount</span><strong>TZS {{ payment.amount|floatformat:0 }}</strong></div>
+                <div class="d-flex justify-content-between py-1"><span>Reference given</span><strong>{{ payment.payment_reference|default:"None" }}</strong></div>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group mb-3">
+                <label class="form-label">Why wasn't it received? (shown to the tenant)</label>
+                <textarea name="rejection_reason" class="form-control" rows="3" placeholder="e.g., 'No transaction with that code found - please double-check and resend.'" required></textarea>
+            </div>
+            <div class="d-flex gap-2 justify-content-end">
+                <a href="{% url 'payments:verify' payment.id %}" class="btn btn-secondary">← Cancel</a>
+                <button type="submit" class="btn btn-danger">Send Back to Tenant</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

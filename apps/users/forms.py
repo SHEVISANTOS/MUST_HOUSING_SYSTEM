@@ -13,7 +13,7 @@ REGISTRATION_ROLE_CHOICES = [
 
 class CustomUserCreationForm(UserCreationForm):
     role = forms.ChoiceField(choices=REGISTRATION_ROLE_CHOICES, required=True)
-    phone = forms.CharField(required=False)
+    phone = forms.CharField(required=True)
 
     class Meta:
         model = User

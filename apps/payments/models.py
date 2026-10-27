@@ -31,6 +31,7 @@ class Payment(models.Model):
     
     tenant_paid_at = models.DateTimeField(null=True, blank=True)
     landlord_confirmed_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.CharField(max_length=255, blank=True, help_text="Why the landlord said 'Not received' - shown to the tenant so they can fix the code")
     
     amount = models.DecimalField(max_digits=10, decimal_places=2)  
     due_date = models.DateField()

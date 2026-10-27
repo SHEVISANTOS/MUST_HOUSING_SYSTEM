@@ -103,6 +103,12 @@ def create_booking(request, property_id):
     """
     Tenant view to submit a booking request for a specific property.
     Status starts as 'PENDING' awaiting landlord approval.
+
+    3-step wizard, all client-side except the final submit: move-in date +
+    months stepper (step 1) -> review with optional note (step 2) -> this
+    view's success redirect lands on booking_sent (step 3, "what happens
+    next"). Move-out date is computed server-side from months rather than
+    taken as raw tenant input.
     """
     # Ensure user is a tenant
     if request.user.role != 'TENANT':
@@ -112,43 +118,57 @@ def create_booking(request, property_id):
     # Get property and ensure it's available
     prop = get_object_or_404(Property, id=property_id, is_available=True)
 
+    conflict_available_from = None
+
     if request.method == 'POST':
         move_in_date = request.POST.get('move_in_date')
-        move_out_date = request.POST.get('move_out_date')
+        months_raw = request.POST.get('months', '1')
+        note = request.POST.get('note', '').strip()
 
-        # Basic Validation
-        if not move_in_date or not move_out_date:
-            messages.error(request, "Please provide both move-in and move-out dates.")
-        elif move_in_date >= move_out_date:
-            messages.error(request, "Move-out date must be after move-in date.")
+        try:
+            months = max(1, int(months_raw))
+        except (TypeError, ValueError):
+            months = 1
+
+        move_in = parse_date(move_in_date) if move_in_date else None
+
+        if not move_in:
+            messages.error(request, "Please choose a move-in date.")
         elif (conflict := _tenancy_conflicting_with(prop.id, move_in_date)) is not None:
             # Early, friendly feedback - the real, race-safe overlap guard
             # is still enforced at approval time in approve_booking().
+            conflict_available_from = conflict.available_from
             messages.error(
                 request,
                 f"This property is occupied until {date_format(conflict.end_date, 'j M Y')} "
                 f"— earliest move-in {date_format(conflict.available_from, 'j M Y')}."
             )
         else:
+            move_out = _add_months(move_in, months)
             try:
-                # Create booking with PENDING status
                 booking = Booking.objects.create(
                     property=prop,
                     tenant=request.user,
-                    move_in_date=move_in_date,
-                    move_out_date=move_out_date,
+                    move_in_date=move_in,
+                    move_out_date=move_out,
+                    note=note,
                     status='PENDING'
                 )
-                
-                messages.success(request, "✅ Booking request submitted! Awaiting landlord approval.")
-                return redirect('bookings:my_bookings')
-            
+                return redirect('bookings:booking_sent', booking_id=booking.id)
+
             except Exception as e:
                 logger.error(f"Booking creation failed: {e}")
                 messages.error(request, "An error occurred while creating the booking. Please try again.")
 
-    context = {'property': prop}
+    context = {'property': prop, 'conflict_available_from': conflict_available_from}
     return render(request, 'bookings/create.html', context)
+
+
+@login_required
+def booking_sent(request, booking_id):
+    """Step 3 of the booking wizard: confirmation + what happens next."""
+    booking = get_object_or_404(Booking, id=booking_id, tenant=request.user)
+    return render(request, 'bookings/booking_sent.html', {'booking': booking})
 
 
 @login_required
@@ -239,7 +259,27 @@ def approve_booking(request, booking_id):
 
             _create_tenancy(booking, property_obj, months_diff)
 
-        messages.success(request, "✅ Booking approved successfully! Payment invoice generated for tenant.")
+            # Approving this request means any other PENDING request for
+            # the same property that overlaps these dates can no longer be
+            # granted - decline them now rather than leaving the tenant
+            # waiting on a request that was never going to be approved.
+            overlapping_pending = Booking.objects.filter(
+                property_id=property_obj.id, status='PENDING',
+                move_in_date__lte=move_out, move_out_date__gte=move_in,
+            ).exclude(id=booking.id)
+            declined_count = overlapping_pending.update(
+                status='CANCELLED',
+                decline_reason=f"Another booking for these dates was approved first (move-in {date_format(move_in, 'j M Y')}).",
+            )
+
+        if declined_count:
+            messages.success(
+                request,
+                f"✅ Booking approved! Payment invoice generated for tenant. "
+                f"{declined_count} other overlapping request(s) were automatically declined."
+            )
+        else:
+            messages.success(request, "✅ Booking approved successfully! Payment invoice generated for tenant.")
 
     except ValidationError as e:
         messages.error(request, f"Cannot approve: {' '.join(e.messages)}")
@@ -268,6 +308,7 @@ def reject_booking(request, booking_id):
 
     try:
         booking.status = 'CANCELLED'
+        booking.decline_reason = request.POST.get('decline_reason', '').strip()
         booking.save()
         messages.error(request, "❌ Booking rejected.")
     except Exception as e:

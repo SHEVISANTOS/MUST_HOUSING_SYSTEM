@@ -406,11 +406,22 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
                 <h2 class="mb-0" style="color: #14746c; font-weight: 700;">{{ property.title }}</h2>
-                {% if not property.is_available %}
-                    <span class="badge badge-secondary">⚫ Not Listed</span>
-                {% else %}
-                    {% include 'bookings/_tenancy_status_badge.html' with tenancy=current_tenancy %}
-                {% endif %}
+                <div class="d-flex align-items-center gap-2">
+                    {% if not property.is_available %}
+                        <span class="badge badge-secondary">⚫ Not Listed</span>
+                    {% else %}
+                        {% include 'bookings/_tenancy_status_badge.html' with tenancy=current_tenancy %}
+                    {% endif %}
+                    {% if user.is_authenticated %}
+                    <button type="button" class="btn btn-sm btn-secondary" id="detailSaveBtn"
+                            data-save-url="{% url 'properties:toggle_saved' property.pk %}"
+                            onclick="toggleDetailSave(event, this)"
+                            aria-pressed="{% if property.pk in saved_property_ids %}true{% else %}false{% endif %}"
+                            style="{% if property.pk in saved_property_ids %}color:var(--coral-deep,#b8432f);{% endif %}">
+                        ♥ <span id="detailSaveLabel">{% if property.pk in saved_property_ids %}Saved{% else %}Save{% endif %}</span>
+                    </button>
+                    {% endif %}
+                </div>
             </div>
             <p class="text-muted mb-3">📍 {{ property.location }} | {{ property.distance_from_center_km }} km from city center</p>
 
@@ -530,4 +541,22 @@
     {% endif %}
 </div>
 {% endif %}
+
+<script>
+function toggleDetailSave(event, btn) {
+    event.preventDefault();
+    const token = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch(btn.dataset.saveUrl, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': token, 'X-Requested-With': 'fetch' },
+    })
+        .then(r => r.json())
+        .then(data => {
+            btn.setAttribute('aria-pressed', data.saved);
+            btn.style.color = data.saved ? 'var(--coral-deep, #b8432f)' : '';
+            document.getElementById('detailSaveLabel').textContent = data.saved ? 'Saved' : 'Save';
+        })
+        .catch(() => {});
+}
+</script>
 {% endblock %}

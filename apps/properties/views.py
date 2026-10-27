@@ -2,12 +2,13 @@
 from datetime import datetime
 
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Prefetch, Q, Exists, OuterRef
 from django.views.decorators.http import require_POST
-from .models import Property, PropertyImage
+from .models import Property, PropertyImage, SavedProperty
 from .forms import PropertyForm
 
 # Statuses that represent a live, occupying tenancy (as opposed to the two
@@ -331,3 +332,40 @@ def property_pause(request, pk):
     prop.save(update_fields=['status', 'is_available', 'updated_at'])
 
     return redirect('properties:my_properties')
+
+
+@require_POST
+@login_required
+def toggle_saved(request, pk):
+    """
+    Heart-button toggle. Called via fetch() from the listing card/detail
+    page, so it returns JSON rather than redirecting - falls back to a
+    plain redirect only if JS is unavailable (form submits normally).
+    """
+    prop = get_object_or_404(Property, pk=pk)
+    saved, created = SavedProperty.objects.get_or_create(user=request.user, property=prop)
+    if not created:
+        saved.delete()
+        is_saved = False
+    else:
+        is_saved = True
+
+    if request.headers.get('x-requested-with') == 'fetch':
+        return JsonResponse({'saved': is_saved})
+
+    messages.success(request, f"{'Saved' if is_saved else 'Removed from saved'}: {prop.title}")
+    return redirect(request.POST.get('next') or 'properties:detail', pk=pk)
+
+
+@login_required
+def saved_properties(request):
+    """A seeker's bookmarked listings."""
+    from apps.bookings.models import Tenancy
+
+    relevant_tenancies = Tenancy.objects.filter(status__in=_LIVE_TENANCY_STATUSES).order_by('start_date')
+    properties = Property.objects.filter(saved_by__user=request.user).prefetch_related(
+        'images',
+        Prefetch('tenancies', queryset=relevant_tenancies, to_attr='prefetched_tenancies'),
+    ).order_by('-saved_by__created_at')
+
+    return render(request, 'properties/saved.html', {'properties': properties})

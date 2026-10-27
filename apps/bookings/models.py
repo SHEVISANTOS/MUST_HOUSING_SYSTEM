@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -14,31 +16,39 @@ class Booking(models.Model):
         ('CANCELLED', 'Cancelled'),
         ('COMPLETED', 'Completed'),
     ]
-    
+
     # Field Definitions - Ensure all parentheses are closed
     property = models.ForeignKey(
-        Property, 
-        on_delete=models.CASCADE, 
+        Property,
+        on_delete=models.CASCADE,
         related_name='bookings'
     )
-    
+
     tenant = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
+        User,
+        on_delete=models.CASCADE,
         related_name='bookings'
     )
-    
+
     move_in_date = models.DateField()
     move_out_date = models.DateField()
-    
+
     status = models.CharField(
-        max_length=20, 
-        choices=STATUS_CHOICES, 
+        max_length=20,
+        choices=STATUS_CHOICES,
         default='PENDING'
     )
-    
+    note = models.TextField(blank=True, help_text="Optional note from the tenant to the landlord")
+    expires_at = models.DateTimeField(null=True, blank=True, help_text="A PENDING request past this time can be treated as stale")
+    decline_reason = models.CharField(max_length=255, blank=True, help_text="Why this request was declined, e.g. auto-declined for an overlapping approval")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self._state.adding and not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(hours=48)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Booking #{self.id} - {self.property.title}"

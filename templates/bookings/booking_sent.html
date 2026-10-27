@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Request Sent{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 560px; margin: 0 auto;">
+    <div class="card-body text-center" style="padding: 36px 24px;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">✅</div>
+        <h3 style="color: var(--forest);">Request sent</h3>
+        <p class="text-muted">Your booking request for <strong>{{ booking.property.title }}</strong> has been sent to the landlord.</p>
+
+        <div class="card" style="background: var(--paper); border: none; text-align: left; margin: 20px 0;">
+            <div class="card-body" style="padding: 14px 16px;">
+                <div class="d-flex justify-content-between py-2" style="border-bottom: 1px solid var(--line);">
+                    <span>Move-in</span><strong>{{ booking.move_in_date|date:"j M Y" }}</strong>
+                </div>
+                <div class="d-flex justify-content-between py-2">
+                    <span>Move-out</span><strong>{{ booking.move_out_date|date:"j M Y" }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert-info text-start" style="text-align:left;">
+            <strong>What happens next</strong>
+            <ul class="mb-0 mt-2" style="padding-left: 18px;">
+                <li>The landlord reviews your request, usually within a couple of days.</li>
+                <li>You'll see it marked <strong>Confirmed</strong> on "My Bookings" once approved, with a payment invoice.</li>
+                <li>If it isn't approved, you'll see the reason and can look for another place.</li>
+            </ul>
+        </div>
+
+        <a href="{% url 'bookings:my_bookings' %}" class="btn btn-green mt-3" style="width:100%;">View My Bookings</a>
+    </div>
+</div>
+{% endblock %}

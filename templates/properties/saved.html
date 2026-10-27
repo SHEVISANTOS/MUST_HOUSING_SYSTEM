@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Saved Properties{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Your list</p>
+        <h1>Saved Properties</h1>
+    </div>
+</div>
+
+{% if properties %}
+    <div class="listing-grid">
+        {% for property in properties %}
+            {% include "properties/_listing_card.html" %}
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <p class="empty-title">No saved properties yet</p>
+        <p>Tap the heart on a listing to save it here for later.</p>
+        <a href="{% url 'properties:list' %}" class="btn btn-green mt-3">Browse Houses</a>
+    </div>
+{% endif %}
+{% endblock %}

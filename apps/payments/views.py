@@ -182,6 +182,35 @@ def verify_payment(request, payment_id):
 
 
 @login_required
+def reject_payment(request, payment_id):
+    """
+    Landlord: "Not received" - sends the payment back to PENDING with a
+    reason so the tenant can see what to fix (e.g. a mistyped transaction
+    code) and resubmit via mark_payment_made.
+    """
+    payment = get_object_or_404(Payment, id=payment_id)
+
+    if payment.booking.property.landlord != request.user:
+        messages.error(request, "Permission denied. You can only manage payments for your own properties.")
+        return redirect('core:dashboard')
+
+    if payment.status not in ['PENDING', 'TENANT_PAID']:
+        messages.warning(request, 'This payment cannot be rejected at this time.')
+        return redirect('payments:landlord_payments')
+
+    if request.method == 'POST':
+        reason = request.POST.get('rejection_reason', '').strip()
+        payment.status = 'PENDING'
+        payment.rejection_reason = reason
+        payment.tenant_paid_at = None
+        payment.save(update_fields=['status', 'rejection_reason', 'tenant_paid_at', 'updated_at'])
+        messages.success(request, "Payment marked as not received - the tenant has been shown your note.")
+        return redirect('payments:landlord_payments')
+
+    return render(request, 'payments/reject_payment.html', {'payment': payment})
+
+
+@login_required
 def download_payment_slip(request, payment_id):
     """Generate payment slip PDF. Accessible to the tenant on the booking or the property's landlord."""
     payment = get_object_or_404(
@@ -364,7 +393,8 @@ def mark_payment_made(request, booking_id):
                 
                 payment.status = 'TENANT_PAID'
                 payment.tenant_paid_at = timezone.now()
-                
+                payment.rejection_reason = ''  # clear any previous "not received" note now they've resubmitted
+
                 # Save extra fields from form if they exist
                 if hasattr(form, 'cleaned_data'):
                     payment.payment_method = form.cleaned_data.get('payment_method')

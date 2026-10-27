@@ -235,6 +235,13 @@
         .listing-card-price { margin: 0; font-size: 0.95rem; }
         .listing-card-price strong { font-family: var(--font-display); font-size: 1.15rem; color: var(--forest); }
         .listing-card-price span { color: var(--text-grey); font-size: 0.82rem; }
+        .listing-card-save {
+            position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%;
+            background: rgb(255 255 255 / 90%); border: none; color: var(--text-grey); font-size: 1.1rem;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: color 0.15s, transform 0.1s;
+        }
+        .listing-card-save:hover { transform: scale(1.08); }
+        .listing-card-save.saved { color: var(--coral-deep); }
 
         /* ========================================
            📈 TENANCY PROGRESS / TIMELINE
@@ -284,6 +291,7 @@
     </style>
 </head>
 <body>
+    {% csrf_token %}
     <div class="app-shell">
         <!-- ✅ ROLE-BASED SIDEBAR NAVIGATION -->
         {% include "partials/_sidebar.html" %}
@@ -388,6 +396,24 @@
                 }
             }
         });
+
+        // Heart/save button on listing cards (sits inside the card's own
+        // <a> link, so this must stop that navigation on click).
+        function toggleSaveProperty(event, btn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const token = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch(btn.dataset.saveUrl, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': token, 'X-Requested-With': 'fetch' },
+            })
+                .then(r => r.json())
+                .then(data => {
+                    btn.classList.toggle('saved', data.saved);
+                    btn.setAttribute('aria-pressed', data.saved);
+                })
+                .catch(() => {});
+        }
     </script>
 </body>
 </html>

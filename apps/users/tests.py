@@ -52,7 +52,7 @@ class NextRedirectTests(TestCase):
     def test_registration_carries_next_through_for_tenant(self):
         client = Client()
         response = client.post(reverse('users:register'), {
-            'username': 'nr_newtenant', 'email': 'nt@example.com', 'phone': '',
+            'username': 'nr_newtenant', 'email': 'nt@example.com', 'phone': '0712345678',
             'role': 'TENANT', 'password1': 'Str0ngPassw0rd!', 'password2': 'Str0ngPassw0rd!',
             'next': self.booking_url,
         })
@@ -61,7 +61,7 @@ class NextRedirectTests(TestCase):
     def test_registration_as_landlord_with_booking_next_goes_to_dashboard(self):
         client = Client()
         response = client.post(reverse('users:register'), {
-            'username': 'nr_newlandlord', 'email': 'nl@example.com', 'phone': '',
+            'username': 'nr_newlandlord', 'email': 'nl@example.com', 'phone': '0712345679',
             'role': 'LANDLORD', 'password1': 'Str0ngPassw0rd!', 'password2': 'Str0ngPassw0rd!',
             'next': self.booking_url,
         }, follow=True)
@@ -73,7 +73,7 @@ class NextRedirectTests(TestCase):
     def test_registration_with_external_next_is_ignored(self):
         client = Client()
         response = client.post(reverse('users:register'), {
-            'username': 'nr_newtenant2', 'email': 'nt2@example.com', 'phone': '',
+            'username': 'nr_newtenant2', 'email': 'nt2@example.com', 'phone': '0712345680',
             'role': 'TENANT', 'password1': 'Str0ngPassw0rd!', 'password2': 'Str0ngPassw0rd!',
             'next': 'https://evil.com',
         }, follow=True)

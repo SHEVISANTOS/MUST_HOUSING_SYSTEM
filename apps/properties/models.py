@@ -133,9 +133,23 @@ class PropertyImage(models.Model):
 
     def __str__(self):
         return f"Image for {self.property.title}"
-    
+
     def save(self, *args, **kwargs):
         # If this is marked as primary, unset other primaries
         if self.is_primary:
             PropertyImage.objects.filter(property=self.property, is_primary=True).exclude(id=self.id).update(is_primary=False)
         super().save(*args, **kwargs)
+
+
+class SavedProperty(models.Model):
+    """A seeker's bookmark on a listing (the heart button)."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='saved_properties')
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='saved_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'property')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} saved {self.property.title}"

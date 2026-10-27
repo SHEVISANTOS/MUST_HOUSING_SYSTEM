@@ -3,6 +3,18 @@
 {% block title %}Register - VOT House Finding{% endblock %}
 
 {% block content %}
+<style>
+    .role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .role-card {
+        border: 2px solid var(--line); border-radius: 14px; padding: 16px; text-align: center;
+        cursor: pointer; background: #fff; transition: border-color 0.15s, background 0.15s;
+    }
+    .role-card:hover { border-color: var(--forest); }
+    .role-card.selected { border-color: var(--forest); background: var(--leaf); }
+    .role-card .role-icon { font-size: 1.6rem; display: block; margin-bottom: 6px; }
+    .role-card .role-name { font-weight: 700; color: var(--ink); }
+    .role-card .role-desc { font-size: 0.78rem; color: var(--text-grey); margin-top: 2px; }
+</style>
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
         <div class="card">
@@ -24,21 +36,29 @@
                             <input type="email" name="email" class="form-control" id="id_email" required>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label for="id_phone" class="form-label">Phone (Optional)</label>
-                        <input type="tel" name="phone" class="form-control" id="id_phone" placeholder="+255...">
+                        <label for="id_phone" class="form-label">Phone *</label>
+                        <input type="tel" name="phone" class="form-control" id="id_phone" placeholder="+255..." required>
                     </div>
-                    
+
                     <div class="mb-3">
-                        <label for="id_role" class="form-label">I am a:</label>
-                        <select name="role" class="form-select" id="id_role" required>
-                            <option value="">Select role...</option>
-                            <option value="TENANT">Tenant </option>
-                            <option value="LANDLORD">Landlord</option>
-                        </select>
+                        <label class="form-label">I am a: *</label>
+                        <div class="role-cards">
+                            <div class="role-card" data-role="TENANT" onclick="selectRole('TENANT')">
+                                <span class="role-icon">🔑</span>
+                                <div class="role-name">Tenant</div>
+                                <div class="role-desc">Looking for a place to rent</div>
+                            </div>
+                            <div class="role-card" data-role="LANDLORD" onclick="selectRole('LANDLORD')">
+                                <span class="role-icon">🏠</span>
+                                <div class="role-name">Landlord</div>
+                                <div class="role-desc">Listing properties to rent out</div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="role" id="id_role" required>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="id_password1" class="form-label">Password</label>
@@ -67,7 +87,7 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                
+
                 <hr>
                 <div class="text-center">
                     <small>Already have an account? <a href="{% url 'users:login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Login here</a></small>
@@ -76,4 +96,22 @@
         </div>
     </div>
 </div>
+
+<script>
+function selectRole(role) {
+    document.getElementById('id_role').value = role;
+    document.querySelectorAll('.role-card').forEach(function (card) {
+        card.classList.toggle('selected', card.dataset.role === role);
+    });
+}
+
+document.querySelector('form').addEventListener('submit', function (e) {
+    if (!document.getElementById('id_role').value) {
+        e.preventDefault();
+        alert('Please choose whether you are a Tenant or a Landlord.');
+    }
+});
+
+{% if form.role.value %}selectRole('{{ form.role.value }}');{% endif %}
+</script>
 {% endblock %}

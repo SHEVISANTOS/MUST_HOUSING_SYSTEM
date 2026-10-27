@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Property, PropertyImage
+from .models import Property, PropertyImage, SavedProperty
 
 # ✅ INLINE: Allows adding images directly on the Property form
 class PropertyImageInline(admin.TabularInline):
@@ -45,3 +45,11 @@ class PropertyAdmin(admin.ModelAdmin):
         'amenities': "Separate with commas: water, electricity, wifi, parking",
         'distance_from_center_km': "Distance from city center in kilometers",
     }
+
+
+@admin.register(SavedProperty)
+class SavedPropertyAdmin(admin.ModelAdmin):
+    list_display = ('user', 'property', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('user__username', 'property__title')
+    readonly_fields = ('created_at',)

@@ -2,10 +2,58 @@
 {% block title %}Mark Payment Made{% endblock %}
 
 {% block content %}
+<style>
+    .pay-timeline { display: flex; justify-content: space-between; margin: 16px 0 20px; position: relative; }
+    .pay-timeline::before { content: ''; position: absolute; top: 14px; left: 10%; right: 10%; height: 2px; background: var(--line); z-index: 0; }
+    .pay-step { flex: 1; text-align: center; position: relative; z-index: 1; }
+    .pay-step .dot { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 2px solid var(--line); margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; color: var(--text-grey); }
+    .pay-step.done .dot { background: var(--forest); border-color: var(--forest); color: #fff; }
+    .pay-step.current .dot { border-color: var(--forest); color: var(--forest); font-weight: 700; }
+    .pay-step span.label { font-size: 0.75rem; color: var(--text-grey); }
+    .landlord-number-row { display: flex; align-items: center; gap: 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; }
+    .landlord-number-row strong { font-size: 1.05rem; flex: 1; }
+    .copy-btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 6px 12px; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+    .copy-btn:hover { background: var(--line); }
+</style>
 <div class="card" style="max-width: 700px; margin: 0 auto;">
     <div class="card-header">✅ Mark Payment as Made</div>
     <div class="card-body">
-        
+
+        <!-- Status timeline -->
+        <div class="pay-timeline">
+            <div class="pay-step {% if payment.status != 'PENDING' or payment.rejection_reason %}done{% else %}current{% endif %}">
+                <div class="dot">1</div><span class="label">Submitted</span>
+            </div>
+            <div class="pay-step {% if payment.status == 'COMPLETED' %}done{% elif payment.status == 'TENANT_PAID' %}current{% endif %}">
+                <div class="dot">2</div><span class="label">Landlord checks</span>
+            </div>
+            <div class="pay-step {% if payment.status == 'COMPLETED' %}done{% endif %}">
+                <div class="dot">3</div><span class="label">Receipt</span>
+            </div>
+        </div>
+
+        {% if payment.rejection_reason %}
+        <div class="alert alert-danger mb-3" style="background:#fbe4df; color:#9c3422; padding:14px; border-radius:8px;">
+            <strong>⚠️ Landlord says this wasn't received:</strong> {{ payment.rejection_reason }}
+        </div>
+        {% endif %}
+
+        {% if booking.property.landlord.phone %}
+        <div class="landlord-number-row">
+            <span>📱</span>
+            <strong id="landlordPhone">{{ booking.property.landlord.phone }}</strong>
+            <button type="button" class="copy-btn" onclick="copyLandlordPhone()">Copy</button>
+        </div>
+        <script>
+        function copyLandlordPhone() {
+            navigator.clipboard.writeText(document.getElementById('landlordPhone').textContent.trim()).then(function() {
+                event.target.textContent = 'Copied!';
+                setTimeout(() => { event.target.textContent = 'Copy'; }, 1500);
+            });
+        }
+        </script>
+        {% endif %}
+
         <!-- ✅ DYNAMIC PAYMENT BREAKDOWN -->
         <div class="alert alert-info mb-4" style="background:#d1ecf1; border:1px solid #bee5eb; padding:20px; border-radius:8px;">
             <h5 class="mb-3" style="color: #0c5460; font-weight: 600;">💰 Payment Calculation</h5>
