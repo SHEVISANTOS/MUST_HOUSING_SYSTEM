@@ -296,8 +296,8 @@
     {% endif %}
     {% endwith %}
 
-    <!-- 2. Property Location (Google Map) -->
-    {% if property.latitude and property.longitude and google_maps_api_key %}
+    <!-- 2. Property Location (OpenStreetMap via Leaflet, no API key) -->
+    {% if property.latitude and property.longitude %}
     <div class="card mb-3 shadow-sm">
         <div class="card-header bg-success text-white">
             <h5 class="mb-0">📍 Property Location</h5>
@@ -307,26 +307,21 @@
         </div>
     </div>
 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
-        function initMap() {
-            const propertyLocation = {
-                lat: {{ property.latitude }},
-                lng: {{ property.longitude }}
-            };
-
-            const map = new google.maps.Map(document.getElementById("property-map"), {
-                zoom: 15,
-                center: propertyLocation,
-            });
-
-            new google.maps.Marker({
-                position: propertyLocation,
-                map: map,
-                title: "{{ property.title }}",
-            });
-        }
+        document.addEventListener('DOMContentLoaded', function () {
+            const pos = [{{ property.latitude|stringformat:"f" }}, {{ property.longitude|stringformat:"f" }}];
+            const map = L.map('property-map', { scrollWheelZoom: false }).setView(pos, 16);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            L.marker(pos).addTo(map).bindPopup("{{ property.title|escapejs }}");
+        });
     </script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap"></script>
     {% endif %}
 
     <!-- 3. Property Details -->

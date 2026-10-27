@@ -31,7 +31,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-dev-key-replace-in-vercel'
 # Keep Debug False in production, but allow local override
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11']
+ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11' , '192.168.1.207']
 # Extra hosts for non-Vercel deployments (e.g. a bare Ubuntu server's IP or
 # domain) - additive, comma-separated, so it doesn't disturb the Vercel list
 # above. Unset by default (no effect unless explicitly configured).
@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',  # {% load humanize %} / |intcomma - TZS thousand separators
+    'django_extensions',
     
     # Third party
     'crispy_bootstrap5',
@@ -198,11 +199,6 @@ ENDING_SOON_DAYS = int(os.getenv('ENDING_SOON_DAYS', '30'))
 # when calling scheduled task endpoints. Empty by default so the endpoint
 # fails closed (rejects everything) until explicitly configured.
 CRON_SECRET = os.getenv('CRON_SECRET', '')
-
-# Used by templates/properties/detail.html to render the property location
-# map. Empty by default - the template hides the map entirely rather than
-# loading the Google Maps JS API with no/invalid key.
-GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'core:post_login_redirect' # Ensure 'core' app exists, or change to 'users:dashboard' etc.
