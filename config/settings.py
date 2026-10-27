@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     'properties',
     'bookings',
     'payments',
+    'messaging',
 ]
 
 MIDDLEWARE = [
@@ -111,6 +112,7 @@ TEMPLATES = [{
             'django.contrib.auth.context_processors.auth',
             'django.contrib.messages.context_processors.messages',
             'apps.properties.context_processors.saved_property_ids',
+            'apps.messaging.context_processors.unread_message_count',
         ],
     },
 }]

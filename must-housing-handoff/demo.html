@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOT House Finding components demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap">
+<link rel="stylesheet" href="css/tokens.css"><link rel="stylesheet" href="css/components.css">
+<style>main{max-width:1100px;margin:0 auto;padding:32px 16px;display:flex;flex-direction:column;gap:28px}.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}</style>
+</head><body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0114 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-campus" viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5-10-5zM6 11v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></symbol>
+  <symbol id="i-water" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 8-11h-6l1-7z"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 9a15 15 0 0120 0M5 12.5a10 10 0 0114 0M8.5 16a5 5 0 017 0M12 19.5h.01"/></symbol>
+  <symbol id="i-verified" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M12 3l7 4v5c0 4.5-3 8-7 9-4-1-7-4.5-7-9V7z"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 3v3M16 3v3M4 8h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z"/></symbol>
+  <symbol id="i-payment" viewBox="0 0 24 24"><path d="M3 6h18v12H3zM3 10h18M7 15h4"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 00-1 1v16a1 1 0 001 1h12a1 1 0 001-1V8zM14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 01-1 1h-5v-6h-6v6H4a1 1 0 01-1-1z"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.4A8 8 0 1121 12z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M16 4v4M10 10v4M18 16v4"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></symbol>
+</svg>
+<main>
+<h1>Components demo</h1>
+<div class="row"><button class="vh-btn vh-btn--primary">Request to book</button><button class="vh-btn vh-btn--secondary">Message landlord</button><button class="vh-btn vh-btn--danger">Decline</button><button class="vh-btn vh-btn--primary" disabled>Disabled</button><button class="vh-btn vh-btn--primary" aria-busy="true">Sending…</button></div>
+<form class="vh-search" role="search"><svg class="vh-icon" aria-hidden="true"><use href="#i-search"></use></svg><label class="vh-sr-only" for="q">Area</label><input id="q" type="search" placeholder="Area, street or landmark"><button class="vh-btn vh-btn--primary vh-btn--sm">Search</button></form>
+<div class="vh-chips"><button class="vh-chip" aria-pressed="true">Near MUST</button><button class="vh-chip" aria-pressed="false">Under 100k</button><button class="vh-chip" aria-pressed="false">Available now</button></div>
+<div class="row"><span class="vh-badge vh-badge--success">Available now</span><span class="vh-badge vh-badge--warning">Pending</span><span class="vh-badge vh-badge--info">Confirmed</span><span class="vh-badge vh-badge--danger">Overdue</span><span class="vh-badge vh-badge--neutral">Cancelled</span></div>
+<div class="vh-grid vh-grid--3">
+<article class="vh-card vh-listing"><div class="vh-listing__media"><span class="vh-listing__status"><span class="vh-badge vh-badge--success">Available now</span></span><button class="vh-listing__save" aria-pressed="false" aria-label="Save"><svg class="vh-icon" aria-hidden="true"><use href="#i-heart"></use></svg></button></div><div class="vh-card__body"><h3 class="vh-listing__title"><a href="#">Self Contained · Iyunga</a></h3><p class="vh-listing__meta">2.5 km from city centre · Water · Electricity</p><p class="vh-listing__price"><strong>TZS 180,000</strong> <span>/ month</span></p></div></article>
+<article class="vh-card vh-listing"><div class="vh-listing__media"><span class="vh-listing__status"><span class="vh-badge vh-badge--warning">Free from 1 Feb</span></span><button class="vh-listing__save" aria-pressed="true" aria-label="Saved"><svg class="vh-icon" aria-hidden="true"><use href="#i-heart"></use></svg></button></div><div class="vh-card__body"><h3 class="vh-listing__title"><a href="#">1 Bedroom · Forest</a></h3><p class="vh-listing__meta">3.5 km from city centre · Water</p><p class="vh-listing__price"><strong>TZS 90,000</strong> <span>/ month</span></p></div></article>
+<div class="vh-card"><div class="vh-skeleton" style="aspect-ratio:4/3"></div><div class="vh-card__body"><div class="vh-skeleton" style="height:16px;width:70%"></div></div></div>
+</div>
+<div class="vh-field" style="max-width:360px"><label class="vh-label" for="c">Transaction code</label><input class="vh-input" id="c" value="QK7" aria-invalid="true" aria-describedby="ce"><span class="vh-error" id="ce"><svg class="vh-icon" aria-hidden="true"><use href="#i-alert"></use></svg>Codes are 10 letters and numbers</span></div>
+<div class="row"><div class="vh-stepper"><button aria-label="Fewer months">−</button><output>6 months</output><button aria-label="More months">+</button></div></div>
+<ol class="vh-steps" style="max-width:420px"><li class="is-done">Dates</li><li aria-current="step">Review</li><li>Sent</li></ol>
+<div class="vh-alert vh-alert--success" role="status">Request sent. Most landlords reply within a day.</div>
+<div class="vh-card vh-empty"><span class="vh-empty__icon"><svg class="vh-icon" aria-hidden="true"><use href="#i-search"></use></svg></span><h2>No places match all your filters</h2><p>Try a higher budget or remove a filter.</p></div>
+</main>
+<nav class="vh-tabbar" aria-label="Main"><a href="#" aria-current="page"><svg class="vh-icon" aria-hidden="true"><use href="#i-search"></use></svg>Search</a><a href="#"><svg class="vh-icon" aria-hidden="true"><use href="#i-heart"></use></svg>Saved</a><a href="#"><svg class="vh-icon" aria-hidden="true"><use href="#i-chat"></use></svg>Messages<span class="vh-count">2</span></a><a href="#"><svg class="vh-icon" aria-hidden="true"><use href="#i-user"></use></svg>Account</a></nav>
+</body></html>

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Messages{% endblock %}
+
+{% block content %}
+<style>
+    .inbox-row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
+    .inbox-row:hover { background: var(--paper); }
+    .inbox-row:last-child { border-bottom: none; }
+    .inbox-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--forest); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+    .inbox-main { flex: 1; min-width: 0; }
+    .inbox-top { display: flex; justify-content: space-between; gap: 8px; }
+    .inbox-name { font-weight: 700; }
+    .inbox-time { font-size: 0.78rem; color: var(--text-grey); white-space: nowrap; }
+    .inbox-preview { font-size: 0.88rem; color: var(--text-grey); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .inbox-property { font-size: 0.78rem; color: var(--forest); font-weight: 600; margin-top: 2px; }
+    .unread-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--coral-deep); flex-shrink: 0; }
+</style>
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Inbox</p>
+        <h1>Messages</h1>
+    </div>
+</div>
+
+{% if rows %}
+<div class="card">
+    {% for row in rows %}
+    <a href="{% url 'messaging:thread' row.conversation.id %}" class="inbox-row">
+        <span class="inbox-avatar">{{ row.other_party.username|first|upper }}</span>
+        <div class="inbox-main">
+            <div class="inbox-top">
+                <span class="inbox-name">{{ row.other_party.username }}</span>
+                {% if row.last_message %}<span class="inbox-time">{{ row.last_message.created_at|naturaltime }}</span>{% endif %}
+            </div>
+            <div class="inbox-property">{{ row.conversation.property.title }}</div>
+            {% if row.last_message %}
+            <div class="inbox-preview">{{ row.last_message.body|truncatechars:70 }}</div>
+            {% else %}
+            <div class="inbox-preview">No messages yet</div>
+            {% endif %}
+        </div>
+        {% if row.unread_count %}<span class="unread-dot" title="{{ row.unread_count }} unread"></span>{% endif %}
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p class="empty-title">No conversations yet</p>
+    <p>Messages with landlords or tenants will show up here.</p>
+</div>
+{% endif %}
+{% endblock %}

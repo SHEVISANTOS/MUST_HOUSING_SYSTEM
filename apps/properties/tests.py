@@ -158,14 +158,47 @@ class PublicBrowsingTests(TestCase):
         self.assertNotIn('0711223344', body)
         self.assertNotIn('landlord@example.com', body)
 
-    def test_signed_in_tenant_sees_booking_form_and_contact_details(self):
+    def test_signed_in_tenant_without_confirmed_booking_sees_no_phone(self):
+        # Privacy: landlord phone and exact address are only shown once this
+        # tenant has an actual CONFIRMED/PAID/COMPLETED booking for this
+        # specific property - just being signed in isn't enough, and email
+        # is unaffected (the brief only calls out phone + address).
         client = Client()
         client.login(username='pub_tenant', password='pw')
         response = client.get(reverse('properties:detail', kwargs={'pk': self.property.pk}))
         body = response.content.decode()
         self.assertIn('Book This Property', body)
-        self.assertIn('0711223344', body)
+        self.assertNotIn('0711223344', body)
         self.assertIn('landlord@example.com', body)
+        self.assertIn('Phone shared once your booking is confirmed', body)
+
+    def test_tenant_with_confirmed_booking_sees_phone_and_exact_map(self):
+        self.property.latitude = -2.516
+        self.property.longitude = 32.917
+        self.property.save()
+        Booking.objects.create(
+            property=self.property, tenant=self.tenant,
+            move_in_date=timezone.localdate(), move_out_date=timezone.localdate() + timedelta(days=90),
+            status='CONFIRMED',
+        )
+        client = Client()
+        client.login(username='pub_tenant', password='pw')
+        response = client.get(reverse('properties:detail', kwargs={'pk': self.property.pk}))
+        body = response.content.decode()
+        self.assertIn('0711223344', body)
+        self.assertNotIn('approximate', body.lower())
+        self.assertIn('-2.516000', body)  # exact coordinate, not rounded to -2.52
+
+    def test_landlord_sees_own_phone_and_exact_map_without_a_booking(self):
+        self.property.latitude = -2.516
+        self.property.longitude = 32.917
+        self.property.save()
+        client = Client()
+        client.login(username='pub_landlord', password='pw')
+        response = client.get(reverse('properties:detail', kwargs={'pk': self.property.pk}))
+        body = response.content.decode()
+        self.assertIn('0711223344', body)
+        self.assertIn('-2.516000', body)
 
     def test_landlord_sees_no_booking_button(self):
         client = Client()

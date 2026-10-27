@@ -199,6 +199,20 @@ def property_detail(request, pk):
         Prefetch('tenancies', queryset=relevant_tenancies, to_attr='prefetched_tenancies'),
     )[:4]
 
+    # Privacy: landlord phone + the exact map pin are only shown once this
+    # tenant has an actual confirmed relationship with the property - a
+    # seeker just browsing shouldn't be able to pull a landlord's number or
+    # exact address off every listing. The landlord viewing their own
+    # property always sees full detail.
+    from apps.bookings.models import Booking
+    has_confirmed_booking = prop.landlord_id == request.user.id or (
+        request.user.is_authenticated and Booking.objects.filter(
+            property=prop, tenant=request.user, status__in=['CONFIRMED', 'PAID', 'COMPLETED'],
+        ).exists()
+    )
+    approx_latitude = round(float(prop.latitude), 2) if prop.latitude is not None else None
+    approx_longitude = round(float(prop.longitude), 2) if prop.longitude is not None else None
+
     return render(request, 'properties/detail.html', {
         'property': prop,
         'current_tenancy': current_tenancy,
@@ -208,6 +222,9 @@ def property_detail(request, pk):
         'og_image_url': og_image_url,
         'og_url': og_url,
         'similar_properties': similar_properties,
+        'has_confirmed_booking': has_confirmed_booking,
+        'approx_latitude': approx_latitude,
+        'approx_longitude': approx_longitude,
     })
 
 @login_required

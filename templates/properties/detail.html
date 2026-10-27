@@ -377,11 +377,16 @@
     {% if property.latitude and property.longitude %}
     <div class="card mb-3 shadow-sm">
         <div class="card-header bg-success text-white">
-            <h5 class="mb-0">📍 Property Location</h5>
+            <h5 class="mb-0">📍 Property Location{% if not has_confirmed_booking %} (approximate){% endif %}</h5>
         </div>
         <div class="card-body p-0">
             <div id="property-map" style="height: 400px; width: 100%;"></div>
         </div>
+        {% if not has_confirmed_booking %}
+        <div class="card-body py-2 px-3" style="background: var(--paper, #f7f8f3); font-size: 0.85rem; color: var(--text-grey, #5b6b66);">
+            This is an approximate area. The exact address is shown once your booking is confirmed.
+        </div>
+        {% endif %}
     </div>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -390,6 +395,7 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            {% if has_confirmed_booking %}
             const pos = [{{ property.latitude|stringformat:"f" }}, {{ property.longitude|stringformat:"f" }}];
             const map = L.map('property-map', { scrollWheelZoom: false }).setView(pos, 16);
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -397,6 +403,15 @@
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
             L.marker(pos).addTo(map).bindPopup("{{ property.title|escapejs }}");
+            {% else %}
+            const pos = [{{ approx_latitude|stringformat:"f" }}, {{ approx_longitude|stringformat:"f" }}];
+            const map = L.map('property-map', { scrollWheelZoom: false }).setView(pos, 12);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            L.circle(pos, { radius: 1200, color: '#176b52', fillOpacity: 0.15 }).addTo(map);
+            {% endif %}
         });
     </script>
     {% endif %}
@@ -468,6 +483,7 @@
                 {% if current_tenancy %}
                     <p class="text-center small text-muted mb-2">Currently occupied - free from {{ current_tenancy.available_from|date:"j M Y" }}. You can still request a booking for after that date.</p>
                 {% endif %}
+                <a href="{% url 'messaging:start_conversation' property.id %}" class="btn btn-secondary w-100 mb-2">💬 Ask a Question</a>
             {% else %}
                 <div class="alert alert-info text-center p-2 mb-2 small">Booking is only available for tenant accounts.</div>
             {% endif %}
@@ -479,9 +495,13 @@
                 <div class="contact-item">
                     <span class="me-2">👤</span> <strong>{{ property.landlord.username|title }}</strong>
                 </div>
-                {% if property.landlord.phone %}
+                {% if property.landlord.phone and has_confirmed_booking %}
                 <div class="contact-item">
                     <span class="me-2">📱</span> <a href="tel:{{ property.landlord.phone }}" class="text-decoration-none text-dark">{{ property.landlord.phone }}</a>
+                </div>
+                {% elif property.landlord.phone %}
+                <div class="contact-item text-muted" style="font-size:0.85rem;">
+                    <span class="me-2">📱</span> Phone shared once your booking is confirmed - <a href="{% url 'messaging:start_conversation' property.id %}">message the landlord</a> in the meantime.
                 </div>
                 {% endif %}
                 {% if property.landlord.email %}

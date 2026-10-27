@@ -20,6 +20,7 @@ urlpatterns = [
     path('properties/', include('apps.properties.urls')),
     path('bookings/', include('apps.bookings.urls')),
     path('payments/', include('apps.payments.urls')),
+    path('messages/', include('apps.messaging.urls')),
 ]
 
 # Serve media/static in development

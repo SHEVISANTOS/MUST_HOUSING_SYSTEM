@@ -1,0 +1,43 @@
+{% comment %}
+  Listing card for search results and "similar places".
+  Drop into templates/properties/ and include from list.html:
+    {% for property in properties %}{% include "properties/_listing_card.html" %}{% endfor %}
+  Uses only fields that exist today (Property, PropertyImage, Tenancy).
+  Needs: {% load humanize %} in the parent, the icon sprite in base.html,
+  and the view's existing Prefetch('tenancies', to_attr='prefetched_tenancies').
+{% endcomment %}
+{% load humanize %}
+{% with photo=property.images.all|first tenancy=property.get_current_tenancy %}
+<article class="vh-card vh-listing">
+  <div class="vh-listing__media">
+    {% if photo %}
+      <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:property.title }}" loading="lazy" width="400" height="300">
+    {% endif %}
+    <span class="vh-listing__status">
+      {% if tenancy %}
+        <span class="vh-badge vh-badge--warning">Free from {{ tenancy.available_from|date:"j M" }}</span>
+      {% else %}
+        <span class="vh-badge vh-badge--success">Available now</span>
+      {% endif %}
+    </span>
+    <button type="button" class="vh-listing__save" aria-pressed="false"
+            aria-label="Save {{ property.title }}" data-save-url="{# url to toggle SavedProperty #}">
+      <svg class="vh-icon" aria-hidden="true"><use href="#i-heart"></use></svg>
+    </button>
+  </div>
+  <div class="vh-card__body">
+    <h3 class="vh-listing__title">
+      <a href="{% url 'properties:detail' property.pk %}">{{ property.get_property_type_display }} · {{ property.location }}</a>
+    </h3>
+    <p class="vh-listing__meta">
+      {# Today the model stores distance from the city centre. Switch to the  #}
+      {# proposed distance_to_campus_km (from latitude/longitude) when added. #}
+      {{ property.distance_from_center_km|floatformat:1 }} km from city centre
+      {% for a in property.amenities_list|slice:":3" %} · {{ a }}{% endfor %}
+    </p>
+    <p class="vh-listing__price">
+      <strong>TZS {{ property.monthly_rent|floatformat:0|intcomma }}</strong> <span>/ month</span>
+    </p>
+  </div>
+</article>
+{% endwith %}
