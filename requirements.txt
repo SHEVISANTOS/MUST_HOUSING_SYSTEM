@@ -41,4 +41,4 @@ cssselect2==0.7.0
 webencodings==0.5.1
 brotli==1.2.1
 zopfli==0.2.3
-django-extensions==4.1
+django-extensions
