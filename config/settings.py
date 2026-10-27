@@ -199,6 +199,11 @@ ENDING_SOON_DAYS = int(os.getenv('ENDING_SOON_DAYS', '30'))
 # fails closed (rejects everything) until explicitly configured.
 CRON_SECRET = os.getenv('CRON_SECRET', '')
 
+# Used by templates/properties/detail.html to render the property location
+# map. Empty by default - the template hides the map entirely rather than
+# loading the Google Maps JS API with no/invalid key.
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', '')
+
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'core:post_login_redirect' # Ensure 'core' app exists, or change to 'users:dashboard' etc.
 LOGOUT_REDIRECT_URL = 'properties:list'

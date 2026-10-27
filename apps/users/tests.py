@@ -78,3 +78,22 @@ class NextRedirectTests(TestCase):
             'next': 'https://evil.com',
         }, follow=True)
         self.assertFalse(any('evil.com' in url for url, _ in response.redirect_chain))
+
+
+class RegistrationSecurityTests(TestCase):
+    """
+    Self-registration must never be able to grant ADMIN - the UI's role
+    dropdown only offers Tenant/Landlord, but that's not a security
+    boundary on its own (CustomUserCreationForm's choices are what actually
+    enforce it server-side; see apps/users/forms.py).
+    """
+
+    def test_posting_role_admin_is_rejected(self):
+        client = Client()
+        response = client.post(reverse('users:register'), {
+            'username': 'would_be_admin', 'email': 'wba@example.com', 'phone': '',
+            'role': 'ADMIN', 'password1': 'Str0ngPassw0rd!', 'password2': 'Str0ngPassw0rd!',
+        })
+        self.assertEqual(response.status_code, 200)  # re-renders the form, no redirect
+        self.assertFalse(User.objects.filter(username='would_be_admin').exists())
+        self.assertIn('role', response.context['form'].errors)
