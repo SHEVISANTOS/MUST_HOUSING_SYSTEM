@@ -1,6 +1,6 @@
-Django==5.0.14
+Django==5.2.17
 asgiref==3.8.1
-sqlparse==0.5.5
+sqlparse==0.6.0
 
 # WSGI server (Ubuntu/Gunicorn deployment only - Vercel uses its own via api/index.py)
 gunicorn==22.0.0
@@ -18,7 +18,7 @@ django-crispy-forms==2.3
 crispy-bootstrap5==2024.2
 
 # API & Auth
-djangorestframework==3.15.2
+djangorestframework==3.18.2
 djangorestframework-simplejwt==5.5.1
 PyJWT==2.15.1
 
@@ -41,3 +41,4 @@ cssselect2==0.7.0
 webencodings==0.5.1
 brotli==1.2.1
 zopfli==0.2.3
+django-extensions==4.3.1
