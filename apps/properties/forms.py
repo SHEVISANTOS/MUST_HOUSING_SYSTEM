@@ -9,6 +9,7 @@ class PropertyForm(forms.ModelForm):
         fields = [
             'title', 'description', 'property_type', 'location',
             'distance_from_center_km', 'monthly_rent', 'amenities',
+            'min_months', 'max_months', 'months_per_payment',
             'latitude', 'longitude', 'google_maps_link', 'is_available'
         ]
         widgets = {
@@ -19,6 +20,9 @@ class PropertyForm(forms.ModelForm):
             'distance_from_center_km': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'monthly_rent': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 150000'}),
             'amenities': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'water, electricity, wifi, parking'}),
+            'min_months': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 3', 'min': 1}),
+            'max_months': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 12', 'min': 1}),
+            'months_per_payment': forms.NumberInput(attrs={'class': 'form-control', 'min': 1}),
             'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any', 'placeholder': 'e.g., -8.9094'}),
             'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any', 'placeholder': 'e.g., 33.4607'}),
             'google_maps_link': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://maps.app.goo.gl/...'}),

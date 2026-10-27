@@ -4,88 +4,166 @@
 {% block title %}Search Houses - VOT House Finding{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-12">
-        <h2>Available Houses</h2>
+<style>
+    .search-bar-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .search-bar-row input[type="text"] { flex: 1; min-width: 200px; }
+    .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink); font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+    .chip:hover { background: var(--paper); }
+    .chip.active { background: var(--forest); border-color: var(--forest); color: #fff; }
+    .list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .result-count { color: var(--text-grey); font-size: 0.9rem; }
+    .sort-select { width: auto; }
+
+    .filter-sheet-overlay { display: none; position: fixed; inset: 0; background: rgb(23 42 37 / 50%); z-index: 1100; }
+    .filter-sheet-overlay.open { display: block; }
+    .filter-sheet {
+        position: fixed; z-index: 1101; background: #fff; box-shadow: var(--shadow-md);
+        display: flex; flex-direction: column;
+        /* Bottom sheet on phones */
+        left: 0; right: 0; bottom: 0; max-height: 85vh; border-radius: 20px 20px 0 0;
+        transform: translateY(100%); transition: transform 0.25s ease;
+    }
+    .filter-sheet.open { transform: translateY(0); }
+    .filter-sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+    .filter-sheet-body { padding: 16px 20px; overflow-y: auto; }
+    .filter-sheet-footer { padding: 16px 20px; border-top: 1px solid var(--line); display: flex; gap: 10px; }
+    .filter-sheet-close { background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-grey); }
+
+    @media (min-width: 768px) {
+        /* Side sheet on tablet+ */
+        .filter-sheet {
+            left: auto; right: 0; top: 0; bottom: 0; max-height: none; width: 360px;
+            border-radius: 0; transform: translateX(100%);
+        }
+        .filter-sheet.open { transform: translateX(0); }
+    }
+
+    .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 28px; flex-wrap: wrap; }
+    .pagination a, .pagination span { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+    .pagination a:hover { background: var(--paper); }
+    .pagination .current { background: var(--forest); border-color: var(--forest); color: #fff; }
+</style>
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Search</p>
+        <h1>Available Houses</h1>
     </div>
 </div>
 
-<!-- Search Filter Form -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3">
-            <div class="col-md-3">
-                <input type="text" name="q" class="form-control" placeholder="Search..." value="{{ request.GET.q }}">
-            </div>
-            <div class="col-md-2">
-                <input type="number" name="max_price" class="form-control" placeholder="Max Price (TZS)" value="{{ request.GET.max_price }}">
-            </div>
-            <div class="col-md-2">
-                <select name="type" class="form-select">
-                    <option value="">All Types</option>
-                    {% for value, label in property_types %}
-                    <option value="{{ value }}" {% if request.GET.type == value %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
-                <input type="text" name="location" class="form-control" placeholder="Location" value="{{ request.GET.location }}">
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
-            </div>
-
-            <!-- Availability filters -->
-            <div class="col-md-3">
-                <div class="form-check pt-2">
-                    <input class="form-check-input" type="checkbox" name="available_now" value="1"
-                           id="availableNow" {% if available_now %}checked{% endif %}
-                           onchange="this.form.available_by.disabled = this.checked; this.form.submit();">
-                    <label class="form-check-label" for="availableNow">🟢 Available now only</label>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small text-muted mb-0">Available by</label>
-                <input type="date" name="available_by" class="form-control" value="{{ available_by }}"
-                       {% if available_now %}disabled{% endif %}>
-            </div>
-        </form>
+<form method="get" id="searchForm">
+    <div class="search-bar-row">
+        <input type="text" name="q" class="form-control" placeholder="Search by title, description or location..." value="{{ search_query }}">
+        <button type="submit" class="btn btn-green">🔍 Search</button>
+        <button type="button" class="btn btn-secondary" onclick="toggleFilterSheet(true)">⚙️ Filters</button>
     </div>
+
+    {% if property_type %}<input type="hidden" name="type" value="{{ property_type }}">{% endif %}
+    {% if location %}<input type="hidden" name="location" value="{{ location }}">{% endif %}
+    {% if available_now %}<input type="hidden" name="available_now" value="1">{% endif %}
+    {% if available_by %}<input type="hidden" name="available_by" value="{{ available_by }}">{% endif %}
+    {% if max_price %}<input type="hidden" name="max_price" value="{{ max_price }}">{% endif %}
+    {% if sort != 'recommended' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+</form>
+
+<!-- Quick chips: plain links, each carrying the full current query with just their own param toggled -->
+<div class="chip-row">
+    <a href="{{ available_now_url }}" class="chip {% if available_now %}active{% endif %}">🟢 Available now</a>
+    {% for label, url, is_active in budget_chips %}
+    <a href="{{ url }}" class="chip {% if is_active %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
 </div>
 
-<!-- Properties Grid -->
-<div class="row">
-    {% if properties %}
+<div class="list-toolbar">
+    <span class="result-count">{{ page_obj.paginator.count }} propert{{ page_obj.paginator.count|pluralize:"y,ies" }} found</span>
+    <form method="get" id="sortForm">
+        {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+        {% if max_price %}<input type="hidden" name="max_price" value="{{ max_price }}">{% endif %}
+        {% if property_type %}<input type="hidden" name="type" value="{{ property_type }}">{% endif %}
+        {% if location %}<input type="hidden" name="location" value="{{ location }}">{% endif %}
+        {% if available_now %}<input type="hidden" name="available_now" value="1">{% endif %}
+        {% if available_by %}<input type="hidden" name="available_by" value="{{ available_by }}">{% endif %}
+        <select name="sort" class="form-select sort-select" onchange="this.form.submit()">
+            <option value="recommended" {% if sort == 'recommended' %}selected{% endif %}>Recommended</option>
+            <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>Lowest price</option>
+            <option value="nearest" {% if sort == 'nearest' %}selected{% endif %}>Nearest</option>
+            <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+        </select>
+    </form>
+</div>
+
+<!-- Results -->
+{% if properties %}
+    <div class="listing-grid">
         {% for property in properties %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h5 class="card-title mb-0">{{ property.title }}</h5>
-                        {% include 'bookings/_tenancy_status_badge.html' with tenancy=property.get_current_tenancy %}
-                    </div>
-                    <p class="card-text text-muted">
-                        <small>📍 {{ property.location }} ({{ property.distance_from_center_km }} km from city center)</small>
-                    </p>
-                    <p class="card-text">
-                        <strong>Type:</strong> {{ property.get_property_type_display }}<br>
-                        <strong>Rent:</strong> TZS {{ property.monthly_rent|floatformat:0|intcomma }}/month<br>
-                        <strong>Amenities:</strong> {{ property.amenities }}
-                    </p>
-                    <p class="card-text">{{ property.description|truncatewords:20 }}</p>
-                    <a href="{% url 'properties:detail' property.id %}" class="btn btn-outline-primary">View Details</a>
-                </div>
-            </div>
-        </div>
+            {% include "properties/_listing_card.html" %}
         {% endfor %}
-    {% else %}
-        <div class="col-12">
-            <div class="alert alert-info text-center">
-                <h5>No properties found</h5>
-                <p>Try adjusting your search filters or check back later for new listings.</p>
-                <a href="{% url 'properties:create' %}" class="btn btn-success mt-2">Add Your First Property</a>
-            </div>
-        </div>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="pagination" aria-label="Search results pages">
+        {% if page_obj.has_previous %}
+            <a href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">← Prev</a>
+        {% endif %}
+        <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Next →</a>
+        {% endif %}
+    </nav>
     {% endif %}
+{% else %}
+    <div class="empty-state">
+        <p class="empty-title">No properties found</p>
+        <p>Try adjusting your search or filters, or check back later for new listings.</p>
+        <a href="{% url 'properties:create' %}" class="btn btn-green mt-3">+ List a Property</a>
+    </div>
+{% endif %}
+
+<!-- Filter sheet (bottom on phones, side on tablet+) -->
+<div class="filter-sheet-overlay" id="filterSheetOverlay" onclick="toggleFilterSheet(false)"></div>
+<div class="filter-sheet" id="filterSheet" role="dialog" aria-label="Filters">
+    <div class="filter-sheet-header">
+        <strong>Filters</strong>
+        <button type="button" class="filter-sheet-close" onclick="toggleFilterSheet(false)" aria-label="Close filters">&times;</button>
+    </div>
+    <form method="get" class="filter-sheet-body">
+        {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
+        {% if available_now %}<input type="hidden" name="available_now" value="1">{% endif %}
+        {% if sort != 'recommended' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+
+        <div class="form-group">
+            <label class="form-label">Property type</label>
+            <select name="type" class="form-select">
+                <option value="">All types</option>
+                {% for value, label in property_types %}
+                <option value="{{ value }}" {% if property_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Location</label>
+            <input type="text" name="location" class="form-control" placeholder="e.g., Ilemela" value="{{ location }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Max price (TZS)</label>
+            <input type="number" name="max_price" class="form-control" value="{{ max_price }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Available by</label>
+            <input type="date" name="available_by" class="form-control" value="{{ available_by }}">
+        </div>
+        <div class="filter-sheet-footer" style="margin: 0 -20px -16px; position: sticky; bottom: 0; background: #fff;">
+            <a href="{% url 'properties:list' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">Clear</a>
+            <button type="submit" class="btn btn-green" style="flex: 1;">Show results</button>
+        </div>
+    </form>
 </div>
+
+<script>
+function toggleFilterSheet(open) {
+    document.getElementById('filterSheet').classList.toggle('open', open);
+    document.getElementById('filterSheetOverlay').classList.toggle('open', open);
+}
+</script>
 {% endblock %}

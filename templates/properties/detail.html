@@ -212,9 +212,62 @@
             font-size: 2.2rem;
         }
     }
+
+    /* Key facts strip */
+    .key-facts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 12px;
+        margin: 16px 0;
+    }
+    .key-fact {
+        background: var(--card-bg, #fff);
+        border: 1px solid var(--line, #dce4dc);
+        border-radius: 12px;
+        padding: 12px 14px;
+        text-align: center;
+    }
+    .key-fact-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+    .key-fact-value { font-weight: 700; color: var(--ink, #172a25); font-size: 0.95rem; }
+    .key-fact-label { font-size: 0.72rem; color: var(--text-grey, #5b6b66); text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* Two-column layout: sticky sidebar on desktop */
+    .detail-layout { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+    @media (min-width: 992px) {
+        .detail-layout { grid-template-columns: 2fr 1fr; }
+        .detail-sidebar { position: sticky; top: calc(var(--topbar-height, 60px) + 20px); }
+        .mobile-sticky-bar { display: none !important; }
+    }
+
+    /* Mobile sticky price/book bar - a condensed duplicate of the sidebar
+       card's price+CTA, since the brief wants the FULL card sticky only on
+       desktop and just a slim bar on phones. */
+    .mobile-sticky-bar {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 950;
+        background: #fff; border-top: 1px solid var(--line, #dce4dc);
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+        padding: 10px 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .mobile-sticky-bar .msb-price { flex: 1; min-width: 0; }
+    .mobile-sticky-bar .msb-price strong { display: block; font-size: 1.1rem; color: #14746c; }
+    .mobile-sticky-bar .msb-price span { font-size: 0.75rem; color: var(--text-grey, #5b6b66); }
+    .mobile-sticky-bar .msb-btn {
+        background: linear-gradient(135deg, #14746c 0%, #4fa89e 100%);
+        color: white; border: none; padding: 10px 18px; border-radius: 8px;
+        font-size: 0.9rem; font-weight: 600; text-decoration: none; white-space: nowrap;
+    }
+    @media (max-width: 991px) {
+        /* Leave room so the sticky bar never covers the footer/last content */
+        .property-detail-container { padding-bottom: 76px; }
+    }
+
+    /* Similar places */
+    .similar-section { margin-top: 28px; }
 </style>
 
 <div class="property-detail-container">
+<div class="detail-layout">
+<div class="detail-main">
 
     <!-- 1. Property Image Gallery (TOP) -->
     {% with property_images=property.images.all %}
@@ -296,6 +349,30 @@
     {% endif %}
     {% endwith %}
 
+    <!-- Key facts strip -->
+    <div class="key-facts">
+        <div class="key-fact">
+            <span class="key-fact-icon">🏠</span>
+            <div class="key-fact-value">{{ property.get_property_type_display }}</div>
+            <div class="key-fact-label">Type</div>
+        </div>
+        <div class="key-fact">
+            <span class="key-fact-icon">💰</span>
+            <div class="key-fact-value">TZS {{ property.monthly_rent|floatformat:0|intcomma }}</div>
+            <div class="key-fact-label">Per month</div>
+        </div>
+        <div class="key-fact">
+            <span class="key-fact-icon">📍</span>
+            <div class="key-fact-value">{{ property.distance_from_center_km }} km</div>
+            <div class="key-fact-label">From city center</div>
+        </div>
+        <div class="key-fact">
+            <span class="key-fact-icon">{% if current_tenancy %}🟡{% else %}🟢{% endif %}</span>
+            <div class="key-fact-value">{% if current_tenancy %}From {{ current_tenancy.available_from|date:"j M" }}{% else %}Now{% endif %}</div>
+            <div class="key-fact-label">Available</div>
+        </div>
+    </div>
+
     <!-- 2. Property Location (OpenStreetMap via Leaflet, no API key) -->
     {% if property.latitude and property.longitude %}
     <div class="card mb-3 shadow-sm">
@@ -351,7 +428,11 @@
         </div>
     </div>
 
-    <!-- 4. Rental Details Card (BOTTOM) -->
+</div>
+<!-- /.detail-main -->
+
+<div class="detail-sidebar">
+    <!-- 4. Rental Details Card -->
     <div class="rental-card">
         <div class="rental-header">💰 Rental Details</div>
         <div class="rental-body">
@@ -377,7 +458,7 @@
                     <p class="text-center small text-muted mb-2">Currently occupied - free from {{ current_tenancy.available_from|date:"j M Y" }}. You can still request a booking for after that date.</p>
                 {% endif %}
             {% else %}
-                <div class="alert alert-info text-center p-2 mb-2 small">Booking is for student accounts.</div>
+                <div class="alert alert-info text-center p-2 mb-2 small">Booking is only available for tenant accounts.</div>
             {% endif %}
 
             <hr class="my-3">
@@ -412,6 +493,41 @@
             </div>
         </div>
     </div>
-    
 </div>
+<!-- /.detail-sidebar -->
+
+</div>
+<!-- /.detail-layout -->
+
+<!-- Similar places -->
+{% if similar_properties %}
+<div class="similar-section">
+    <h3 style="color:#14746c; font-weight:700; margin-bottom:14px;">Similar places</h3>
+    <div class="listing-grid">
+        {% for property in similar_properties %}
+            {% include "properties/_listing_card.html" %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+</div>
+<!-- /.property-detail-container -->
+
+<!-- Mobile sticky price/book bar -->
+{% if property.is_available %}
+<div class="mobile-sticky-bar">
+    <div class="msb-price">
+        <strong>TZS {{ property.monthly_rent|floatformat:0|intcomma }}</strong>
+        <span>per month</span>
+    </div>
+    {% if not user.is_authenticated %}
+        <a href="{% url 'bookings:create_booking' property.id %}" class="msb-btn">Sign in to Book</a>
+    {% elif user.role == 'TENANT' %}
+        <a href="{% url 'bookings:create_booking' property.id %}" class="msb-btn">
+            {% if current_tenancy %}Request a Booking{% else %}Book Now{% endif %}
+        </a>
+    {% endif %}
+</div>
+{% endif %}
 {% endblock %}

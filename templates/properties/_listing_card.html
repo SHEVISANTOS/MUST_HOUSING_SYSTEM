@@ -1,0 +1,29 @@
+{% comment %}
+Listing card for search results. Include from a parent that has already
+loaded humanize and prefetched images/tenancies (see property_list's
+Prefetch('tenancies', to_attr='prefetched_tenancies')):
+    {% for property in properties %}{% include "properties/_listing_card.html" %}{% endfor %}
+{% endcomment %}
+{% load humanize %}
+{% with photo=property.images.all|first tenancy=property.get_current_tenancy %}
+<a href="{% url 'properties:detail' property.pk %}" class="listing-card">
+    <div class="listing-card-media">
+        {% if photo %}
+            <img src="{{ photo.image.url }}" alt="{{ photo.caption|default:property.title }}" loading="lazy">
+        {% else %}
+            <div class="listing-card-media-empty">🏠</div>
+        {% endif %}
+        <span class="badge {% if tenancy %}badge-warning{% else %}badge-success{% endif %} listing-card-status">
+            {% if tenancy %}Free from {{ tenancy.available_from|date:"j M" }}{% else %}Available now{% endif %}
+        </span>
+    </div>
+    <div class="listing-card-body">
+        <h3 class="listing-card-title">{{ property.get_property_type_display }} · {{ property.location }}</h3>
+        <p class="listing-card-meta">
+            {{ property.distance_from_center_km|floatformat:1 }} km from city center
+            {% for a in property.amenities_list|slice:":3" %}· {{ a }} {% endfor %}
+        </p>
+        <p class="listing-card-price"><strong>TZS {{ property.monthly_rent|floatformat:0|intcomma }}</strong> <span>/ month</span></p>
+    </div>
+</a>
+{% endwith %}

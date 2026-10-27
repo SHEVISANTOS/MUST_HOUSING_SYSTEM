@@ -22,10 +22,19 @@
                         <p class="mb-0 text-muted">{{ prop.description|truncatewords:30 }}</p>
                     </div>
                     <div class="text-end ms-3">
-                        <span class="badge {% if prop.is_available %}badge-success{% else %}badge-secondary{% endif %} mb-2">
-                            {% if prop.is_available %}✅ Available{% else %}❌ Unavailable{% endif %}
+                        <span class="badge {% if prop.status == 'live' %}badge-success{% elif prop.status == 'paused' %}badge-warning{% elif prop.status == 'let' %}badge-info{% else %}badge-secondary{% endif %} mb-2">
+                            {{ prop.get_status_display }}
                         </span>
-                        <a href="{% url 'properties:detail' prop.id %}" class="btn btn-sm btn-green">👁️ View Details</a>
+                        <div class="d-flex gap-2 flex-wrap justify-content-end mt-1">
+                            <a href="{% url 'properties:detail' prop.id %}" class="btn btn-sm btn-green">👁️ View</a>
+                            <a href="{% url 'properties:edit' prop.id %}" class="btn btn-sm btn-secondary">✏️ Edit</a>
+                            <form method="post" action="{% url 'properties:pause' prop.id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-secondary">
+                                    {% if prop.status == 'paused' %}▶️ Reactivate{% else %}⏸️ Pause{% endif %}
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>

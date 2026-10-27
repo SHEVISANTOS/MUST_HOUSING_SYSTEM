@@ -1,10 +1,12 @@
 # apps/properties/views.py
 from datetime import datetime
 
+from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Prefetch, Q, Exists, OuterRef
+from django.views.decorators.http import require_POST
 from .models import Property, PropertyImage
 from .forms import PropertyForm
 
@@ -41,9 +43,12 @@ def property_list(request):
     location = request.GET.get('location')
     available_now = request.GET.get('available_now')
     available_by = request.GET.get('available_by')  # YYYY-MM-DD
+    sort = request.GET.get('sort', 'recommended')
 
     if search_query:
-        queryset = queryset.filter(Q(title__icontains=search_query) | Q(description__icontains=search_query))
+        queryset = queryset.filter(
+            Q(title__icontains=search_query) | Q(description__icontains=search_query) | Q(location__icontains=search_query)
+        )
     if max_price:
         queryset = queryset.filter(monthly_rent__lte=max_price)
     if property_type:
@@ -73,11 +78,57 @@ def property_list(request):
         except ValueError:
             pass  # malformed date in the query string - ignore the filter rather than error out
 
+    sort_options = {
+        'recommended': '-created_at',
+        'price_low': 'monthly_rent',
+        'nearest': 'distance_from_center_km',
+        'newest': '-created_at',
+    }
+    queryset = queryset.order_by(sort_options.get(sort, sort_options['recommended']), 'id')
+
+    paginator = Paginator(queryset, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    # Preserve every filter param except `page` when building pagination
+    # links, so going to page 2 doesn't silently drop the active search.
+    querystring = request.GET.copy()
+    querystring.pop('page', None)
+
+    # Quick-filter chips are plain links, not form submit buttons, each
+    # carrying the FULL current querystring with just their own param
+    # toggled - a <button type=submit> sharing a form with other chip
+    # buttons would drop every other chip's state on click, since only the
+    # clicked button's name/value is included in a form submission.
+    def _chip_url(**overrides):
+        qs = request.GET.copy()
+        qs.pop('page', None)
+        for key, value in overrides.items():
+            if value is None:
+                qs.pop(key, None)
+            else:
+                qs[key] = value
+        return f"{request.path}?{qs.urlencode()}"
+
+    available_now_url = _chip_url(available_now=None if available_now else '1')
+    budget_chips = [
+        (label, _chip_url(max_price=str(value)), max_price == str(value))
+        for label, value in [('Under 100k', 100000), ('Under 200k', 200000), ('Under 500k', 500000)]
+    ]
+
     return render(request, 'properties/list.html', {
-        'properties': queryset,
+        'properties': page_obj,
+        'page_obj': page_obj,
+        'querystring': querystring.urlencode(),
         'property_types': Property.PROPERTY_TYPES,
         'available_now': available_now,
+        'available_now_url': available_now_url,
         'available_by': available_by,
+        'sort': sort,
+        'search_query': search_query or '',
+        'max_price': max_price or '',
+        'property_type': property_type or '',
+        'location': location or '',
+        'budget_chips': budget_chips,
     })
 
 def property_detail(request, pk):
@@ -139,6 +190,14 @@ def property_detail(request, pk):
     og_image_url = request.build_absolute_uri(static('img/vot_logo.png'))
     og_url = request.build_absolute_uri(request.path)
 
+    relevant_tenancies = Tenancy.objects.filter(status__in=_LIVE_TENANCY_STATUSES).order_by('start_date')
+    similar_properties = Property.objects.filter(
+        property_type=prop.property_type, is_available=True,
+    ).exclude(pk=prop.pk).prefetch_related(
+        'images',
+        Prefetch('tenancies', queryset=relevant_tenancies, to_attr='prefetched_tenancies'),
+    )[:4]
+
     return render(request, 'properties/detail.html', {
         'property': prop,
         'current_tenancy': current_tenancy,
@@ -147,6 +206,7 @@ def property_detail(request, pk):
         'timeline_end': window_end,
         'og_image_url': og_image_url,
         'og_url': og_url,
+        'similar_properties': similar_properties,
     })
 
 @login_required
@@ -174,6 +234,7 @@ def property_create(request):
                     prop = form.save(commit=False)
                     prop.landlord = request.user
                     prop.is_available = True
+                    prop.status = 'live'
                     prop.save()
 
                     # 2️⃣ Handle multiple image uploads
@@ -211,3 +272,62 @@ def my_properties(request):
         'total': properties.count(),
         'available': properties.filter(is_available=True).count()
     })
+
+@login_required
+def property_edit(request, pk):
+    """Landlord view to edit one of their own property listings."""
+    prop = get_object_or_404(Property, pk=pk)
+    if prop.landlord_id != request.user.id:
+        messages.error(request, "You can only edit your own properties.")
+        return redirect('properties:my_properties')
+
+    MAX_IMAGES = 10
+    MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024  # 2MB
+
+    if request.method == 'POST':
+        form = PropertyForm(request.POST, request.FILES, instance=prop)
+        if form.is_valid():
+            images = request.FILES.getlist('property_images')
+            oversized = [img.name for img in images if img.size > MAX_IMAGE_SIZE_BYTES]
+            if len(images) > MAX_IMAGES:
+                messages.error(request, f"You can upload up to {MAX_IMAGES} images at once ({len(images)} selected).")
+            elif oversized:
+                messages.error(request, f"Each image must be 2MB or smaller. Too large: {', '.join(oversized)}")
+            else:
+                form.save()
+                has_primary = prop.images.filter(is_primary=True).exists()
+                for i, image in enumerate(images):
+                    PropertyImage.objects.create(
+                        property=prop,
+                        image=image,
+                        is_primary=(i == 0 and not has_primary),
+                    )
+                messages.success(request, f"✅ '{prop.title}' updated successfully.")
+                return redirect('properties:detail', pk=prop.id)
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = PropertyForm(instance=prop)
+
+    return render(request, 'properties/edit.html', {'form': form, 'property': prop})
+
+@require_POST
+@login_required
+def property_pause(request, pk):
+    """Landlord quick action: pause a live listing, or reactivate a paused one."""
+    prop = get_object_or_404(Property, pk=pk)
+    if prop.landlord_id != request.user.id:
+        messages.error(request, "You can only manage your own properties.")
+        return redirect('properties:my_properties')
+
+    if prop.status == 'paused':
+        prop.status = 'live'
+        prop.is_available = True
+        messages.success(request, f"'{prop.title}' is live again.")
+    else:
+        prop.status = 'paused'
+        prop.is_available = False
+        messages.success(request, f"'{prop.title}' is paused and hidden from search.")
+    prop.save(update_fields=['status', 'is_available', 'updated_at'])
+
+    return redirect('properties:my_properties')

@@ -47,7 +47,7 @@ class SeekerPrivacyTests(TestCase):
     def test_listing_page_never_leaks_tenant_details(self):
         response = self.client.get(reverse('properties:list'))
         body = response.content.decode()
-        self.assertIn('Available from', body)  # the occupancy badge did render
+        self.assertIn('Free from', body)  # the occupancy badge did render
         self.assertNotIn('secrettenant', body)
         self.assertNotIn('0799999999', body)
         self.assertNotIn('Confidential', body)
@@ -172,7 +172,7 @@ class PublicBrowsingTests(TestCase):
         client.login(username='pub_landlord2', password='pw')  # a landlord, not this property's owner
         response = client.get(reverse('properties:detail', kwargs={'pk': self.property.pk}))
         body = response.content.decode()
-        self.assertIn('Booking is for student accounts', body)
+        self.assertIn('Booking is only available for tenant accounts', body)
         self.assertNotIn('class="book-btn"', body)
 
     def test_delisted_property_shows_no_booking_option_to_anyone(self):
@@ -199,3 +199,95 @@ class PublicBrowsingTests(TestCase):
         # not assumed) on top of the anonymous baseline; the property-
         # listing work itself must be identical either way.
         self.assertEqual(len(anon_ctx.captured_queries) + 2, len(auth_ctx.captured_queries))
+
+
+class PropertyEditPauseTests(TestCase):
+    """Landlord-only Edit and Pause actions on their own listings."""
+
+    def setUp(self):
+        self.landlord = User.objects.create_user(username='ep_landlord', password='pw', role='LANDLORD')
+        self.other_landlord = User.objects.create_user(username='ep_landlord2', password='pw', role='LANDLORD')
+        self.tenant = User.objects.create_user(username='ep_tenant', password='pw', role='TENANT')
+        self.property = Property.objects.create(
+            landlord=self.landlord, title='Editable Property', location='Mwanza',
+            property_type='2BR', monthly_rent=150000, distance_from_center_km=1.0,
+        )
+
+    def test_owner_can_view_edit_form(self):
+        client = Client()
+        client.login(username='ep_landlord', password='pw')
+        response = client.get(reverse('properties:edit', kwargs={'pk': self.property.pk}))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Editable Property', response.content.decode())
+
+    def test_owner_can_submit_edit(self):
+        client = Client()
+        client.login(username='ep_landlord', password='pw')
+        response = client.post(reverse('properties:edit', kwargs={'pk': self.property.pk}), {
+            'title': 'Updated Title', 'description': 'Updated description',
+            'property_type': '2BR', 'location': 'Mwanza',
+            'distance_from_center_km': 1.0, 'monthly_rent': 175000,
+            'months_per_payment': 1, 'is_available': 'on',
+        })
+        self.assertRedirects(response, reverse('properties:detail', kwargs={'pk': self.property.pk}))
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.title, 'Updated Title')
+        self.assertEqual(self.property.monthly_rent, 175000)
+
+    def test_non_owner_landlord_cannot_edit(self):
+        client = Client()
+        client.login(username='ep_landlord2', password='pw')
+        response = client.post(reverse('properties:edit', kwargs={'pk': self.property.pk}), {
+            'title': 'Hijacked', 'description': 'x', 'property_type': '2BR',
+            'location': 'Mwanza', 'distance_from_center_km': 1.0, 'monthly_rent': 1,
+            'months_per_payment': 1,
+        })
+        self.assertRedirects(response, reverse('properties:my_properties'))
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.title, 'Editable Property')
+
+    def test_tenant_cannot_edit(self):
+        client = Client()
+        client.login(username='ep_tenant', password='pw')
+        response = client.get(reverse('properties:edit', kwargs={'pk': self.property.pk}))
+        self.assertEqual(response.status_code, 302)
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.title, 'Editable Property')
+
+    def test_owner_can_pause_and_reactivate(self):
+        client = Client()
+        client.login(username='ep_landlord', password='pw')
+
+        response = client.post(reverse('properties:pause', kwargs={'pk': self.property.pk}))
+        self.assertRedirects(response, reverse('properties:my_properties'))
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, 'paused')
+        self.assertFalse(self.property.is_available)
+
+        response = client.post(reverse('properties:pause', kwargs={'pk': self.property.pk}))
+        self.assertRedirects(response, reverse('properties:my_properties'))
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, 'live')
+        self.assertTrue(self.property.is_available)
+
+    def test_paused_property_excluded_from_public_listing(self):
+        self.property.status = 'paused'
+        self.property.is_available = False
+        self.property.save()
+
+        response = Client().get(reverse('properties:list'))
+        self.assertNotIn('Editable Property', response.content.decode())
+
+    def test_non_owner_cannot_pause(self):
+        client = Client()
+        client.login(username='ep_landlord2', password='pw')
+        response = client.post(reverse('properties:pause', kwargs={'pk': self.property.pk}))
+        self.assertRedirects(response, reverse('properties:my_properties'))
+        self.property.refresh_from_db()
+        self.assertEqual(self.property.status, 'live')
+
+    def test_pause_requires_post(self):
+        client = Client()
+        client.login(username='ep_landlord', password='pw')
+        response = client.get(reverse('properties:pause', kwargs={'pk': self.property.pk}))
+        self.assertEqual(response.status_code, 405)

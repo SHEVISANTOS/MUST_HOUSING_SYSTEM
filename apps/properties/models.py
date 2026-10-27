@@ -5,6 +5,21 @@ from django.utils import timezone
 from apps.users.models import User
 
 class Property(models.Model):
+    # Richer listing lifecycle, additive alongside `is_available` below -
+    # existing code's is_available checks/filters are untouched and keep
+    # driving search/visibility exactly as before. `status` is a separate,
+    # more detailed classification for the landlord-facing property
+    # management UI (Edit/Pause); wherever a view changes one, it sets both
+    # explicitly rather than one being derived from the other by save()
+    # magic, which would silently change existing behavior.
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('in_review', 'In Review'),
+        ('live', 'Live'),
+        ('paused', 'Paused'),
+        ('let', 'Let'),
+    ]
+
     PROPERTY_TYPES = [
         ('SINGLE', 'Single Room'),
         ('BEDSITTER', 'Bedsitter'),
@@ -32,7 +47,11 @@ class Property(models.Model):
     monthly_rent = models.DecimalField(max_digits=10, decimal_places=2)
     amenities = models.TextField(help_text="Separate with commas", blank=True, null=True)
     is_available = models.BooleanField(default=True)
-    
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='live')
+    min_months = models.PositiveIntegerField(null=True, blank=True, help_text="Minimum tenancy length landlord will accept")
+    max_months = models.PositiveIntegerField(null=True, blank=True, help_text="Maximum tenancy length landlord will accept")
+    months_per_payment = models.PositiveIntegerField(default=1, help_text="How many months' rent is paid at once")
+
     # Google Maps Coordinates
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, 
                                    help_text="Latitude for Google Maps")

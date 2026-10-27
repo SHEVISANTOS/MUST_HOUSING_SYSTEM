@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% block title %}Edit {{ property.title }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <div class="card-header">✏️ Edit Property</div>
+    <div class="card-body">
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-3" style="background:#f8d7da; color:#721c24; padding:10px; border-radius:6px;">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Title *</label>
+                {{ form.title }}
+                {% if form.title.errors %}<small class="text-danger">{{ form.title.errors }}</small>{% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Description *</label>
+                {{ form.description }}
+                {% if form.description.errors %}<small class="text-danger">{{ form.description.errors }}</small>{% endif %}
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom:14px;">
+                <div class="form-group">
+                    <label style="display:block; margin-bottom:6px; font-weight:500;">Property Type *</label>
+                    {{ form.property_type }}
+                    {% if form.property_type.errors %}<small class="text-danger">{{ form.property_type.errors }}</small>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label style="display:block; margin-bottom:6px; font-weight:500;">Monthly Rent (TZS) *</label>
+                    {{ form.monthly_rent }}
+                    {% if form.monthly_rent.errors %}<small class="text-danger">{{ form.monthly_rent.errors }}</small>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Location *</label>
+                {{ form.location }}
+                {% if form.location.errors %}<small class="text-danger">{{ form.location.errors }}</small>{% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Distance from city center (km) *</label>
+                {{ form.distance_from_center_km }}
+                {% if form.distance_from_center_km.errors %}<small class="text-danger">{{ form.distance_from_center_km.errors }}</small>{% endif %}
+            </div>
+
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Amenities</label>
+                {{ form.amenities }}
+                <small class="text-muted">Separate with commas: water, wifi, parking</small>
+            </div>
+
+            <!-- Tenancy terms -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #14746c;">
+                <h5 style="margin-bottom: 12px; color: #14746c;">📅 Tenancy Terms</h5>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:6px; font-weight:500;">Min months</label>
+                        {{ form.min_months }}
+                        {% if form.min_months.errors %}<small class="text-danger">{{ form.min_months.errors }}</small>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:6px; font-weight:500;">Max months</label>
+                        {{ form.max_months }}
+                        {% if form.max_months.errors %}<small class="text-danger">{{ form.max_months.errors }}</small>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:6px; font-weight:500;">Months per payment</label>
+                        {{ form.months_per_payment }}
+                        {% if form.months_per_payment.errors %}<small class="text-danger">{{ form.months_per_payment.errors }}</small>{% endif %}
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2">All optional - leave blank if flexible.</small>
+            </div>
+
+            <!-- Existing photos -->
+            {% if property.images.all %}
+            <div class="form-group" style="margin-bottom:14px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Current Photos</label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    {% for img in property.images.all %}
+                    <img src="{{ img.image.url }}" alt="" style="width:100px; height:75px; object-fit:cover; border-radius:6px; border:2px solid {% if img.is_primary %}#14746c{% else %}#ddd{% endif %};">
+                    {% endfor %}
+                </div>
+                <small class="text-muted">Photo management isn't available here yet - contact support to remove a photo.</small>
+            </div>
+            {% endif %}
+
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:6px; font-weight:500;">Add More Photos</label>
+                <input type="file" name="property_images" class="form-control" multiple accept="image/*">
+                <small class="text-muted">📸 Optional - up to 10 photos, max 2MB each</small>
+                <div id="imageUploadError" class="text-danger" style="display:none; margin-top:6px; font-size:0.85rem;"></div>
+                <div id="imagePreview" class="mt-2" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+            </div>
+
+            <!-- Google Maps Location -->
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #14746c;">
+                <h5 style="margin-bottom: 12px; color: #14746c;">📍 Google Maps Location</h5>
+
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label style="display:block; margin-bottom:6px; font-weight:500;">Google Maps Link</label>
+                    {{ form.google_maps_link }}
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:6px; font-weight:500;">Latitude</label>
+                        {{ form.latitude }}
+                    </div>
+                    <div class="form-group">
+                        <label style="display:block; margin-bottom:6px; font-weight:500;">Longitude</label>
+                        {{ form.longitude }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Availability -->
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    {{ form.is_available }}
+                    <span style="margin-left: 8px; font-weight: 500;">✅ Property is available for rent</span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-green" style="width: 100%; padding: 12px; font-weight: 600;">💾 Save Changes</button>
+        </form>
+    </div>
+</div>
+
+<!-- Image Preview Script -->
+<script>
+const MAX_IMAGES = 10;
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
+
+document.querySelector('input[name="property_images"]').addEventListener('change', function(e) {
+    const preview = document.getElementById('imagePreview');
+    const errorBox = document.getElementById('imageUploadError');
+    preview.innerHTML = '';
+    errorBox.style.display = 'none';
+    errorBox.textContent = '';
+
+    const files = Array.from(this.files || []);
+    const errors = [];
+
+    if (files.length > MAX_IMAGES) {
+        errors.push(`You can upload up to ${MAX_IMAGES} images (you selected ${files.length}).`);
+    }
+    const oversized = files.filter(f => f.size > MAX_IMAGE_SIZE);
+    if (oversized.length) {
+        errors.push(`These files exceed 2MB: ${oversized.map(f => f.name).join(', ')}.`);
+    }
+
+    if (errors.length) {
+        errorBox.textContent = errors.join(' ');
+        errorBox.style.display = 'block';
+        this.value = '';
+        return;
+    }
+
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.cssText = 'width: 100px; height: 75px; object-fit: cover; border-radius: 6px; border: 2px solid #ddd;';
+            preview.appendChild(img);
+        }
+        reader.readAsDataURL(file);
+    });
+});
+</script>
+{% endblock %}

@@ -8,8 +8,10 @@ urlpatterns = [
     path('', views.property_list, name='list'),
     path('create/', views.property_create, name='create'),
     path('my-properties/', views.my_properties, name='my_properties'),
-    
-    
+
+
     path('<int:pk>/', views.property_detail, name='detail'),
-    
+    path('<int:pk>/edit/', views.property_edit, name='edit'),
+    path('<int:pk>/pause/', views.property_pause, name='pause'),
+
 ]
