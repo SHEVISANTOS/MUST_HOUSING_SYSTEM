@@ -8,7 +8,9 @@ from django.conf.urls.static import static
 from apps.core import views as core_views
 
 urlpatterns = [
-     
+
+    path('healthz', core_views.healthz, name='healthz'),
+
     path('admin/login/', core_views.admin_login_view, name='admin_login'),
     
     # Standard admin URLs (must come AFTER custom login)

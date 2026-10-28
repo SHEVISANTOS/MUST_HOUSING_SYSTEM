@@ -1,0 +1,12 @@
+[Unit]
+Description=MUST Housing (VOT House Finding) - nightly DB + media backup
+After=postgresql.service
+Wants=postgresql.service
+
+[Service]
+# Runs as root (no User= set), matching votstay-backup.service - needed to
+# create/write /var/backups/must_housing, which is root-owned like every
+# other app's backup directory on this server.
+Type=oneshot
+Environment=APP_DIR=/srv/must_housing
+ExecStart=/srv/must_housing/deploy/backup/must-housing-backup.sh

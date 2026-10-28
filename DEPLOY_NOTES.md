@@ -136,6 +136,60 @@ Pulls the latest code, reinstalls dependencies, migrates, collects static
 files, and restarts Gunicorn. Requires passwordless (or prompted) `sudo` for
 the `systemctl restart` step.
 
+### 13. Nightly backup (local Postgres + local media)
+
+Unlike the Vercel/Neon deployment, this server has no managed point-in-time
+recovery - `deploy/backup/must-housing-backup.sh` is the only backup this
+data gets. It `pg_dump`s the local database and tars `media/` (skipped if
+R2 is configured instead, since then there's nothing local to back up),
+writing timestamped, checksummed files to `/var/backups/must_housing/`
+with a 7-day retention (`BACKUP_KEEP_DAYS`). Optional off-site copy via
+`BACKUP_S3_URI` (same convention as `VOT-Stay/deploy/backup/backup.sh`).
+
+    sudo cp deploy/must-housing-backup.service deploy/must-housing-backup.timer /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now must-housing-backup.timer
+    sudo systemctl list-timers must-housing-backup.timer
+
+To test it immediately rather than waiting for 02:45:
+
+    sudo systemctl start must-housing-backup.service
+    sudo journalctl -u must-housing-backup -n 20 --no-pager
+
+### 14. Health monitoring + email alerts
+
+`deploy/monitor/must-housing-monitor.sh` runs every 3 hours: checks
+`nginx`/`postgresql`/`must-housing` are active, hits `/healthz` (confirms
+the DB is actually reachable, not just that Gunicorn accepted the TCP
+connection), checks the TLS cert isn't expiring within 14 days, and checks
+a DB backup exists from the last 2 days. On any problem it emails
+`shevijeremiah@gmail.com` via Brevo, **reusing VOT-Stay's existing Brevo
+API key** (`/home/santos/VOT-Stay/.env`) rather than provisioning a second
+account - same convention `votstay-sshdigest.sh` already uses. Deduped so
+a standing issue re-alerts once/day instead of every run.
+
+This is monitor-and-alert only - unlike `votstay-autoupdate.sh`, it does
+**not** auto-pull code or auto-restart anything; deploys here stay a
+manual step (`scripts/deploy_ubuntu.sh` or the manual sequence in step 12).
+
+    sudo cp deploy/must-housing-monitor.service deploy/must-housing-monitor.timer /etc/systemd/system/
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now must-housing-monitor.timer
+
+To test it immediately:
+
+    sudo systemctl start must-housing-monitor.service
+    sudo journalctl -u must-housing-monitor -n 40 --no-pager
+
+**Naming note:** this server's actual live systemd service is named
+`must-housing` (not `vot-house-finding` as the rest of this doc assumes) -
+a holdover from before the project was renamed from "MUST Housing System"
+to "VOT House Finding". The backup/monitor units above were written to
+match what's actually running. If you're deploying fresh to a new server
+following steps 1-12 above, swap `must-housing` for `vot-house-finding` in
+`deploy/must-housing-backup.service`, `deploy/must-housing-monitor.service`
+and the `SERVICE=` line in `deploy/monitor/must-housing-monitor.sh`.
+
 ### Adding HTTPS later (once a domain is pointed at this server)
 
 Pick a domain/subdomain distinct from whatever other apps on this server

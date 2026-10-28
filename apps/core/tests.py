@@ -10,6 +10,13 @@ from apps.payments.models import Payment
 from apps.messaging.models import Conversation, Message
 
 
+class HealthzTests(TestCase):
+    def test_healthz_returns_ok_without_auth(self):
+        response = Client().get(reverse('healthz'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'status': 'ok'})
+
+
 class LandlordAttentionQueueTests(TestCase):
     def setUp(self):
         self.landlord = User.objects.create_user(username='attn_landlord', password='pw', role='LANDLORD')

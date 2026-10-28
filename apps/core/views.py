@@ -4,7 +4,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.db import connection
 from django.db.models import Sum, Count, Q
 from django.contrib.auth import authenticate, login, logout
 from django.template.loader import render_to_string
@@ -18,6 +19,21 @@ from apps.bookings.models import Booking
 from apps.payments.models import Payment
 
 logger = logging.getLogger(__name__)
+
+
+# ==========================================
+# ❤️ HEALTH CHECK
+# ==========================================
+
+def healthz(request):
+    """Unauthenticated liveness/readiness probe for external monitoring -
+    confirms the app is up AND the database is actually reachable, not just
+    that Gunicorn accepted the TCP connection."""
+    try:
+        connection.ensure_connection()
+    except Exception as exc:
+        return JsonResponse({'status': 'error', 'detail': str(exc)}, status=503)
+    return JsonResponse({'status': 'ok'})
 
 
 # ==========================================

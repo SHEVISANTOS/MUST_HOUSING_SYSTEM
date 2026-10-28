@@ -1,0 +1,11 @@
+[Unit]
+Description=MUST Housing (VOT House Finding) - health check + alert
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Runs as root (no User= set), matching votstay-autoupdate.service - needs
+# to read systemctl unit states and /home/santos/VOT-Stay/.env for the
+# Brevo alert credentials.
+Type=oneshot
+ExecStart=/srv/must_housing/deploy/monitor/must-housing-monitor.sh
