@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
-# Redeploy script for the Ubuntu/Gunicorn deployment. Run as the "deploy"
-# user from /opt/vot-house-finding after the initial setup in
-# DEPLOY_NOTES.md is done. Pulls the latest code, installs any new
-# dependencies, applies migrations, collects static files, and restarts
-# Gunicorn.
+# Redeploy script for the Ubuntu/Gunicorn deployment. Run as the "santos"
+# user from /srv/must_housing after the initial setup in DEPLOY_NOTES.md is
+# done. Pulls the latest code, installs any new dependencies, applies
+# migrations, collects static files, and restarts Gunicorn.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

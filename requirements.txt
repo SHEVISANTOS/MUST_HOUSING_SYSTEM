@@ -41,4 +41,7 @@ cssselect2==0.7.0
 webencodings==0.5.1
 brotli==1.2.1
 zopfli==0.2.3
-django-extensions
+
+# django-extensions (shell_plus, runserver_plus, etc.) is dev-only - see
+# requirements-dev.txt. Not installed here on purpose: config/settings.py
+# only loads it when present, so production doesn't need it.

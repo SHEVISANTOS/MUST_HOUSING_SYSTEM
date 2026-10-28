@@ -1,3 +1,4 @@
+import importlib.util
 import os
 import sys
 from pathlib import Path
@@ -63,12 +64,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',  # {% load humanize %} / |intcomma - TZS thousand separators
-    'django_extensions',
-    
+
     # Third party
     'crispy_bootstrap5',
     'whitenoise.runserver_nostatic',
-    
+
     # ⬇️ CRITICAL FIX: Use simple names now that 'apps' is in sys.path
     'users',
     'properties',
@@ -76,6 +76,14 @@ INSTALLED_APPS = [
     'payments',
     'messaging',
 ]
+
+# django-extensions (shell_plus, runserver_plus, etc.) is a dev convenience
+# tool, not a real runtime dependency - it's intentionally left out of
+# requirements.txt (see requirements-dev.txt) so production installs stay
+# lean. Load it only if it's actually installed, so an environment that
+# skipped the dev requirements doesn't hard-crash on a missing dev tool.
+if importlib.util.find_spec('django_extensions'):
+    INSTALLED_APPS.append('django_extensions')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
