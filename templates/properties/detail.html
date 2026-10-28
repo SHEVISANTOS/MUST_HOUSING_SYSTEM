@@ -500,8 +500,9 @@
                     <span class="me-2">📱</span> <a href="tel:{{ property.landlord.phone }}" class="text-decoration-none text-dark">{{ property.landlord.phone }}</a>
                 </div>
                 {% elif property.landlord.phone %}
-                <div class="contact-item text-muted" style="font-size:0.85rem;">
-                    <span class="me-2">📱</span> Phone shared once your booking is confirmed - <a href="{% url 'messaging:start_conversation' property.id %}">message the landlord</a> in the meantime.
+                <div class="contact-item text-muted" style="font-size:0.85rem; align-items:flex-start;">
+                    <span class="me-2">📱</span>
+                    <span>Phone shared once your booking is confirmed - <a href="{% url 'messaging:start_conversation' property.id %}">message the landlord</a> in the meantime.</span>
                 </div>
                 {% endif %}
                 {% if property.landlord.email %}
