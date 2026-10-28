@@ -26,14 +26,18 @@
                             {{ prop.get_status_display }}
                         </span>
                         <div class="d-flex gap-2 flex-wrap justify-content-end mt-1">
+                            {% if prop.status == 'draft' %}
+                            <a href="{% url 'properties:wizard_step' prop.id 'basics' %}" class="btn btn-sm btn-green">✏️ Finish listing</a>
+                            {% else %}
                             <a href="{% url 'properties:detail' prop.id %}" class="btn btn-sm btn-green">👁️ View</a>
-                            <a href="{% url 'properties:edit' prop.id %}" class="btn btn-sm btn-secondary">✏️ Edit</a>
+                            <a href="{% url 'properties:wizard_step' prop.id 'basics' %}" class="btn btn-sm btn-secondary">✏️ Edit</a>
                             <form method="post" action="{% url 'properties:pause' prop.id %}" class="d-inline">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-secondary">
                                     {% if prop.status == 'paused' %}▶️ Reactivate{% else %}⏸️ Pause{% endif %}
                                 </button>
                             </form>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -44,7 +48,7 @@
                 <div style="font-size: 3rem; margin-bottom: 15px;">🏠</div>
                 <h4>No Properties Listed Yet</h4>
                 <p class="text-muted">Start earning by listing your first property!</p>
-                <a href="{% url 'properties:create' %}" class="btn btn-green mt-2">+ Add New Property</a>
+                <a href="{% url 'properties:wizard_start' %}" class="btn btn-green mt-2">+ Add New Property</a>
             </div>
         {% endif %}
     </div>

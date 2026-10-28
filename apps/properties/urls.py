@@ -10,6 +10,10 @@ urlpatterns = [
     path('my-properties/', views.my_properties, name='my_properties'),
     path('saved/', views.saved_properties, name='saved'),
 
+    # 🧙 5-step add/edit wizard
+    path('wizard/new/', views.property_wizard_start, name='wizard_start'),
+    path('wizard/<int:pk>/<str:step>/', views.property_wizard_step, name='wizard_step'),
+    path('wizard/<int:pk>/photos/delete/<int:image_id>/', views.property_wizard_delete_image, name='wizard_delete_image'),
 
     path('<int:pk>/', views.property_detail, name='detail'),
     path('<int:pk>/edit/', views.property_edit, name='edit'),

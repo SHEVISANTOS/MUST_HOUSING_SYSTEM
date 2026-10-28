@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}{% if property.status == 'draft' %}Add Property{% else %}Edit Property{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+    .wizard-steps { display: flex; gap: 8px; margin-bottom: 8px; }
+    .wizard-step-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+    .wizard-step-dot.done { background: var(--forest); }
+    .wizard-step-dot.active { background: var(--forest); box-shadow: 0 0 0 2px rgb(23 107 82 / 20%); }
+    .wizard-step-labels { display: flex; justify-content: space-between; margin-bottom: 24px; }
+    .wizard-step-labels span { font-size: 0.72rem; font-weight: 600; color: var(--text-grey); text-align: center; flex: 1; }
+    .wizard-step-labels span.current { color: var(--forest); font-weight: 700; }
+    .wizard-photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .wizard-photo-item { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 4/3; border: 1px solid var(--line); }
+    .wizard-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .wizard-photo-primary-badge { position: absolute; top: 6px; left: 6px; background: var(--forest); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+    .wizard-photo-delete { position: absolute; top: 6px; right: 6px; background: rgb(0 0 0 / 55%); color: #fff; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; font-size: 0.9rem; line-height: 1; }
+    .wizard-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .wizard-review-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.92rem; gap: 16px; }
+    .wizard-review-row:last-child { border-bottom: none; }
+    .wizard-review-row dt { color: var(--text-grey); font-weight: 600; }
+    .wizard-review-row dd { margin: 0; text-align: right; }
+</style>
+
+<div class="card" style="max-width: 720px; margin: 0 auto;">
+    <div class="card-header">
+        🧙 {% if property.status == 'draft' %}List New Property{% else %}Edit Property{% endif %}
+    </div>
+    <div class="card-body">
+
+        <div class="wizard-steps">
+            {% for slug, label in steps %}
+            <div class="wizard-step-dot {% if forloop.counter0 < step_index %}done{% elif forloop.counter0 == step_index %}active{% endif %}"></div>
+            {% endfor %}
+        </div>
+        <div class="wizard-step-labels">
+            {% for slug, label in steps %}
+            <span class="{% if slug == step %}current{% endif %}">{{ label }}</span>
+            {% endfor %}
+        </div>
+
+        {% if step == 'photos' %}
+            <p class="page-sub" style="margin-top:0;">Add up to 10 photos. The first photo (or the one you mark) is used as the cover image.</p>
+
+            {% if images %}
+            <div class="wizard-photo-grid">
+                {% for image in images %}
+                <div class="wizard-photo-item">
+                    <img src="{{ image.image.url }}" alt="{{ property.title }}">
+                    {% if image.is_primary %}<span class="wizard-photo-primary-badge">Cover</span>{% endif %}
+                    <form method="post" action="{% url 'properties:wizard_delete_image' property.id image.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="wizard-photo-delete" title="Remove photo">×</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Upload photos</label>
+                    <input type="file" name="property_images" accept="image/*" multiple class="form-control">
+                </div>
+                <div class="wizard-nav">
+                    <a href="{% url 'properties:wizard_step' property.id prev_step %}" class="btn btn-secondary">← Back</a>
+                    <button type="submit" class="btn btn-green">Save &amp; continue →</button>
+                </div>
+            </form>
+            {% if not images %}
+            <p class="mt-3" style="text-align:center;"><a href="{% url 'properties:wizard_step' property.id next_step %}">Skip for now →</a></p>
+            {% endif %}
+
+        {% elif step == 'review' %}
+            <dl>
+                <div class="wizard-review-row"><dt>Title</dt><dd>{{ property.title }}</dd></div>
+                <div class="wizard-review-row"><dt>Type</dt><dd>{{ property.get_property_type_display }}</dd></div>
+                <div class="wizard-review-row"><dt>Location</dt><dd>{{ property.location|default:"—" }}</dd></div>
+                <div class="wizard-review-row"><dt>Distance from center</dt><dd>{{ property.distance_from_center_km }} km</dd></div>
+                <div class="wizard-review-row"><dt>Photos</dt><dd>{{ images|length }} uploaded</dd></div>
+                <div class="wizard-review-row"><dt>Monthly rent</dt><dd>TZS {{ property.monthly_rent|floatformat:0 }}</dd></div>
+                <div class="wizard-review-row"><dt>Amenities</dt><dd>{{ property.amenities|default:"—" }}</dd></div>
+            </dl>
+
+            {% if not property.description %}
+            <div class="flash flash-warning mt-2"><span>⚠️ You haven't added a description yet - go back to Basics to add one.</span></div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="wizard-nav">
+                    <a href="{% url 'properties:wizard_step' property.id prev_step %}" class="btn btn-secondary">← Back</a>
+                    {% if property.status == 'draft' %}
+                    <button type="submit" name="action" value="publish" class="btn btn-green">🚀 Publish listing</button>
+                    {% else %}
+                    <button type="submit" name="action" value="save" class="btn btn-green">💾 Save changes</button>
+                    {% endif %}
+                </div>
+            </form>
+
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                    {{ field }}
+                    {% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}
+                    {% if field.errors %}<small class="text-danger d-block">{{ field.errors|striptags }}</small>{% endif %}
+                </div>
+                {% endfor %}
+                <div class="wizard-nav">
+                    {% if prev_step %}
+                    <a href="{% url 'properties:wizard_step' property.id prev_step %}" class="btn btn-secondary">← Back</a>
+                    {% else %}
+                    <span></span>
+                    {% endif %}
+                    <button type="submit" class="btn btn-green">Save &amp; continue →</button>
+                </div>
+            </form>
+        {% endif %}
+
+        <p class="mt-3" style="text-align:center;">
+            <a href="{% url 'properties:my_properties' %}">Save &amp; exit to My Properties</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -2,14 +2,14 @@
 from datetime import datetime
 
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Prefetch, Q, Exists, OuterRef
 from django.views.decorators.http import require_POST
 from .models import Property, PropertyImage, SavedProperty
-from .forms import PropertyForm
+from .forms import PropertyForm, PropertyBasicsForm, PropertyLocationForm, PropertyRentForm
 
 # Statuses that represent a live, occupying tenancy (as opposed to the two
 # terminal states - terminated/renewed - which no longer block a property).
@@ -328,6 +328,138 @@ def property_edit(request, pk):
         form = PropertyForm(instance=prop)
 
     return render(request, 'properties/edit.html', {'form': form, 'property': prop})
+
+
+# ==========================================
+# 🧙 5-STEP PROPERTY WIZARD (add & edit)
+# ==========================================
+# Each step's form POSTs straight to the Property row and saves on submit -
+# that's the autosave: a landlord who abandons the wizard after step 2 has
+# a real status='draft' row sitting in My Properties, not client-only state
+# that vanishes on refresh.
+
+WIZARD_STEPS = [
+    ('basics', 'Basics'),
+    ('photos', 'Photos'),
+    ('location', 'Location'),
+    ('rent', 'Rent & Availability'),
+    ('review', 'Review'),
+]
+WIZARD_STEP_SLUGS = [slug for slug, _ in WIZARD_STEPS]
+WIZARD_STEP_FORMS = {
+    'basics': PropertyBasicsForm,
+    'location': PropertyLocationForm,
+    'rent': PropertyRentForm,
+}
+WIZARD_MAX_IMAGES = 10
+WIZARD_MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024  # 2MB
+
+
+@login_required
+def property_wizard_start(request):
+    """'Add Property' entry point - creates a blank draft row immediately
+    and sends the landlord into step 1 for it."""
+    if request.user.role != 'LANDLORD':
+        messages.error(request, "Only landlords can list properties.")
+        return redirect('core:dashboard')
+
+    prop = Property.objects.create(
+        landlord=request.user, title='Untitled listing', property_type='SINGLE',
+        location='', distance_from_center_km=0, monthly_rent=0,
+        status='draft', is_available=False,
+    )
+    return redirect('properties:wizard_step', pk=prop.pk, step='basics')
+
+
+@login_required
+def property_wizard_step(request, pk, step):
+    """One step of the add/edit wizard. GET renders it, POST saves that
+    step's fields to the DB and moves to the next step."""
+    prop = get_object_or_404(Property, pk=pk)
+    if prop.landlord_id != request.user.id:
+        messages.error(request, "You can only edit your own properties.")
+        return redirect('properties:my_properties')
+    if step not in WIZARD_STEP_SLUGS:
+        raise Http404("Unknown wizard step.")
+
+    step_index = WIZARD_STEP_SLUGS.index(step)
+    prev_step = WIZARD_STEP_SLUGS[step_index - 1] if step_index > 0 else None
+    next_step = WIZARD_STEP_SLUGS[step_index + 1] if step_index < len(WIZARD_STEP_SLUGS) - 1 else None
+
+    if step == 'photos':
+        return _wizard_photos_step(request, prop, step_index, prev_step, next_step)
+    if step == 'review':
+        return _wizard_review_step(request, prop, step_index, prev_step)
+
+    form_class = WIZARD_STEP_FORMS[step]
+    if request.method == 'POST':
+        form = form_class(request.POST, instance=prop)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Progress saved.")
+            return redirect('properties:wizard_step', pk=prop.pk, step=next_step)
+        messages.error(request, "Please correct the errors below.")
+    else:
+        form = form_class(instance=prop)
+
+    return render(request, 'properties/wizard.html', {
+        'form': form, 'property': prop, 'step': step, 'step_index': step_index,
+        'steps': WIZARD_STEPS, 'prev_step': prev_step, 'next_step': next_step,
+    })
+
+
+def _wizard_photos_step(request, prop, step_index, prev_step, next_step):
+    if request.method == 'POST':
+        images = request.FILES.getlist('property_images')
+        oversized = [img.name for img in images if img.size > WIZARD_MAX_IMAGE_SIZE_BYTES]
+        if prop.images.count() + len(images) > WIZARD_MAX_IMAGES:
+            messages.error(request, f"You can have up to {WIZARD_MAX_IMAGES} images total.")
+        elif oversized:
+            messages.error(request, f"Each image must be 2MB or smaller. Too large: {', '.join(oversized)}")
+        else:
+            has_primary = prop.images.filter(is_primary=True).exists()
+            for i, image in enumerate(images):
+                PropertyImage.objects.create(property=prop, image=image, is_primary=(i == 0 and not has_primary))
+            if images:
+                messages.success(request, f"{len(images)} photo(s) saved.")
+            return redirect('properties:wizard_step', pk=prop.pk, step=next_step)
+
+    return render(request, 'properties/wizard.html', {
+        'property': prop, 'step': 'photos', 'step_index': step_index,
+        'steps': WIZARD_STEPS, 'prev_step': prev_step, 'next_step': next_step,
+        'images': prop.images.all(),
+    })
+
+
+@require_POST
+@login_required
+def property_wizard_delete_image(request, pk, image_id):
+    prop = get_object_or_404(Property, pk=pk)
+    if prop.landlord_id != request.user.id:
+        messages.error(request, "You can only edit your own properties.")
+        return redirect('properties:my_properties')
+    PropertyImage.objects.filter(pk=image_id, property=prop).delete()
+    return redirect('properties:wizard_step', pk=prop.pk, step='photos')
+
+
+def _wizard_review_step(request, prop, step_index, prev_step):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'publish':
+            prop.status = 'live'
+            prop.is_available = True
+            prop.save(update_fields=['status', 'is_available', 'updated_at'])
+            messages.success(request, f"✅ '{prop.title}' is now live!")
+        else:
+            messages.success(request, f"✅ '{prop.title}' updated.")
+        return redirect('properties:detail', pk=prop.pk)
+
+    return render(request, 'properties/wizard.html', {
+        'property': prop, 'step': 'review', 'step_index': step_index,
+        'steps': WIZARD_STEPS, 'prev_step': prev_step,
+        'images': prop.images.all(),
+    })
+
 
 @require_POST
 @login_required

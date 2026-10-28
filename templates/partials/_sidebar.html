@@ -60,12 +60,12 @@
             </a>
         </li>
         <li class="nav-item">
-            <a href="{% url 'properties:create' %}" class="nav-link {% if 'create' in request.path %}active{% endif %}">
+            <a href="{% url 'properties:wizard_start' %}" class="nav-link {% if 'wizard' in request.path or 'create' in request.path %}active{% endif %}">
                 {% include "partials/_icon.html" with d="M12 5v14M5 12h14" %} <span class="nav-label">Add Property</span>
             </a>
         </li>
         <li class="nav-item">
-            <a href="{% url 'properties:my_properties' %}" class="nav-link {% if 'properties' in request.path and 'create' not in request.path %}active{% endif %}">
+            <a href="{% url 'properties:my_properties' %}" class="nav-link {% if 'properties' in request.path and 'create' not in request.path and 'wizard' not in request.path %}active{% endif %}">
                 {% include "partials/_icon.html" with d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 10h.01M15 10h.01" %} <span class="nav-label">My Properties</span>
             </a>
         </li>

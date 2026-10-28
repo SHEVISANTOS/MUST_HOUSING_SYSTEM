@@ -6,8 +6,10 @@ from django.db import connection
 from django.urls import reverse
 from django.utils import timezone
 
+from django.core.files.uploadedfile import SimpleUploadedFile
+
 from apps.users.models import User
-from apps.properties.models import Property
+from apps.properties.models import Property, PropertyImage
 from apps.bookings.models import Booking, Tenancy
 
 
@@ -329,3 +331,143 @@ class PropertyEditPauseTests(TestCase):
         client.login(username='ep_landlord', password='pw')
         response = client.get(reverse('properties:pause', kwargs={'pk': self.property.pk}))
         self.assertEqual(response.status_code, 405)
+
+
+# A minimal valid 1x1 transparent PNG, for image-upload tests - Pillow (via
+# Django's ImageField) validates uploaded files are real images, so an
+# arbitrary byte string isn't enough.
+_ONE_PX_PNG = (
+    b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01'
+    b'\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0bIDATx\x9cc\x64'
+    b'\x60\x00\x00\x00\x05\x00\x01\x1f\xcd\xbb\xd3\x00\x00\x00\x00IEND\xaeB`\x82'
+)
+
+
+class PropertyWizardTests(TestCase):
+    """The 5-step add/edit wizard - each step POST should persist straight
+    to the DB (the 'real autosave'), not just hold client-side state."""
+
+    def setUp(self):
+        self.landlord = User.objects.create_user(username='wiz_landlord', password='pw', role='LANDLORD')
+        self.other_landlord = User.objects.create_user(username='wiz_landlord2', password='pw', role='LANDLORD')
+        self.tenant = User.objects.create_user(username='wiz_tenant', password='pw', role='TENANT')
+        self.client = Client()
+        self.client.login(username='wiz_landlord', password='pw')
+
+    def test_start_creates_draft_and_redirects_to_basics(self):
+        response = self.client.get(reverse('properties:wizard_start'))
+        prop = Property.objects.get(landlord=self.landlord)
+        self.assertEqual(prop.status, 'draft')
+        self.assertFalse(prop.is_available)
+        self.assertRedirects(response, reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'basics'}))
+
+    def test_tenant_cannot_start_wizard(self):
+        client = Client()
+        client.login(username='wiz_tenant', password='pw')
+        response = client.get(reverse('properties:wizard_start'), follow=True)
+        self.assertRedirects(response, reverse('core:dashboard'))
+        self.assertFalse(Property.objects.exists())
+
+    def test_basics_step_saves_and_advances_to_photos(self):
+        self.client.get(reverse('properties:wizard_start'))
+        prop = Property.objects.get(landlord=self.landlord)
+
+        response = self.client.post(
+            reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'basics'}),
+            {'title': 'Cozy Bedsitter', 'description': 'Near the market', 'property_type': 'BEDSITTER', 'location': 'Nyamagana'},
+        )
+        self.assertRedirects(response, reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'photos'}))
+
+        # The autosave: a fresh query on the DB row reflects step 1's data
+        # even though the wizard hasn't been finished or published yet.
+        prop.refresh_from_db()
+        self.assertEqual(prop.title, 'Cozy Bedsitter')
+        self.assertEqual(prop.status, 'draft')
+
+    def test_photos_step_uploads_and_sets_primary(self):
+        self.client.get(reverse('properties:wizard_start'))
+        prop = Property.objects.get(landlord=self.landlord)
+
+        image = SimpleUploadedFile('room.png', _ONE_PX_PNG, content_type='image/png')
+        response = self.client.post(
+            reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'photos'}),
+            {'property_images': [image]},
+        )
+        self.assertRedirects(response, reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'location'}))
+        self.assertEqual(PropertyImage.objects.filter(property=prop).count(), 1)
+        self.assertTrue(PropertyImage.objects.get(property=prop).is_primary)
+
+    def test_delete_photo(self):
+        self.client.get(reverse('properties:wizard_start'))
+        prop = Property.objects.get(landlord=self.landlord)
+        image = PropertyImage.objects.create(
+            property=prop, image=SimpleUploadedFile('room.png', _ONE_PX_PNG, content_type='image/png'), is_primary=True,
+        )
+
+        response = self.client.post(reverse('properties:wizard_delete_image', kwargs={'pk': prop.pk, 'image_id': image.id}))
+        self.assertRedirects(response, reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'photos'}))
+        self.assertFalse(PropertyImage.objects.filter(pk=image.id).exists())
+
+    def test_location_and_rent_steps_save(self):
+        self.client.get(reverse('properties:wizard_start'))
+        prop = Property.objects.get(landlord=self.landlord)
+
+        self.client.post(
+            reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'location'}),
+            {'distance_from_center_km': 3.2, 'latitude': -2.516, 'longitude': 32.898},
+        )
+        self.client.post(
+            reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'rent'}),
+            {'monthly_rent': 120000, 'months_per_payment': 1},
+        )
+        prop.refresh_from_db()
+        self.assertEqual(prop.distance_from_center_km, 3.2)
+        self.assertEqual(prop.monthly_rent, 120000)
+        self.assertEqual(prop.status, 'draft')  # still a draft until the Review step publishes it
+
+    def test_review_step_publishes_draft(self):
+        self.client.get(reverse('properties:wizard_start'))
+        prop = Property.objects.get(landlord=self.landlord)
+
+        response = self.client.post(
+            reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'review'}),
+            {'action': 'publish'},
+        )
+        self.assertRedirects(response, reverse('properties:detail', kwargs={'pk': prop.pk}))
+        prop.refresh_from_db()
+        self.assertEqual(prop.status, 'live')
+        self.assertTrue(prop.is_available)
+
+    def test_review_step_on_already_live_property_does_not_change_status(self):
+        prop = Property.objects.create(
+            landlord=self.landlord, title='Existing Place', location='Mwanza',
+            property_type='2BR', monthly_rent=200000, distance_from_center_km=2.0,
+            status='live', is_available=True,
+        )
+        response = self.client.post(
+            reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'review'}),
+            {'action': 'save'},
+        )
+        self.assertRedirects(response, reverse('properties:detail', kwargs={'pk': prop.pk}))
+        prop.refresh_from_db()
+        self.assertEqual(prop.status, 'live')
+
+    def test_non_owner_cannot_access_wizard_step(self):
+        self.client.get(reverse('properties:wizard_start'))
+        prop = Property.objects.get(landlord=self.landlord)
+
+        other_client = Client()
+        other_client.login(username='wiz_landlord2', password='pw')
+        response = other_client.get(reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'basics'}), follow=True)
+        self.assertRedirects(response, reverse('properties:my_properties'))
+
+    def test_unknown_step_404s(self):
+        self.client.get(reverse('properties:wizard_start'))
+        prop = Property.objects.get(landlord=self.landlord)
+        response = self.client.get(reverse('properties:wizard_step', kwargs={'pk': prop.pk, 'step': 'bogus'}))
+        self.assertEqual(response.status_code, 404)
+
+    def test_draft_shows_finish_listing_button_in_my_properties(self):
+        self.client.get(reverse('properties:wizard_start'))
+        response = self.client.get(reverse('properties:my_properties'))
+        self.assertIn('Finish listing', response.content.decode())
