@@ -24,8 +24,12 @@ urlpatterns = [
     path('reports/financial/', views.export_financial_report, name='export_financial'),
     path('reports/activity/', views.export_activity_report, name='export_activity'),
     
-    # 👥 User Management 
+    # 👥 User Management
     path('manage-users/', views.manage_users, name='manage_users'),
+
+    # ✅ Verification queue
+    path('verification-queue/', views.verification_queue, name='verification_queue'),
+    path('verification-queue/verify/<int:user_id>/', views.verify_user, name='verify_user'),
     
     # ✅ Login redirect handler
     path('login-redirect/', views.post_login_redirect, name='post_login_redirect'),

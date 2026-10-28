@@ -309,7 +309,11 @@
     <!-- ── MANAGE USERS ── -->
     <div class="adash-section-label">👥 Manage User Accounts</div>
     <div class="adash-user-btns d-flex gap-2 flex-wrap">
-      <a href="/admin/users/user/" class="btn adash-ubtn primary">🛠️ Open Django User Admin</a>
+      <a href="{% url 'core:verification_queue' %}" class="btn adash-ubtn primary">
+        ✅ Verification Queue{% if stats.pending_verification %} <span class="badge bg-danger ms-1">{{ stats.pending_verification }}</span>{% endif %}
+      </a>
+      <a href="{% url 'core:manage_users' %}" class="btn adash-ubtn outline">👥 Manage Users</a>
+      <a href="/admin/users/user/" class="btn adash-ubtn outline">🛠️ Open Django User Admin</a>
       <a href="/admin/" class="btn adash-ubtn outline">🌐 Full Admin Panel</a>
     </div>
 

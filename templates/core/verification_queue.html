@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Verification Queue{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Admin</p>
+        <h1>Verification queue</h1>
+        <p class="page-sub">Review new landlord and tenant accounts and mark them verified.</p>
+    </div>
+    <a href="{% url 'core:admin_dashboard' %}" class="card-header-link">← Back to admin dashboard</a>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card{% if pending_landlords %} stat-card-attention{% endif %}">
+        <p class="stat-label">Unverified Landlords</p>
+        <p class="stat-value">{{ pending_landlords|length }}</p>
+    </div>
+    <div class="stat-card{% if pending_tenants %} stat-card-attention{% endif %}">
+        <p class="stat-label">Unverified Tenants</p>
+        <p class="stat-value">{{ pending_tenants|length }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><span>🤝 Landlords awaiting verification</span></div>
+    <div class="card-body" style="padding: 0;">
+        {% if pending_landlords %}
+        <div class="table-wrapper">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Properties listed</th>
+                        <th>Joined</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for landlord in pending_landlords %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ landlord.username }}</td>
+                        <td>{{ landlord.email|default:"-" }}</td>
+                        <td>{{ landlord.phone|default:"-" }}</td>
+                        <td>{{ landlord.property_count }}</td>
+                        <td>{{ landlord.date_joined|date:"d M Y" }}</td>
+                        <td>
+                            <form method="post" action="{% url 'core:verify_user' landlord.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-green">✅ Verify</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p class="empty-title">All caught up</p>
+            <p>No landlord accounts are waiting on verification.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><span>🏠 Tenants awaiting verification</span></div>
+    <div class="card-body" style="padding: 0;">
+        {% if pending_tenants %}
+        <div class="table-wrapper">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Bookings made</th>
+                        <th>Joined</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tenant in pending_tenants %}
+                    <tr>
+                        <td style="font-weight: 600;">{{ tenant.username }}</td>
+                        <td>{{ tenant.email|default:"-" }}</td>
+                        <td>{{ tenant.phone|default:"-" }}</td>
+                        <td>{{ tenant.booking_count }}</td>
+                        <td>{{ tenant.date_joined|date:"d M Y" }}</td>
+                        <td>
+                            <form method="post" action="{% url 'core:verify_user' tenant.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-green">✅ Verify</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p class="empty-title">All caught up</p>
+            <p>No tenant accounts are waiting on verification.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

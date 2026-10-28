@@ -122,6 +122,19 @@
         .stat-card-primary .stat-value { color: #fff; font-size: 2.4rem; }
         .stat-card-attention { border-color: var(--coral); }
         .stat-card-attention .stat-value { color: var(--coral-deep); }
+        .attention-queue { border-color: var(--coral); }
+        .attention-queue .card-header { background: rgb(223 115 94 / 8%); color: var(--coral-deep); }
+        .attention-row {
+            display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+            border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; transition: background 0.15s;
+        }
+        .attention-row:last-child { border-bottom: none; }
+        .attention-row:hover { background: rgb(223 115 94 / 6%); }
+        .attention-icon { font-size: 1.3rem; line-height: 1; }
+        .attention-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .attention-text strong { font-family: var(--font-display); color: var(--ink); font-size: 0.95rem; }
+        .attention-detail { font-size: 0.8rem; color: var(--text-grey); }
+        .attention-cta { font-size: 0.82rem; font-weight: 700; color: var(--coral-deep); white-space: nowrap; }
         .card-header-link { margin-left: auto; font-size: 0.85rem; font-weight: 700; color: var(--forest) !important; }
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-grey); }
         .empty-state p { margin: 0; }

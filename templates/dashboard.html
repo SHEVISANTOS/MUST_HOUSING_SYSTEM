@@ -43,6 +43,26 @@
     {% endif %}
 </div>
 
+{% if user.role == 'LANDLORD' and attention_items %}
+<div class="card attention-queue">
+    <div class="card-header">
+        <span>⚠️ Needs your attention</span>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        {% for item in attention_items %}
+        <a href="{{ item.url }}" class="attention-row">
+            <span class="attention-icon">{{ item.icon }}</span>
+            <span class="attention-text">
+                <strong>{{ item.count }} {{ item.label }}</strong>
+                <span class="attention-detail">{{ item.detail }}</span>
+            </span>
+            <span class="attention-cta">{{ item.cta }} →</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- Recent Bookings Table - SCROLLABLE -->
 <div class="card">
     <div class="card-header">

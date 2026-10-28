@@ -1,6 +1,6 @@
 import logging
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
@@ -52,6 +52,9 @@ def dashboard(request):
         ).order_by('due_date')[:5]
         
     else:  # LANDLORD
+        from django.urls import reverse
+        from apps.messaging.models import Message
+
         context['my_properties'] = Property.objects.filter(landlord=request.user)
         context['total_bookings'] = Booking.objects.filter(
             property__landlord=request.user
@@ -65,7 +68,46 @@ def dashboard(request):
         context['upcoming_payments'] = Payment.objects.filter(
             booking__property__landlord=request.user, status='PENDING'
         ).order_by('due_date')[:5]
-    
+
+        payments_awaiting_qs = Payment.objects.filter(
+            booking__property__landlord=request.user, status='TENANT_PAID'
+        ).select_related('booking__tenant', 'booking__property').order_by('-tenant_paid_at')
+        payments_awaiting_count = payments_awaiting_qs.count()
+
+        unread_conversations_count = Message.objects.filter(
+            conversation__landlord=request.user, read_at__isnull=True,
+        ).exclude(sender=request.user).values('conversation').distinct().count()
+
+        attention_items = []
+        if context['pending_bookings']:
+            attention_items.append({
+                'icon': '📝',
+                'label': 'Booking request' if context['pending_bookings'] == 1 else 'Booking requests',
+                'detail': 'Awaiting your approval',
+                'count': context['pending_bookings'],
+                'url': reverse('bookings:landlord_bookings'),
+                'cta': 'Review requests',
+            })
+        if payments_awaiting_count:
+            attention_items.append({
+                'icon': '💰',
+                'label': 'Payment' if payments_awaiting_count == 1 else 'Payments',
+                'detail': 'Marked paid by tenant, needs your confirmation',
+                'count': payments_awaiting_count,
+                'url': reverse('payments:landlord_payments'),
+                'cta': 'Verify payments',
+            })
+        if unread_conversations_count:
+            attention_items.append({
+                'icon': '💬',
+                'label': 'Conversation' if unread_conversations_count == 1 else 'Conversations',
+                'detail': 'Have unread messages from tenants',
+                'count': unread_conversations_count,
+                'url': reverse('messaging:inbox'),
+                'cta': 'Open inbox',
+            })
+        context['attention_items'] = attention_items
+
     return render(request, 'dashboard.html', context)
 
 
@@ -109,6 +151,7 @@ def admin_dashboard(request):
         'bookings': Booking.objects.count(),
         'completed_payments': Payment.objects.filter(status='COMPLETED').count(),
         'total_revenue': Payment.objects.filter(status='COMPLETED').aggregate(Sum('amount'))['amount__sum'] or 0,
+        'pending_verification': User.objects.filter(is_verified=False, role__in=['LANDLORD', 'TENANT']).count(),
     }
 
     sys_config = {
@@ -185,6 +228,45 @@ def reports_page(request):
         return redirect('core:dashboard')
 
     return render(request, 'core/reports.html')
+
+
+@login_required
+def verification_queue(request):
+    """Admin-only queue of unverified landlord/tenant accounts, with a
+    one-click action to mark them verified - replaces having to go into
+    raw Django admin just to flip is_verified."""
+    if not _is_admin(request.user):
+        messages.error(request, "Access denied. Administrator privileges required.")
+        return redirect('core:dashboard')
+
+    pending_landlords = User.objects.filter(
+        role='LANDLORD', is_verified=False
+    ).annotate(property_count=Count('properties', distinct=True)).order_by('date_joined')
+
+    pending_tenants = User.objects.filter(
+        role='TENANT', is_verified=False
+    ).annotate(booking_count=Count('bookings', distinct=True)).order_by('date_joined')
+
+    return render(request, 'core/verification_queue.html', {
+        'pending_landlords': pending_landlords,
+        'pending_tenants': pending_tenants,
+    })
+
+
+@login_required
+def verify_user(request, user_id):
+    """Mark a single user as verified - admin-only, POST-only."""
+    if not _is_admin(request.user):
+        messages.error(request, "Access denied. Administrator privileges required.")
+        return redirect('core:dashboard')
+
+    if request.method == 'POST':
+        target = get_object_or_404(User, id=user_id)
+        target.is_verified = True
+        target.save(update_fields=['is_verified'])
+        messages.success(request, f'{target.username} has been verified.')
+
+    return redirect('core:verification_queue')
 
 
 @login_required
