@@ -12,6 +12,7 @@ from apps.properties.models import Property
 from apps.bookings.models import Booking, Tenancy
 from apps.bookings.services import sync_tenancy_statuses
 from apps.payments.models import Payment
+from apps.notifications.models import Notification
 
 class BookingApprovalTests(TestCase):
     def setUp(self):
@@ -465,3 +466,41 @@ class CreateBookingAccessTests(TenancyTestBase):
         messages = [str(m) for m in response.context[-1]['messages']]
         self.assertTrue(any('tenant' in m.lower() for m in messages))
         self.assertFalse(Booking.objects.filter(property=self.property, tenant=self.landlord).exists())
+
+
+class BookingNotificationTests(TenancyTestBase):
+    """Each booking lifecycle action should leave an in-app Notification for
+    whoever needs to see it - see apps.notifications.models.Notification."""
+
+    def test_create_booking_notifies_landlord(self):
+        client = Client()
+        client.login(username='tenant1', password='pw')
+        move_in = timezone.localdate() + timedelta(days=10)
+        client.post(reverse('bookings:create_booking', kwargs={'property_id': self.property.id}), {
+            'move_in_date': move_in.isoformat(), 'months': 3,
+        })
+        n = Notification.objects.get(user=self.landlord, kind='booking_request')
+        self.assertIn('tenant1', n.body)
+        self.assertFalse(n.read_at)
+
+    def test_approve_booking_notifies_tenant(self):
+        booking = Booking.objects.create(
+            property=self.property, tenant=self.tenant,
+            move_in_date=timezone.localdate(), move_out_date=timezone.localdate() + timedelta(days=90),
+            status='PENDING',
+        )
+        client = Client()
+        client.login(username='landlord1', password='pw')
+        client.post(reverse('bookings:approve_booking', kwargs={'booking_id': booking.id}))
+        self.assertTrue(Notification.objects.filter(user=self.tenant, kind='booking_approved').exists())
+
+    def test_reject_booking_notifies_tenant(self):
+        booking = Booking.objects.create(
+            property=self.property, tenant=self.tenant,
+            move_in_date=timezone.localdate(), move_out_date=timezone.localdate() + timedelta(days=90),
+            status='PENDING',
+        )
+        client = Client()
+        client.login(username='landlord1', password='pw')
+        client.post(reverse('bookings:reject_booking', kwargs={'booking_id': booking.id}))
+        self.assertTrue(Notification.objects.filter(user=self.tenant, kind='booking_declined').exists())

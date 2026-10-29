@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'bookings',
     'payments',
     'messaging',
+    'notifications',
 ]
 
 # django-extensions (shell_plus, runserver_plus, etc.) is a dev convenience
@@ -122,6 +123,7 @@ TEMPLATES = [{
             'django.contrib.messages.context_processors.messages',
             'apps.properties.context_processors.saved_property_ids',
             'apps.messaging.context_processors.unread_message_count',
+            'apps.notifications.context_processors.unread_notification_count',
         ],
     },
 }]

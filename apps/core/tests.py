@@ -102,6 +102,11 @@ class VerificationQueueTests(TestCase):
         self.assertTrue(self.landlord.is_verified)
         self.assertRedirects(response, reverse('core:verification_queue'))
 
+    def test_verify_user_sends_notification(self):
+        from apps.notifications.models import Notification
+        self.client.post(reverse('core:verify_user', args=[self.landlord.id]))
+        self.assertTrue(Notification.objects.filter(user=self.landlord, kind='account_verified').exists())
+
     def test_verified_user_drops_off_queue(self):
         self.landlord.is_verified = True
         self.landlord.save()

@@ -277,9 +277,13 @@ def verify_user(request, user_id):
         return redirect('core:dashboard')
 
     if request.method == 'POST':
+        from django.urls import reverse
+        from apps.notifications.models import Notification
+
         target = get_object_or_404(User, id=user_id)
         target.is_verified = True
         target.save(update_fields=['is_verified'])
+        Notification.notify(target, 'account_verified', "Your account has been verified!", link=reverse('core:dashboard'))
         messages.success(request, f'{target.username} has been verified.')
 
     return redirect('core:verification_queue')

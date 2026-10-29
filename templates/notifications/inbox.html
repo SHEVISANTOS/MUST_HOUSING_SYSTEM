@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<style>
+    .notif-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-bottom: 1px solid var(--line); text-decoration: none; color: inherit; }
+    .notif-row:hover { background: var(--paper); }
+    .notif-row:last-child { border-bottom: none; }
+    .notif-row.unread { background: rgb(23 107 82 / 4%); }
+    .notif-icon { font-size: 1.2rem; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+    .notif-main { flex: 1; min-width: 0; }
+    .notif-top { display: flex; justify-content: space-between; gap: 8px; }
+    .notif-body { font-weight: 600; color: var(--ink); }
+    .notif-time { font-size: 0.78rem; color: var(--text-grey); white-space: nowrap; }
+    .unread-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--coral-deep); flex-shrink: 0; margin-top: 4px; }
+</style>
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Inbox</p>
+        <h1>Notifications</h1>
+    </div>
+</div>
+
+{% if notifications %}
+<div class="card">
+    {% for n in notifications %}
+    {% if n.link %}
+    <a href="{{ n.link }}" class="notif-row {% if n.was_unread %}unread{% endif %}">
+    {% else %}
+    <div class="notif-row {% if n.was_unread %}unread{% endif %}">
+    {% endif %}
+        <span class="notif-icon">{{ n.icon }}</span>
+        <div class="notif-main">
+            <div class="notif-top">
+                <span class="notif-body">{{ n.body }}</span>
+                <span class="notif-time">{{ n.created_at|naturaltime }}</span>
+            </div>
+        </div>
+        {% if n.was_unread %}<span class="unread-dot" title="Unread"></span>{% endif %}
+    {% if n.link %}</a>{% else %}</div>{% endif %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p class="empty-title">No notifications yet</p>
+    <p>Updates on your bookings, payments, and account will show up here.</p>
+</div>
+{% endif %}
+{% endblock %}

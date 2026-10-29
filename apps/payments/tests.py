@@ -1,10 +1,12 @@
-from django.test import TestCase
+from django.test import TestCase, Client
+from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 from apps.users.models import User
 from apps.properties.models import Property
 from apps.bookings.models import Booking
 from apps.payments.models import Payment
+from apps.notifications.models import Notification
 
 class PaymentTests(TestCase):
     def setUp(self):
@@ -67,3 +69,53 @@ class PaymentTests(TestCase):
         )
         
         self.assertTrue(overdue_payment.late_fee > 0)
+
+
+class PaymentNotificationTests(TestCase):
+    """Each payment action should leave an in-app Notification for whoever
+    needs to act on or see it - see apps.notifications.models.Notification."""
+
+    def setUp(self):
+        self.landlord = User.objects.create_user(username='pn_landlord', password='pw', role='LANDLORD')
+        self.tenant = User.objects.create_user(username='pn_tenant', password='pw', role='TENANT')
+        self.property = Property.objects.create(
+            landlord=self.landlord, title='Notif Property', location='Mwanza',
+            property_type='SINGLE', monthly_rent=50000, distance_from_center_km=2.5,
+        )
+        self.move_in = timezone.now().date()
+        self.booking = Booking.objects.create(
+            property=self.property, tenant=self.tenant,
+            move_in_date=self.move_in, move_out_date=self.move_in + timedelta(days=30),
+            status='CONFIRMED',
+        )
+
+    def test_mark_payment_made_notifies_landlord(self):
+        client = Client()
+        client.login(username='pn_tenant', password='pw')
+        client.post(reverse('payments:mark_payment', kwargs={'booking_id': self.booking.id}), {
+            'payment_method': 'CASH', 'payment_reference': 'REF123',
+        })
+        n = Notification.objects.get(user=self.landlord, kind='payment_marked_paid')
+        self.assertIn('pn_tenant', n.body)
+
+    def test_verify_payment_notifies_tenant(self):
+        payment = Payment.objects.create(
+            booking=self.booking, tenant=self.tenant, amount=50000,
+            due_date=self.move_in, status='TENANT_PAID',
+        )
+        client = Client()
+        client.login(username='pn_landlord', password='pw')
+        client.post(reverse('payments:verify', kwargs={'payment_id': payment.id}))
+        self.assertTrue(Notification.objects.filter(user=self.tenant, kind='payment_confirmed').exists())
+
+    def test_reject_payment_notifies_tenant(self):
+        payment = Payment.objects.create(
+            booking=self.booking, tenant=self.tenant, amount=50000,
+            due_date=self.move_in, status='TENANT_PAID',
+        )
+        client = Client()
+        client.login(username='pn_landlord', password='pw')
+        client.post(reverse('payments:reject_payment', kwargs={'payment_id': payment.id}), {
+            'rejection_reason': 'Wrong reference code',
+        })
+        self.assertTrue(Notification.objects.filter(user=self.tenant, kind='payment_rejected').exists())

@@ -11,8 +11,10 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.db import transaction
 from django.db.models import Q
+from django.urls import reverse
 from .models import Payment
 from .forms import TenantPaymentForm, LandlordConfirmForm
+from apps.notifications.models import Notification
 
 # xhtml2pdf setup (Serverless friendly - no C dependencies)
 try:
@@ -159,13 +161,19 @@ def verify_payment(request, payment_id):
                         payment.payment_notes = f"[Landlord: {confirmation_notes}]"
                 
                 payment.save()
-                
+
                 # Update Booking Status to PAID
                 booking = payment.booking
                 if booking.status == 'CONFIRMED':
                     booking.status = 'PAID'
                     booking.save()
-                
+
+                Notification.notify(
+                    payment.tenant, 'payment_confirmed',
+                    f"Your payment of TZS {payment.amount:,.0f} for '{booking.property.title}' was confirmed",
+                    link=reverse('payments:payment_detail', kwargs={'payment_id': payment.id}),
+                )
+
                 messages.success(request, f"✅ Payment of TZS {payment.amount:,.0f} verified successfully!")
                 return redirect('payments:landlord_payments')
                 
@@ -204,6 +212,11 @@ def reject_payment(request, payment_id):
         payment.rejection_reason = reason
         payment.tenant_paid_at = None
         payment.save(update_fields=['status', 'rejection_reason', 'tenant_paid_at', 'updated_at'])
+        Notification.notify(
+            payment.tenant, 'payment_rejected',
+            f"Your payment for '{payment.booking.property.title}' was not received - check the note and resubmit",
+            link=reverse('payments:payment_detail', kwargs={'payment_id': payment.id}),
+        )
         messages.success(request, "Payment marked as not received - the tenant has been shown your note.")
         return redirect('payments:landlord_payments')
 
@@ -406,7 +419,13 @@ def mark_payment_made(request, booking_id):
                     payment.payment_proof = request.FILES['payment_proof']
                     
                 payment.save()
-                
+
+                Notification.notify(
+                    booking.property.landlord, 'payment_marked_paid',
+                    f"{booking.tenant.username} marked TZS {total_amount:,.0f} as paid for '{booking.property.title}'",
+                    link=reverse('payments:landlord_payments'),
+                )
+
                 messages.success(request, f'✅ Payment of TZS {total_amount:,.0f} marked as made! Landlord will verify receipt.')
                 return redirect('payments:payment_detail', payment_id=payment.id)
     else:

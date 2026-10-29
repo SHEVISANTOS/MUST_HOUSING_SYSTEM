@@ -229,16 +229,18 @@ class PublicBrowsingTests(TestCase):
         with CaptureQueriesContext(connection) as auth_ctx:
             tenant_client.get(reverse('properties:list'))
 
-        # Signed-in adds exactly 4 queries on top of the anonymous baseline,
+        # Signed-in adds exactly 5 queries on top of the anonymous baseline,
         # verified empirically - not assumed: session lookup + loading the
         # user (both from AuthenticationMiddleware), plus one query each
-        # from the saved_property_ids and unread_message_count context
-        # processors (apps/properties/context_processors.py and
-        # apps/messaging/context_processors.py) - both only hit the DB for
-        # authenticated requests, since the sidebar that uses them renders
-        # on every page. The property-listing work itself must be
-        # identical either way.
-        self.assertEqual(len(anon_ctx.captured_queries) + 4, len(auth_ctx.captured_queries))
+        # from the saved_property_ids, unread_message_count and
+        # unread_notification_count context processors
+        # (apps/properties/context_processors.py,
+        # apps/messaging/context_processors.py and
+        # apps/notifications/context_processors.py) - all three only hit
+        # the DB for authenticated requests, since the sidebar/top bar that
+        # use them render on every page. The property-listing work itself
+        # must be identical either way.
+        self.assertEqual(len(anon_ctx.captured_queries) + 5, len(auth_ctx.captured_queries))
 
 
 class PropertyEditPauseTests(TestCase):

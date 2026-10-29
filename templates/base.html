@@ -90,6 +90,8 @@
         .top-btn-ghost:hover { background: var(--paper); }
         .top-btn-solid { background: var(--forest); border-color: var(--forest); color: #fff; }
         .top-btn-solid:hover { background: var(--forest-dark); color: #fff; }
+        .bell-btn { position: relative; }
+        .bell-badge { position: absolute; top: -4px; right: -4px; background: var(--coral-deep); color: #fff; font-size: 0.62rem; font-weight: 700; min-width: 16px; height: 16px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 3px; line-height: 1; }
 
         /* ---- Main & footer ---- */
         .main-content { flex: 1; width: 100%; padding: 32px; }
@@ -327,6 +329,10 @@
                 </nav>
                 <div class="header-user">
                     {% if user.is_authenticated %}
+                        <a href="{% url 'notifications:inbox' %}" class="top-btn top-btn-ghost bell-btn" aria-label="Notifications">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                            {% if unread_notification_count %}<span class="bell-badge">{{ unread_notification_count }}</span>{% endif %}
+                        </a>
                         <div class="user-badge">
                             <span class="avatar-circle">{{ user.username|first|upper }}</span>
                             <span class="user-name">{{ user.username }}</span>

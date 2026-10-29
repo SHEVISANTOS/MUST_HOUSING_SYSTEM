@@ -5,11 +5,13 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.utils.formats import date_format
 from .models import Booking, Tenancy
 from apps.properties.models import Property
+from apps.notifications.models import Notification
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +156,11 @@ def create_booking(request, property_id):
                     note=note,
                     status='PENDING'
                 )
+                Notification.notify(
+                    prop.landlord, 'booking_request',
+                    f"{request.user.username} requested to book '{prop.title}'",
+                    link=reverse('bookings:landlord_bookings'),
+                )
                 return redirect('bookings:booking_sent', booking_id=booking.id)
 
             except Exception as e:
@@ -272,6 +279,12 @@ def approve_booking(request, booking_id):
                 decline_reason=f"Another booking for these dates was approved first (move-in {date_format(move_in, 'j M Y')}).",
             )
 
+        Notification.notify(
+            booking.tenant, 'booking_approved',
+            f"Your booking for '{property_obj.title}' was approved",
+            link=reverse('bookings:my_bookings'),
+        )
+
         if declined_count:
             messages.success(
                 request,
@@ -310,6 +323,11 @@ def reject_booking(request, booking_id):
         booking.status = 'CANCELLED'
         booking.decline_reason = request.POST.get('decline_reason', '').strip()
         booking.save()
+        Notification.notify(
+            booking.tenant, 'booking_declined',
+            f"Your booking for '{booking.property.title}' was declined",
+            link=reverse('bookings:my_bookings'),
+        )
         messages.error(request, "❌ Booking rejected.")
     except Exception as e:
         logger.error(f"Error rejecting booking {booking_id}: {e}")
