@@ -181,6 +181,7 @@ R2_BUCKET_NAME = os.getenv('R2_BUCKET_NAME', '')
 # "pub-xxxxxxxx.r2.dev" or "media.votmwanza.co.tz".
 R2_PUBLIC_URL = os.getenv('R2_PUBLIC_URL', '')
 
+
 if R2_ACCOUNT_ID and R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY and R2_BUCKET_NAME:
     STORAGES["default"] = {
         "BACKEND": "storages.backends.s3.S3Storage",
