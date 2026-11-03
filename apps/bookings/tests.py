@@ -475,3 +475,38 @@ class BookingNotificationTests(TenancyTestBase):
         client.login(username='landlord1', password='pw')
         client.post(reverse('bookings:reject_booking', kwargs={'booking_id': booking.id}))
         self.assertTrue(Notification.objects.filter(user=self.tenant, kind='booking_declined').exists())
+
+
+class ViewBookingTests(TenancyTestBase):
+    """The booking detail page's template was missing entirely - every
+    'View Details' click 500'd."""
+
+    def setUp(self):
+        super().setUp()
+        self.booking = Booking.objects.create(
+            property=self.property, tenant=self.tenant,
+            move_in_date=timezone.localdate(), move_out_date=timezone.localdate() + timedelta(days=90),
+            status='CANCELLED', decline_reason='Dates no longer available',
+        )
+        self.url = reverse('bookings:view_booking', kwargs={'booking_id': self.booking.id})
+
+    def test_landlord_sees_booking(self):
+        client = Client()
+        client.login(username='landlord1', password='pw')
+        response = client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Dates no longer available')
+        self.assertContains(response, 'tenant1')
+
+    def test_tenant_sees_booking(self):
+        client = Client()
+        client.login(username='tenant1', password='pw')
+        response = client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Test Property')
+
+    def test_unrelated_user_is_redirected(self):
+        client = Client()
+        client.login(username='tenant2', password='pw')
+        response = client.get(self.url)
+        self.assertRedirects(response, reverse('core:dashboard'), fetch_redirect_response=False)

@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Booking BK/{{ booking.id|stringformat:"04d" }}{% endblock %}
+
+{% block content %}
+<style>
+    .detail-row { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row dt { color: var(--text-grey); font-weight: 600; }
+    .detail-row dd { margin: 0; text-align: right; }
+</style>
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Booking</p>
+        <h1>BK/{{ booking.id|stringformat:"04d" }}</h1>
+        <p class="page-sub">{{ booking.property.title }}</p>
+    </div>
+    {% if booking.status == 'PENDING' %}
+        <span class="badge badge-warning">⏳ Pending approval</span>
+    {% elif booking.status == 'CONFIRMED' %}
+        <span class="badge badge-success">✅ Confirmed</span>
+    {% elif booking.status == 'PAID' %}
+        <span class="badge badge-info">💰 Paid &amp; active</span>
+    {% elif booking.status == 'CANCELLED' %}
+        <span class="badge badge-danger">❌ Cancelled</span>
+    {% else %}
+        <span class="badge badge-secondary">{{ booking.get_status_display }}</span>
+    {% endif %}
+</div>
+
+<div class="card">
+    <div class="card-header"><span>📋 Details</span></div>
+    <div class="card-body">
+        <dl style="margin: 0;">
+            <div class="detail-row"><dt>Property</dt><dd><a href="{% url 'properties:detail' booking.property.id %}">{{ booking.property.title }}</a> · {{ booking.property.location }}</dd></div>
+            {% if is_landlord %}
+            <div class="detail-row"><dt>Tenant</dt><dd>{{ booking.tenant.get_full_name|default:booking.tenant.username }}</dd></div>
+            {% else %}
+            <div class="detail-row"><dt>Landlord</dt><dd>{{ booking.property.landlord.get_full_name|default:booking.property.landlord.username }}</dd></div>
+            {% endif %}
+            <div class="detail-row"><dt>Move-in</dt><dd>{{ booking.move_in_date|date:"j M Y" }}</dd></div>
+            <div class="detail-row"><dt>Move-out</dt><dd>{{ booking.move_out_date|date:"j M Y" }}</dd></div>
+            <div class="detail-row"><dt>Monthly rent</dt><dd>TZS {{ booking.property.monthly_rent|floatformat:0|intcomma }}</dd></div>
+            <div class="detail-row"><dt>Requested</dt><dd>{{ booking.created_at|date:"j M Y, H:i" }}</dd></div>
+            {% if booking.note %}
+            <div class="detail-row"><dt>Note from tenant</dt><dd>{{ booking.note }}</dd></div>
+            {% endif %}
+            {% if booking.status == 'CANCELLED' and booking.decline_reason %}
+            <div class="detail-row"><dt>Reason</dt><dd>{{ booking.decline_reason }}</dd></div>
+            {% endif %}
+            {% if booking.tenancy %}
+            <div class="detail-row"><dt>Tenancy</dt><dd>{% include 'bookings/_tenancy_status_badge.html' with tenancy=booking.tenancy mode="contract" %}</dd></div>
+            {% endif %}
+        </dl>
+    </div>
+</div>
+
+{% with payments=booking.payments.all %}
+{% if payments %}
+<div class="card">
+    <div class="card-header"><span>💳 Payments</span></div>
+    <div class="card-body">
+        <dl style="margin: 0;">
+            {% for payment in payments %}
+            <div class="detail-row">
+                <dt>TZS {{ payment.amount|floatformat:0|intcomma }} · {{ payment.get_status_display }}</dt>
+                <dd><a href="{% url 'payments:payment_detail' payment.id %}">View payment →</a></dd>
+            </div>
+            {% endfor %}
+        </dl>
+    </div>
+</div>
+{% endif %}
+{% endwith %}
+
+<a href="{% if is_landlord %}{% url 'bookings:landlord_bookings' %}{% else %}{% url 'bookings:my_bookings' %}{% endif %}" class="btn btn-secondary">← Back to bookings</a>
+{% endblock %}
