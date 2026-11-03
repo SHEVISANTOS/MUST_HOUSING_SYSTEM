@@ -3,6 +3,7 @@
 from django.db import models
 from django.utils import timezone
 from apps.users.models import User
+from config.uploads import RandomName, validate_image_upload
 
 class Property(models.Model):
     # Richer listing lifecycle, additive alongside `is_available` below -
@@ -123,7 +124,7 @@ class Property(models.Model):
 # Property Images Model
 class PropertyImage(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to='property_images/%Y/%m/%d/')
+    image = models.ImageField(upload_to=RandomName('property_images/%Y/%m/%d'), validators=[validate_image_upload])
     caption = models.CharField(max_length=200, blank=True, null=True)
     is_primary = models.BooleanField(default=False)
     uploaded_at = models.DateTimeField(auto_now_add=True)

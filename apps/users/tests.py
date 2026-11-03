@@ -1,8 +1,11 @@
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, Client
 from django.urls import reverse
 
 from apps.users.models import User
 from apps.properties.models import Property
+from config.uploads import RandomName, validate_image_upload
 
 
 class NextRedirectTests(TestCase):
@@ -97,3 +100,69 @@ class RegistrationSecurityTests(TestCase):
         self.assertEqual(response.status_code, 200)  # re-renders the form, no redirect
         self.assertFalse(User.objects.filter(username='would_be_admin').exists())
         self.assertIn('role', response.context['form'].errors)
+
+
+# A minimal valid 1x1 transparent PNG - validate_image_upload checks real
+# file extension/size, not content, but this stands in for "a real upload".
+_ONE_PX_PNG = (
+    b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01'
+    b'\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0bIDATx\x9cc\x64'
+    b'\x60\x00\x00\x00\x05\x00\x01\x1f\xcd\xbb\xd3\x00\x00\x00\x00IEND\xaeB`\x82'
+)
+
+
+class UploadValidationTests(TestCase):
+    """config.uploads - shared by User.profile_picture, Payment.payment_proof
+    and PropertyImage.image. Recovered from a server-only, never-committed
+    change (2026-11-03) and wired back into the three models here - these
+    tests cover the module directly rather than duplicating per-model."""
+
+    def test_accepts_allowed_extensions_under_size_limit(self):
+        for ext in ('.jpg', '.jpeg', '.png', '.webp'):
+            f = SimpleUploadedFile(f'photo{ext}', _ONE_PX_PNG, content_type='image/png')
+            validate_image_upload(f)  # must not raise
+
+    def test_rejects_disallowed_extension(self):
+        f = SimpleUploadedFile('payload.svg', _ONE_PX_PNG, content_type='image/svg+xml')
+        with self.assertRaises(ValidationError):
+            validate_image_upload(f)
+
+    def test_rejects_oversized_file(self):
+        oversized = _ONE_PX_PNG + b'\x00' * (10 * 1024 * 1024)
+        f = SimpleUploadedFile('big.jpg', oversized, content_type='image/jpeg')
+        with self.assertRaises(ValidationError):
+            validate_image_upload(f)
+
+    def test_random_name_keeps_extension_and_date_formats_folder(self):
+        namer = RandomName('profile_pics/%Y/%m')
+        path = namer(None, 'my photo.JPG')
+        self.assertTrue(path.endswith('.jpg'))
+        self.assertNotIn('my photo', path)  # original name is discarded, not just sanitized
+        from django.utils import timezone
+        self.assertTrue(path.startswith(timezone.now().strftime('profile_pics/%Y/%m/')))
+
+    def test_random_name_equality_is_by_folder_not_identity(self):
+        # Must hold, or Django's migration autodetector sees a "change"
+        # every time it compares the model field to the migration state,
+        # even when neither actually changed - exactly the drift this
+        # module's recovery was fixing.
+        self.assertEqual(RandomName('profile_pics'), RandomName('profile_pics'))
+        self.assertNotEqual(RandomName('profile_pics'), RandomName('payment_proofs/%Y/%m'))
+
+    def test_profile_picture_upload_gets_randomized_path(self):
+        user = User.objects.create_user(username='upload_user', password='pw', role='TENANT')
+        user.profile_picture = SimpleUploadedFile('me.png', _ONE_PX_PNG, content_type='image/png')
+        user.save()
+        self.assertNotIn('me.png', user.profile_picture.name)
+        self.assertTrue(user.profile_picture.name.startswith('profile_pics/'))
+        user.profile_picture.delete(save=False)
+
+    def test_profile_picture_field_rejects_disallowed_type(self):
+        # Exercises the validator exactly as Django wires it on the field,
+        # scoped to just this field (not full_clean(), which would also
+        # validate unrelated required fields like password).
+        bad_file = SimpleUploadedFile('virus.exe', b'not an image', content_type='application/octet-stream')
+        field = User._meta.get_field('profile_picture')
+        with self.assertRaises(ValidationError):
+            for validator in field.validators:
+                validator(bad_file)
