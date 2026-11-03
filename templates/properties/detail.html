@@ -395,11 +395,15 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // OSM blocks tile requests without a Referer, and the site-wide
+            // Referrer-Policy (same-origin) strips it - referrerPolicy below
+            // sends just this site's origin with tile requests.
             {% if has_confirmed_booking %}
             const pos = [{{ property.latitude|stringformat:"f" }}, {{ property.longitude|stringformat:"f" }}];
             const map = L.map('property-map', { scrollWheelZoom: false }).setView(pos, 16);
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
+                referrerPolicy: 'strict-origin-when-cross-origin',
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
             L.marker(pos).addTo(map).bindPopup("{{ property.title|escapejs }}");
@@ -408,6 +412,7 @@
             const map = L.map('property-map', { scrollWheelZoom: false }).setView(pos, 12);
             L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
+                referrerPolicy: 'strict-origin-when-cross-origin',
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
             L.circle(pos, { radius: 1200, color: '#176b52', fillOpacity: 0.15 }).addTo(map);
