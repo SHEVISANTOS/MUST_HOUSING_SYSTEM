@@ -64,16 +64,6 @@ Create `/srv/must_housing/.env` (git-ignored, never committed - see
     DJANGO_ALLOWED_HOSTS=<your-server-ip>
     CSRF_TRUSTED_ORIGINS=<your-server-ip>
 
-    # Optional: reuse the same R2 bucket Vercel uses so both deployments
-    # serve the same property images, or leave all five blank to fall back
-    # to local-disk storage under media/ (this server has a persistent
-    # filesystem, unlike Vercel, so that fallback is actually viable here).
-    R2_ACCOUNT_ID=
-    R2_ACCESS_KEY_ID=
-    R2_SECRET_ACCESS_KEY=
-    R2_BUCKET_NAME=
-    R2_PUBLIC_URL=
-
 `DJANGO_ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS` are additive on top of the
 hardcoded Vercel-oriented defaults in `config/settings.py` - setting them
 here has no effect on the Vercel deployment.
@@ -140,9 +130,7 @@ the `systemctl restart` step.
 
 Unlike the Vercel/Neon deployment, this server has no managed point-in-time
 recovery - `deploy/backup/must-housing-backup.sh` is the only backup this
-data gets. It `pg_dump`s the local database and tars `media/` (skipped if
-R2 is configured instead, since then there's nothing local to back up),
-writing timestamped, checksummed files to `/var/backups/must_housing/`
+data gets. It `pg_dump`s the local database and tars `media/`, writing timestamped, checksummed files to `/var/backups/must_housing/`
 with a 7-day retention (`BACKUP_KEEP_DAYS`). Optional off-site copy via
 `BACKUP_S3_URI` (same convention as `VOT-Stay/deploy/backup/backup.sh`).
 
@@ -215,42 +203,19 @@ you deliberately migrate data between them (e.g. `pg_dump` from Neon,
 `pg_restore` into the local Postgres instance) or point this server's
 `DATABASE_URL` at Neon instead of a local database.
 
-## Media storage (Cloudflare R2)
+## Media storage (local disk only)
 
-Property image uploads used plain local-disk storage (`FileSystemStorage`),
-which doesn't persist on Vercel's ephemeral filesystem - images uploaded in
-production were never actually retrievable afterwards. Fixed by adding
-optional Cloudflare R2 support (S3-compatible, via `django-storages`) in
-`config/settings.py`. It's **opt-in via environment variables** - with none
-of the `R2_*` vars set, the app falls back to local disk exactly as before
-(fine for local dev).
+User uploads (property photos, payment proofs, profile pictures) are stored
+on local disk under `MEDIA_ROOT` (`media/`) via `FileSystemStorage`, served
+by nginx's `location /media/` block. Cloudflare R2 support was removed
+(2026-11-03); any leftover `R2_*` env vars are ignored.
 
-**One-time setup in the Cloudflare dashboard:**
-1. R2 → Create bucket (lowercase name, no spaces, e.g. `vot-house-finding-media`).
-2. Open the bucket → Settings → **Public Access** → allow it. This gives you
-   a public `pub-xxxxxxxx.r2.dev` URL - required so generated image URLs are
-   plain, permanent public links rather than short-lived signed ones
-   (`querystring_auth` is set to `False` in settings.py on that assumption).
-   A custom domain works the same way if you'd rather use one.
-3. R2 → Manage API Tokens → create a token with **Object Read & Write**,
-   scoped to this bucket if possible. Copy the Access Key ID and Secret
-   Access Key immediately - R2 only shows the secret once.
-4. Your Account ID is in the R2 dashboard sidebar (also visible in the S3
-   API endpoint URL Cloudflare shows you: `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`).
+Uploads go through `config/uploads.py`: JPG/PNG/WEBP only, max 10 MB, saved
+under a random UUID filename (`RandomName`) rather than the original name.
 
-**Set these as environment variables** (both locally in `.env` and on the
-Vercel project, same pattern as `DATABASE_URL`/`CRON_SECRET`):
-
-    R2_ACCOUNT_ID=<your account id>
-    R2_ACCESS_KEY_ID=<from the API token>
-    R2_SECRET_ACCESS_KEY=<from the API token>
-    R2_BUCKET_NAME=<the bucket name you chose>
-    R2_PUBLIC_URL=<the pub-xxxxxxxx.r2.dev host, or your custom domain - no scheme>
-
-Once all five are set, `config/settings.py` automatically switches
-`STORAGES["default"]` to R2; leaving any of them blank keeps local disk
-storage active. Static files (CSS/JS/whitenoise) are untouched by this -
-only media uploads move to R2.
+**⚠️ Vercel:** Vercel's filesystem is ephemeral, so uploads made on the
+Vercel deployment are not persisted - they disappear on the next deploy or
+cold start. Only the Ubuntu server deployment keeps uploaded media.
 
 ## Tenancy Contract Status & Availability Timeline
 

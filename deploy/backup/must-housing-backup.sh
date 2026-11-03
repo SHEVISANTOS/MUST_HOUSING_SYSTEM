@@ -36,7 +36,7 @@ if [ -d "$APP_DIR/media" ] && [ -n "$(ls -A "$APP_DIR/media" 2>/dev/null)" ]; th
   sha256sum "$MEDIA_FILE" > "$MEDIA_FILE.sha256"
   echo "Media backup written: $MEDIA_FILE ($(du -h "$MEDIA_FILE" | cut -f1))"
 else
-  echo "No local media/ directory to back up (R2 storage is configured, or it's empty)."
+  echo "No local media/ directory to back up (missing or empty)."
 fi
 
 if [ -n "${BACKUP_S3_URI:-}" ]; then

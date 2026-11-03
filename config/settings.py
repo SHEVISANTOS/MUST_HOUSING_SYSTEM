@@ -173,6 +173,21 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Django's default logging only prints to console when DEBUG=True, and with
+# no ADMINS set, unhandled 500s in production went nowhere at all - not even
+# journalctl. Send ERROR-level request failures (tracebacks included) to
+# stderr, which Gunicorn/systemd and Vercel both capture.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'},
+    },
+    'loggers': {
+        'django.request': {'handlers': ['console'], 'level': 'ERROR', 'propagate': False},
+    },
+}
+
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
