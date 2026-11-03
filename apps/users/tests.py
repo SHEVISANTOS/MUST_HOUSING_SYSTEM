@@ -166,3 +166,47 @@ class UploadValidationTests(TestCase):
         with self.assertRaises(ValidationError):
             for validator in field.validators:
                 validator(bad_file)
+
+
+class PhoneNumberTests(TestCase):
+    """A spaced number like '+255 712 345 678' (16 chars) used to overflow
+    User.phone's 15-char column and 500 the profile page."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='phone_user', password='pw', role='TENANT', email='pu@example.com')
+        self.client = Client()
+        self.client.login(username='phone_user', password='pw')
+
+    def test_profile_accepts_spaced_international_number(self):
+        response = self.client.post(reverse('core:profile'), {'email': 'pu@example.com', 'phone': '+255 712 345 678'})
+        self.assertRedirects(response, reverse('core:profile'))
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.phone, '+255712345678')
+
+    def test_profile_accepts_dashed_local_number(self):
+        self.client.post(reverse('core:profile'), {'email': 'pu@example.com', 'phone': '0712-345-678'})
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.phone, '0712345678')
+
+    def test_profile_rejects_garbage_without_crashing(self):
+        response = self.client.post(reverse('core:profile'), {'email': 'pu@example.com', 'phone': 'call me maybe'}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.phone, '')
+        messages = [str(m) for m in response.context['messages']]
+        self.assertTrue(any('valid phone number' in m for m in messages))
+
+    def test_profile_allows_clearing_phone(self):
+        self.user.phone = '0712345678'
+        self.user.save()
+        self.client.post(reverse('core:profile'), {'email': 'pu@example.com', 'phone': ''})
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.phone, '')
+
+    def test_registration_accepts_spaced_number(self):
+        response = Client().post(reverse('users:register'), {
+            'username': 'spaced_phone', 'email': 'sp@example.com', 'phone': '+255 712 345 678',
+            'role': 'TENANT', 'password1': 'Str0ngPassw0rd!', 'password2': 'Str0ngPassw0rd!',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(User.objects.get(username='spaced_phone').phone, '+255712345678')

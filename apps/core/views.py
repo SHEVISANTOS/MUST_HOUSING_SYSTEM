@@ -131,13 +131,16 @@ def dashboard(request):
 def profile(request):
     """User profile page with update functionality"""
     if request.method == 'POST':
-        request.user.first_name = request.POST.get('first_name', request.user.first_name)
-        request.user.last_name = request.POST.get('last_name', request.user.last_name)
-        request.user.email = request.POST.get('email', request.user.email)
-        request.user.phone = request.POST.get('phone', request.user.phone)
-        request.user.save()
-        
-        messages.success(request, 'Profile updated successfully!')
+        from apps.users.forms import ProfileForm
+
+        form = ProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+        else:
+            for errors in form.errors.values():
+                for error in errors:
+                    messages.error(request, error)
         return redirect('core:profile')
     
     return render(request, 'profile.html', {'user': request.user})
