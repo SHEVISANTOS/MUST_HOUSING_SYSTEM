@@ -181,9 +181,11 @@ def property_detail(request, pk):
             'is_ending_soon': t.display_status == 'ending_soon',
         })
 
-    # og:image always uses the site logo (served via whitenoise from
-    # /static/), never a property photo.
-    og_image_url = request.build_absolute_uri(static('img/vot_logo.png'))
+    # Link previews (WhatsApp, Facebook, ...) show the cover photo - nginx
+    # serves /media/ publicly - falling back to the logo for photo-less listings.
+    # PropertyImage's ordering puts the cover first, same photo the listing card shows.
+    cover = next(iter(prop.images.all()), None)
+    og_image_url = request.build_absolute_uri(cover.image.url if cover else static('img/vot_logo.png'))
     og_url = request.build_absolute_uri(request.path)
 
     # Plain share URLs (no third-party SDKs/trackers), built here rather than

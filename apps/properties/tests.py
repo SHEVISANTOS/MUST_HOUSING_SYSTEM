@@ -1,6 +1,7 @@
+import tempfile
 from datetime import timedelta
 
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.test.utils import CaptureQueriesContext
 from django.db import connection
 from django.urls import reverse
@@ -503,3 +504,45 @@ class ShareButtonTests(TestCase):
     def test_share_data_available_for_native_share_sheet(self):
         body = Client().get(self.url).content.decode()
         self.assertIn('id="share-data"', body)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class LinkPreviewImageTests(TestCase):
+    """og:image drives the picture WhatsApp/Facebook show for a shared link."""
+
+    def setUp(self):
+        landlord = User.objects.create_user(username='og_landlord', password='pw', role='LANDLORD')
+        self.property = Property.objects.create(
+            landlord=landlord, title='Preview House', location='Ilemela',
+            property_type='2BR', monthly_rent=150000, distance_from_center_km=1.0,
+        )
+        self.url = reverse('properties:detail', kwargs={'pk': self.property.pk})
+
+    def _add_photo(self, name, primary=False):
+        return PropertyImage.objects.create(
+            property=self.property, is_primary=primary,
+            image=SimpleUploadedFile(name, _ONE_PX_PNG, content_type='image/png'),
+        )
+
+    def _og_image(self):
+        return Client().get(self.url).context['og_image_url']
+
+    def test_no_photos_falls_back_to_logo(self):
+        self.assertIn('/static/img/vot_logo', self._og_image())
+
+    def test_uses_cover_photo_as_absolute_url(self):
+        photo = self._add_photo('cover.png', primary=True)
+        og = self._og_image()
+        self.assertTrue(og.startswith('http://testserver/media/'))
+        self.assertTrue(og.endswith(photo.image.name))
+
+    def test_prefers_cover_over_first_photo(self):
+        self._add_photo('first.png')
+        cover = self._add_photo('cover.png', primary=True)
+        self.assertTrue(self._og_image().endswith(cover.image.name))
+
+    def test_without_cover_matches_listing_card_photo(self):
+        self._add_photo('older.png')
+        self._add_photo('newer.png')
+        card_photo = self.property.images.all()[0]  # what _listing_card.html shows
+        self.assertTrue(self._og_image().endswith(card_photo.image.name))
