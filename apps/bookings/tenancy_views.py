@@ -9,42 +9,14 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.views.decorators.http import require_GET
 
 from .models import Tenancy
-from .services import sync_tenancy_statuses
 
 logger = logging.getLogger(__name__)
-
-
-@require_GET
-def cron_update_tenancy_statuses(request):
-    """
-    Triggered daily by Vercel Cron (see vercel.json's `crons` entry).
-    Vercel automatically sends "Authorization: Bearer <CRON_SECRET>" (from
-    the CRON_SECRET env var configured on the Vercel project) when calling a
-    scheduled path - that's Vercel's own documented convention, not
-    something invented here. Fails closed: if CRON_SECRET isn't configured
-    on this deployment, every request is rejected rather than allowed.
-
-    Not behind @login_required - Vercel Cron isn't a logged-in user, and
-    this endpoint is not reachable through any link in the site's UI.
-    """
-    expected = f"Bearer {settings.CRON_SECRET}" if settings.CRON_SECRET else None
-    if not expected or request.headers.get('Authorization') != expected:
-        return JsonResponse({'error': 'Unauthorized'}, status=401)
-
-    try:
-        result = sync_tenancy_statuses()
-    except Exception:
-        logger.exception("update_tenancy_statuses cron run failed")
-        return JsonResponse({'error': 'Failed to update tenancy statuses'}, status=500)
-
-    return JsonResponse({'status': 'ok', **result})
 
 
 # ==================== TENANT: MY CONTRACT ====================

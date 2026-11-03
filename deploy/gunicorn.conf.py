@@ -1,5 +1,4 @@
-# Gunicorn config for the Ubuntu/systemd deployment (not used by Vercel,
-# which invokes api/index.py's WSGI app directly). Referenced by
+# Gunicorn config for the Ubuntu/systemd deployment. Referenced by
 # deploy/vot-house-finding.service via `gunicorn -c deploy/gunicorn.conf.py`.
 import multiprocessing
 

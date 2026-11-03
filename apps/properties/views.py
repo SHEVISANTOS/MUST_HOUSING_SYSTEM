@@ -180,14 +180,8 @@ def property_detail(request, pk):
             'is_ending_soon': t.display_status == 'ending_soon',
         })
 
-    # og:image deliberately always uses the site logo, never a property
-    # photo: this deployment has no cloud storage configured (no
-    # django-storages/S3/Cloudinary), MEDIA_ROOT is local disk, and nothing
-    # serves /media/ in production (Django's own media serving is wrapped
-    # in `if settings.DEBUG`, and vercel.json has no /media/ route). A
-    # property-photo og:image would work when previewed locally and break
-    # silently in production - the logo is the one image guaranteed to be
-    # reachable (served via whitenoise from /static/).
+    # og:image always uses the site logo (served via whitenoise from
+    # /static/), never a property photo.
     og_image_url = request.build_absolute_uri(static('img/vot_logo.png'))
     og_url = request.build_absolute_uri(request.path)
 

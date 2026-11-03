@@ -9,9 +9,8 @@ def sync_tenancy_statuses():
     tenancies are skipped - those are final, explicit-action states, not
     something the calendar should ever move on from.
 
-    Shared by the update_tenancy_statuses management command and the
-    Vercel Cron endpoint so both report the same counts without
-    duplicating the loop.
+    Called by the update_tenancy_statuses management command (run daily
+    by the server's crontab).
     """
     tenancies_updated = 0
     bookings_completed = 0

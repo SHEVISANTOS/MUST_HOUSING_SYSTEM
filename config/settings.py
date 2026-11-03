@@ -32,10 +32,9 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'fallback-dev-key-replace-in-vercel'
 # Keep Debug False in production, but allow local override
 DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11' , '192.168.1.207']
-# Extra hosts for non-Vercel deployments (e.g. a bare Ubuntu server's IP or
-# domain) - additive, comma-separated, so it doesn't disturb the Vercel list
-# above. Unset by default (no effect unless explicitly configured).
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '192.168.1.113', '192.168.0.11' , '192.168.1.207']
+# Extra hosts (e.g. the server's domain) - additive, comma-separated.
+# Unset by default (no effect unless explicitly configured).
 ALLOWED_HOSTS += [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
 
 # Needed once DEBUG=False and the site is served over plain HTTP from an
@@ -52,8 +51,7 @@ CSRF_TRUSTED_ORIGINS = [
 # Behind nginx: trust its X-Forwarded-Proto header so Django knows a
 # request arrived over HTTPS even though nginx terminates TLS and forwards
 # to Gunicorn over plain HTTP. Only meaningful once nginx is actually
-# setting that header (see deploy/nginx_vot_house_finding.conf) - harmless
-# no-op on Vercel, which sets its own equivalent forwarded-proto handling.
+# setting that header (see deploy/nginx_vot_house_finding.conf).
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
@@ -176,7 +174,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Django's default logging only prints to console when DEBUG=True, and with
 # no ADMINS set, unhandled 500s in production went nowhere at all - not even
 # journalctl. Send ERROR-level request failures (tracebacks included) to
-# stderr, which Gunicorn/systemd and Vercel both capture.
+# stderr, which Gunicorn/systemd captures into journalctl.
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -188,16 +186,18 @@ LOGGING = {
     },
 }
 
+# PBKDF2 is deliberately slow (~1M iterations) to resist brute-forcing, and
+# nearly every test creates/logs in users - the test suite spent most of its
+# time hashing. Use a fast hasher for `manage.py test` only; real logins
+# always use the default secure hashers.
+if len(sys.argv) > 1 and sys.argv[1] == 'test':
+    PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
+
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Tenancy contract tracking
 ENDING_SOON_DAYS = int(os.getenv('ENDING_SOON_DAYS', '30'))
-
-# Shared secret Vercel Cron sends as "Authorization: Bearer <CRON_SECRET>"
-# when calling scheduled task endpoints. Empty by default so the endpoint
-# fails closed (rejects everything) until explicitly configured.
-CRON_SECRET = os.getenv('CRON_SECRET', '')
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'core:post_login_redirect' # Ensure 'core' app exists, or change to 'users:dashboard' etc.

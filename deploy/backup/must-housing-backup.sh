@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # Nightly backup of the Ubuntu deployment's local Postgres database and
-# local-disk media uploads (property photos) - unlike the Vercel/Neon
-# deployment, there's no managed point-in-time recovery here, so this is
-# the only backup this data gets. Mirrors the pattern in
+# local-disk media uploads (property photos) - a local database has no
+# managed point-in-time recovery, so this is the only backup this data gets. Mirrors the pattern in
 # VOT-Stay/deploy/backup/backup.sh, adapted for a local (non-pooled) DB and
 # for local media storage, which that app doesn't need to back up itself.
 #

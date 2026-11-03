@@ -1,8 +1,5 @@
 [Unit]
 Description=VOT House Finding - daily tenancy status sync
-# On Vercel this same job runs via an HTTP endpoint guarded by CRON_SECRET,
-# because Vercel Cron can only hit a URL. A real server can just run the
-# management command directly - no HTTP round-trip or shared secret needed.
 After=network.target postgresql.service
 
 [Service]

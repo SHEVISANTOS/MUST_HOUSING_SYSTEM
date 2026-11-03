@@ -1,7 +1,7 @@
 import datetime
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase, Client, override_settings
+from django.test import TestCase, Client
 from django.test.utils import CaptureQueriesContext
 from django.db import connection
 from django.urls import reverse
@@ -358,35 +358,6 @@ class SyncTenancyStatusesTests(TenancyTestBase):
         self.assertEqual(tenancy.status, 'ended')
         self.assertEqual(tenancy.booking.status, 'COMPLETED')
         self.assertEqual(result['bookings_completed'], 1)
-
-
-class CronEndpointTests(TenancyTestBase):
-    def setUp(self):
-        super().setUp()
-        self.url = reverse('bookings:cron_update_tenancy_statuses')
-
-    def test_no_header_unauthorized(self):
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, 401)
-
-    @override_settings(CRON_SECRET='right-secret')
-    def test_wrong_secret_unauthorized(self):
-        response = self.client.get(self.url, HTTP_AUTHORIZATION='Bearer wrong-secret')
-        self.assertEqual(response.status_code, 401)
-
-    def test_secret_unset_fails_closed(self):
-        response = self.client.get(self.url, HTTP_AUTHORIZATION='Bearer anything')
-        self.assertEqual(response.status_code, 401)
-
-    @override_settings(CRON_SECRET='right-secret')
-    def test_correct_secret_ok(self):
-        response = self.client.get(self.url, HTTP_AUTHORIZATION='Bearer right-secret')
-        self.assertEqual(response.status_code, 200)
-
-    @override_settings(CRON_SECRET='right-secret')
-    def test_post_not_allowed(self):
-        response = self.client.post(self.url, HTTP_AUTHORIZATION='Bearer right-secret')
-        self.assertEqual(response.status_code, 405)
 
 
 class AccessControlTests(TenancyTestBase):

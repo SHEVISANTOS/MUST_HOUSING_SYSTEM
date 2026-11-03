@@ -2,10 +2,9 @@
 
 ## Ubuntu Server Deployment (Gunicorn + Nginx + systemd)
 
-A second, independent deployment target alongside Vercel: Gunicorn behind
-Nginx, managed by systemd, with its own local Postgres database (separate
-from Vercel's Neon database - see the callout at the end of this section).
-Config files referenced below live in `deploy/` and `scripts/deploy_ubuntu.sh`.
+The only deployment target (Vercel and Neon were retired 2026-11-03):
+Gunicorn behind Nginx, managed by systemd, with a local Postgres database
+and local-disk media storage. Config files referenced below live in `deploy/` and `scripts/deploy_ubuntu.sh`.
 
 This assumes Ubuntu 22.04+, a non-root user with `sudo`, and that you're
 deploying from a git clone of this repo. Paths below assume the app lives at
@@ -38,9 +37,6 @@ Skip anything already installed (check with e.g. `nginx -v`, `psql --version`):
 
 ### 3. Local Postgres database
 
-This server gets its **own** Postgres database - it is not the same
-database Vercel uses (see the callout below).
-
     sudo -u postgres psql -c "CREATE USER vot_user WITH PASSWORD 'choose-a-strong-password';"
     sudo -u postgres psql -c "CREATE DATABASE vot_house_finding OWNER vot_user;"
 
@@ -65,8 +61,7 @@ Create `/srv/must_housing/.env` (git-ignored, never committed - see
     CSRF_TRUSTED_ORIGINS=<your-server-ip>
 
 `DJANGO_ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS` are additive on top of the
-hardcoded Vercel-oriented defaults in `config/settings.py` - setting them
-here has no effect on the Vercel deployment.
+hardcoded local-network defaults in `config/settings.py`.
 
 ### 6. Migrate, collect static, create an admin user
 
@@ -84,11 +79,9 @@ here has no effect on the Vercel deployment.
 Edit the `User=`/paths in `/etc/systemd/system/vot-house-finding.service`
 first if your user or install path differs from the defaults above.
 
-### 8. Daily tenancy status sync (replaces Vercel Cron for this deployment)
+### 8. Daily tenancy status sync
 
-Vercel Cron hits an HTTP endpoint guarded by `CRON_SECRET` because that's
-the only mechanism Vercel offers; a real server can just run the management
-command directly on a timer instead:
+Run the `update_tenancy_statuses` management command daily on a timer:
 
     sudo cp deploy/vot-tenancy-sync.service deploy/vot-tenancy-sync.timer /etc/systemd/system/
     sudo systemctl daemon-reload
@@ -128,10 +121,10 @@ the `systemctl restart` step.
 
 ### 13. Nightly backup (local Postgres + local media)
 
-Unlike the Vercel/Neon deployment, this server has no managed point-in-time
-recovery - `deploy/backup/must-housing-backup.sh` is the only backup this
-data gets. It `pg_dump`s the local database and tars `media/`, writing timestamped, checksummed files to `/var/backups/must_housing/`
-with a 7-day retention (`BACKUP_KEEP_DAYS`). Optional off-site copy via
+A local database has no managed point-in-time recovery -
+`deploy/backup/must-housing-backup.sh` is the only backup this data gets.
+It `pg_dump`s the local database and tars `media/`, writing timestamped,
+checksummed files to `/var/backups/must_housing/` with a 7-day retention (`BACKUP_KEEP_DAYS`). Optional off-site copy via
 `BACKUP_S3_URI` (same convention as `VOT-Stay/deploy/backup/backup.sh`).
 
     sudo cp deploy/must-housing-backup.service deploy/must-housing-backup.timer /etc/systemd/system/
@@ -193,16 +186,6 @@ Certbot edits the Nginx config in place to add the TLS block and redirect.
 Afterwards, add the `https://housing.yourdomain.com` origin to
 `CSRF_TRUSTED_ORIGINS` in `.env` and restart the service.
 
-### ⚠️ Separate database from Vercel
-
-Because this deployment uses its own local Postgres (rather than the same
-Neon database Vercel uses), **it starts with an empty database** - no
-users, properties, bookings or payments from the Vercel/Neon deployment
-carry over automatically. The two deployments are independent until/unless
-you deliberately migrate data between them (e.g. `pg_dump` from Neon,
-`pg_restore` into the local Postgres instance) or point this server's
-`DATABASE_URL` at Neon instead of a local database.
-
 ## Media storage (local disk only)
 
 User uploads (property photos, payment proofs, profile pictures) are stored
@@ -213,72 +196,13 @@ by nginx's `location /media/` block. Cloudflare R2 support was removed
 Uploads go through `config/uploads.py`: JPG/PNG/WEBP only, max 10 MB, saved
 under a random UUID filename (`RandomName`) rather than the original name.
 
-**⚠️ Vercel:** Vercel's filesystem is ephemeral, so uploads made on the
-Vercel deployment are not persisted - they disappear on the next deploy or
-cold start. Only the Ubuntu server deployment keeps uploaded media.
-
 ## Tenancy Contract Status & Availability Timeline
 
 Notes for deploying the tenancy/contract feature (models, approval hook,
 renewal, daily status sync, and the tenant/landlord/seeker UI built across
 this feature's steps 1–7).
 
-## 0. ⚠️ Required Vercel env vars (`.env` is no longer committed)
-
-`config/settings.py` calls `load_dotenv()`, which loads a `.env` file *if
-one is present in the working directory*. Until a recent security fix,
-`.env` was committed to this repo — so every Vercel deploy cloned it along
-with the code, and `load_dotenv()` quietly sourced production's real
-`DATABASE_URL` (and `DJANGO_DEBUG=True`) from that committed file. Now that
-`.env` is correctly git-ignored, a fresh clone has nothing for
-`load_dotenv()` to load, and the build **fails outright**
-(`django.core.exceptions.ImproperlyConfigured: settings.DATABASES is
-improperly configured`) unless these are set as real environment variables
-in the Vercel project (Project → Settings → Environment Variables,
-Production scope):
-
-- **`DATABASE_URL`** — required, no fallback. Use the Neon connection
-  string (the *rotated* one, if the password exposure was already
-  remediated — it should be).
-- **`DJANGO_SECRET_KEY`** — has a fallback (`fallback-dev-key-replace-in-
-  vercel`), so it won't crash the build, but that fallback is a public,
-  hardcoded value. If this isn't already set, generate and set a real one:
-  `python -c "import secrets; print(secrets.token_urlsafe(50))"`.
-- **`CRON_SECRET`** — see §1 below; not required for the build to succeed,
-  but required for the daily status sync to actually run.
-- `DJANGO_DEBUG` — no action needed. It now correctly falls back to
-  `False` since the committed `.env` (which had it as `True`) is gone.
-
-## 1. `CRON_SECRET` environment variable
-
-The daily status sync (`update_tenancy_statuses`) runs via a Vercel Cron
-job hitting `/bookings/tasks/update-tenancy-statuses/` (see the `crons`
-entry in `vercel.json`, scheduled for 03:00 UTC daily).
-
-That endpoint is protected by a shared secret: it only accepts requests
-carrying `Authorization: Bearer <CRON_SECRET>`, and **fails closed** — if
-`CRON_SECRET` isn't set, every request is rejected (401), including from
-Vercel Cron itself.
-
-**Before this will run in production**, set `CRON_SECRET` as an environment
-variable on the Vercel project (Project → Settings → Environment Variables).
-Vercel automatically attaches it as the `Authorization: Bearer` header on
-every call it makes to a `crons` path — this is Vercel's own documented
-convention, nothing custom was built for it. Use a long random value, e.g.:
-
-    python -c "import secrets; print(secrets.token_urlsafe(32))"
-
-Without this set, tenancy statuses will simply never auto-advance
-(`upcoming → active → ending_soon → ended`) and bookings won't get
-auto-marked `COMPLETED` on their natural end date. Nothing breaks — the
-site keeps working, since every status shown to users is computed live
-from today's date (`Tenancy.display_status`) regardless of whether the
-cron has run. It's a tidiness/reporting job, not a correctness dependency,
-with one exception: **Booking → `COMPLETED`** on natural end only happens
-via this job, so a booking will stay `CONFIRMED`/`PAID` indefinitely past
-its end date until the cron (or the management command) actually runs.
-
-## 2. Migrations 0006 and 0007
+## 1. Migrations 0006 and 0007
 
 - `0006_tenancy.py` — creates the `Tenancy` table + its indexes. Standard
   schema migration, nothing special.
@@ -287,9 +211,8 @@ its end date until the cron (or the management command) actually runs.
   already have one, so tenants/landlords who were already mid-lease before
   this feature shipped show up correctly instead of looking unoccupied.
 
-Both run automatically as part of the existing build — `vercel.json`'s
-`buildCommand` already runs `python manage.py migrate` on every deploy, so
-**no manual step is required**. If you ever need to run it by hand (e.g.
+Both are applied by the `migrate` step of every deploy
+(`scripts/deploy_ubuntu.sh`). If you ever need to run it by hand (e.g.
 against a copy of the DB locally):
 
     python manage.py migrate bookings
@@ -302,9 +225,9 @@ was no overlap check before this feature. `0007`'s reverse migration is a
 no-op by design (removing the backfilled rows on rollback isn't safe once
 they may have accrued real renewal/termination history).
 
-## 3. Running `update_tenancy_statuses` manually
+## 2. Running `update_tenancy_statuses`
 
-Locally, or via any environment with shell access to the deployment:
+The server's crontab runs this daily at 03:00. To run it by hand:
 
     python manage.py update_tenancy_statuses
 
@@ -312,26 +235,19 @@ Safe to run repeatedly — it's a no-op for rows that are already up to date,
 and prints a one-line summary (`Tenancy statuses updated: N. Bookings
 marked COMPLETED: M.`).
 
-To trigger the same logic over HTTP (e.g. to test the cron path, or as a
-manual override without shell access) — same auth as Vercel Cron uses:
+If it stops running, nothing visibly breaks (every status shown to users is
+computed live from `Tenancy.display_status`), with one exception: a
+Booking only becomes `COMPLETED` on its natural end date via this job, so
+it would stay `CONFIRMED`/`PAID` past its end date until the job runs.
 
-    curl -H "Authorization: Bearer <CRON_SECRET>" \
-      https://<your-domain>/bookings/tasks/update-tenancy-statuses/
+## 3. Deferred follow-ups (not built — scoped out during this feature)
 
-## 4. Deferred follow-ups (not built — scoped out during this feature)
-
-- **Notification system with 30/7/0-day reminders.** No `Notification`
-  model or email backend exists in this project. What *was* built covers
-  the same need passively: every status badge/progress bar is computed
-  live from `Tenancy.display_status`, so a tenant/landlord sees accurate
-  "ending soon" info the moment they load a page — there's just nothing
-  that proactively pushes it to them (email, SMS, in-app inbox) ahead of
-  that. Building real reminders needs: an `EMAIL_BACKEND` configured in
-  `settings.py` (none exists today), and/or a persisted `Notification`
-  model with read/unread state and a bell-icon UI.
+- **30/7/0-day tenancy reminders.** In-app notifications exist
+  (`apps/notifications`, bell icon) for booking/payment/verification
+  events, but nothing yet creates a notification ahead of a tenancy ending,
+  and there's no email/SMS delivery (no `EMAIL_BACKEND` configured).
 - **"Notify me when available"** (seeker-facing, on an occupied listing).
-  Depends on the same notification infrastructure above — deferred for the
-  same reason.
+  Could now build on `apps/notifications`; not built yet.
 - **`INSTALLED_APPS` (`'bookings'`) vs `AppConfig.name` (`'apps.bookings'`)
   mismatch.** Documented in detail in `config/settings.py` right at the
   `sys.path.insert(...)` line, and in `apps/bookings/apps.py`'s `ready()`.

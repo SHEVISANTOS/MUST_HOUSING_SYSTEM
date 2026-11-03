@@ -26,7 +26,4 @@ urlpatterns = [
     # Landlord: Occupancy
     path('occupancy/', tenancy_views.landlord_occupancy, name='landlord_occupancy'),
     path('tenancy/<int:tenancy_id>/terminate/', tenancy_views.terminate_tenancy, name='terminate_tenancy'),
-
-    # Scheduled task (Vercel Cron), not user-facing - see tenancy_views for the auth check
-    path('tasks/update-tenancy-statuses/', tenancy_views.cron_update_tenancy_statuses, name='cron_update_tenancy_statuses'),
 ]
