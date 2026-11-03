@@ -29,3 +29,8 @@ local_settings.py
 .DS_Store
 Thumbs.db
 certs/
+
+# User-uploaded media (local-disk storage - see config/settings.py MEDIA_ROOT).
+# Files already committed under media/ before this was added are untouched
+# here; this only stops new uploads from being accidentally committed.
+media/
