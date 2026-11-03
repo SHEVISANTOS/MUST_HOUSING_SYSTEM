@@ -473,3 +473,33 @@ class PropertyWizardTests(TestCase):
         self.client.get(reverse('properties:wizard_start'))
         response = self.client.get(reverse('properties:my_properties'))
         self.assertIn('Finish listing', response.content.decode())
+
+
+class ShareButtonTests(TestCase):
+    def setUp(self):
+        landlord = User.objects.create_user(username='share_landlord', password='pw', role='LANDLORD')
+        self.property = Property.objects.create(
+            landlord=landlord, title='Tom & Jerry "Studio"', location='Ilemela',
+            property_type='2BR', monthly_rent=150000, distance_from_center_km=1.0,
+        )
+        self.url = reverse('properties:detail', kwargs={'pk': self.property.pk})
+
+    def test_anonymous_visitor_sees_share_links(self):
+        body = Client().get(self.url).content.decode()
+        for host in ('wa.me', 'facebook.com/sharer', 'twitter.com/intent', 't.me/share', 'mailto:'):
+            self.assertIn(host, body)
+        self.assertIn('Copy link', body)
+
+    def test_share_links_encode_title_and_page_url_once(self):
+        links = dict(Client().get(self.url).context['share_links'])
+        page_url = f'http://testserver{self.url}'
+        from urllib.parse import quote
+        self.assertIn(quote(page_url, safe=''), links['Facebook'])
+        # '&' and quotes in the title are percent-encoded, not HTML-escaped
+        self.assertIn('Tom%20%26%20Jerry%20%22Studio%22', links['WhatsApp'])
+        self.assertIn('150%2C000', links['WhatsApp'])
+        self.assertNotIn('&amp;', links['WhatsApp'])
+
+    def test_share_data_available_for_native_share_sheet(self):
+        body = Client().get(self.url).content.decode()
+        self.assertIn('id="share-data"', body)

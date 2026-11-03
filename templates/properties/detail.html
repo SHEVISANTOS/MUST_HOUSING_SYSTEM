@@ -441,8 +441,40 @@
                         ♥ <span id="detailSaveLabel">{% if property.pk in saved_property_ids %}Saved{% else %}Save{% endif %}</span>
                     </button>
                     {% endif %}
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="shareProperty()" aria-controls="sharePanel">🔗 Share</button>
                 </div>
             </div>
+            <div id="sharePanel" hidden>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    {% for name, url in share_links %}
+                    <a href="{{ url }}" class="btn btn-sm btn-secondary" target="_blank" rel="noopener">{{ name }}</a>
+                    {% endfor %}
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="copyShareLink(this)">📋 Copy link</button>
+                </div>
+            </div>
+            {{ share_data|json_script:"share-data" }}
+            <script>
+                // Phones get the native share sheet (WhatsApp, Instagram, SMS, ...);
+                // browsers without navigator.share get the link panel instead.
+                function shareProperty() {
+                    const data = JSON.parse(document.getElementById('share-data').textContent);
+                    if (navigator.share) {
+                        navigator.share(data).catch(() => {});
+                    } else {
+                        const panel = document.getElementById('sharePanel');
+                        panel.hidden = !panel.hidden;
+                    }
+                }
+                function copyShareLink(btn) {
+                    const url = JSON.parse(document.getElementById('share-data').textContent).url;
+                    const done = () => { btn.textContent = '✓ Copied'; setTimeout(() => { btn.textContent = '📋 Copy link'; }, 2000); };
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(url).then(done, () => window.prompt('Copy this link:', url));
+                    } else {
+                        window.prompt('Copy this link:', url);
+                    }
+                }
+            </script>
             <p class="text-muted mb-3">📍 {{ property.location }} | {{ property.distance_from_center_km }} km from city center</p>
 
             <p><strong>Type:</strong> <span class="badge bg-secondary">{{ property.get_property_type_display }}</span></p>

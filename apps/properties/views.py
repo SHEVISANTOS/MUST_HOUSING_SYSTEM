@@ -1,5 +1,6 @@
 # apps/properties/views.py
 from datetime import datetime
+from urllib.parse import quote
 
 from django.core.paginator import Paginator
 from django.http import JsonResponse, Http404
@@ -185,6 +186,18 @@ def property_detail(request, pk):
     og_image_url = request.build_absolute_uri(static('img/vot_logo.png'))
     og_url = request.build_absolute_uri(request.path)
 
+    # Plain share URLs (no third-party SDKs/trackers), built here rather than
+    # in the template so titles with & or quotes aren't double-encoded.
+    share_text = f"{prop.title} - TZS {prop.monthly_rent:,.0f}/month in {prop.location}"
+    enc = lambda s: quote(s, safe='')
+    share_links = [
+        ('WhatsApp', f"https://wa.me/?text={enc(share_text + ' ' + og_url)}"),
+        ('Facebook', f"https://www.facebook.com/sharer/sharer.php?u={enc(og_url)}"),
+        ('X', f"https://twitter.com/intent/tweet?text={enc(share_text)}&url={enc(og_url)}"),
+        ('Telegram', f"https://t.me/share/url?url={enc(og_url)}&text={enc(share_text)}"),
+        ('Email', f"mailto:?subject={enc(prop.title)}&body={enc(share_text + chr(10) + og_url)}"),
+    ]
+
     relevant_tenancies = Tenancy.objects.filter(status__in=_LIVE_TENANCY_STATUSES).order_by('start_date')
     similar_properties = Property.objects.filter(
         property_type=prop.property_type, is_available=True,
@@ -215,6 +228,8 @@ def property_detail(request, pk):
         'timeline_end': window_end,
         'og_image_url': og_image_url,
         'og_url': og_url,
+        'share_links': share_links,
+        'share_data': {'title': prop.title, 'text': share_text, 'url': og_url},
         'similar_properties': similar_properties,
         'has_confirmed_booking': has_confirmed_booking,
         'approx_latitude': approx_latitude,
