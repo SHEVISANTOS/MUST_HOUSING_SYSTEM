@@ -54,6 +54,12 @@ CSRF_TRUSTED_ORIGINS = [
 # setting that header (see deploy/nginx_vot_house_finding.conf).
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# HTTPS hardening: on in production, off when DJANGO_DEBUG=True for local work
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '2592000'))  # 30 days
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
