@@ -1,0 +1,7 @@
+{% if user.is_authenticated and user.role == 'LANDLORD' and not user.is_verified %}
+<div class="flash flash-warning" style="margin-bottom: 20px; display: block;">
+    🛡️ <strong>Your listings are not public yet.</strong>
+    VOT checks every new landlord before their homes appear to renters. We may call you on
+    {{ user.phone|default:"the phone number in your profile" }} to confirm. You'll get a notification as soon as you're verified.
+</div>
+{% endif %}

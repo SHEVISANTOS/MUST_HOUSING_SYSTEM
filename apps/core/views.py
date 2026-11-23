@@ -55,7 +55,7 @@ def dashboard(request):
     }
     
     if request.user.role == 'TENANT':
-        context['total_properties'] = Property.objects.filter(is_available=True).count()
+        context['total_properties'] = Property.objects.public().count()
         context['active_bookings'] = Booking.objects.filter(
             tenant=request.user, status='CONFIRMED'
         ).count()
@@ -273,7 +273,7 @@ def verification_queue(request):
 
     pending_landlords = User.objects.filter(
         role='LANDLORD', is_verified=False
-    ).annotate(property_count=Count('properties', distinct=True)).order_by('date_joined')
+    ).prefetch_related('properties').order_by('date_joined')
 
     pending_tenants = User.objects.filter(
         role='TENANT', is_verified=False
@@ -299,7 +299,12 @@ def verify_user(request, user_id):
         target = get_object_or_404(User, id=user_id)
         target.is_verified = True
         target.save(update_fields=['is_verified'])
-        Notification.notify(target, 'account_verified', "Your account has been verified!", link=reverse('core:dashboard'))
+        if target.role == 'LANDLORD':
+            Notification.notify(target, 'account_verified',
+                                "Your account has been verified - your listings are now visible to renters.",
+                                link=reverse('properties:my_properties'))
+        else:
+            Notification.notify(target, 'account_verified', "Your account has been verified!", link=reverse('core:dashboard'))
         messages.success(request, f'{target.username} has been verified.')
 
     return redirect('core:verification_queue')

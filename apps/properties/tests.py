@@ -23,7 +23,7 @@ class SeekerPrivacyTests(TestCase):
     """
 
     def setUp(self):
-        self.landlord = User.objects.create_user(username='landlord', password='pw', role='LANDLORD')
+        self.landlord = User.objects.create_user(username='landlord', password='pw', role='LANDLORD', is_verified=True)
         self.seeker = User.objects.create_user(username='seeker', password='pw', role='TENANT')
         self.tenant = User.objects.create_user(
             username='secrettenant', password='pw', role='TENANT',
@@ -68,7 +68,7 @@ class ListingQueryCountTests(TestCase):
     see Property.get_current_tenancy()'s prefetch-aware branch."""
 
     def setUp(self):
-        self.landlord = User.objects.create_user(username='landlord', password='pw', role='LANDLORD')
+        self.landlord = User.objects.create_user(username='landlord', password='pw', role='LANDLORD', is_verified=True)
         self.tenant = User.objects.create_user(username='tenant', password='pw', role='TENANT')
         self.seeker = User.objects.create_user(username='seeker2', password='pw', role='TENANT')
         self.client = Client()
@@ -127,11 +127,11 @@ class PublicBrowsingTests(TestCase):
 
     def setUp(self):
         self.landlord = User.objects.create_user(
-            username='pub_landlord', password='pw', role='LANDLORD',
+            username='pub_landlord', password='pw', role='LANDLORD', is_verified=True,
             email='landlord@example.com', phone='0711223344',
         )
         self.tenant = User.objects.create_user(username='pub_tenant', password='pw', role='TENANT')
-        self.other_landlord = User.objects.create_user(username='pub_landlord2', password='pw', role='LANDLORD')
+        self.other_landlord = User.objects.create_user(username='pub_landlord2', password='pw', role='LANDLORD', is_verified=True)
         self.property = Property.objects.create(
             landlord=self.landlord, title='Public Browsing Property', location='Mwanza',
             property_type='2BR', monthly_rent=150000, distance_from_center_km=1.0,
@@ -248,8 +248,8 @@ class PropertyEditPauseTests(TestCase):
     """Landlord-only Edit and Pause actions on their own listings."""
 
     def setUp(self):
-        self.landlord = User.objects.create_user(username='ep_landlord', password='pw', role='LANDLORD')
-        self.other_landlord = User.objects.create_user(username='ep_landlord2', password='pw', role='LANDLORD')
+        self.landlord = User.objects.create_user(username='ep_landlord', password='pw', role='LANDLORD', is_verified=True)
+        self.other_landlord = User.objects.create_user(username='ep_landlord2', password='pw', role='LANDLORD', is_verified=True)
         self.tenant = User.objects.create_user(username='ep_tenant', password='pw', role='TENANT')
         self.property = Property.objects.create(
             landlord=self.landlord, title='Editable Property', location='Mwanza',
@@ -351,8 +351,8 @@ class PropertyWizardTests(TestCase):
     to the DB (the 'real autosave'), not just hold client-side state."""
 
     def setUp(self):
-        self.landlord = User.objects.create_user(username='wiz_landlord', password='pw', role='LANDLORD')
-        self.other_landlord = User.objects.create_user(username='wiz_landlord2', password='pw', role='LANDLORD')
+        self.landlord = User.objects.create_user(username='wiz_landlord', password='pw', role='LANDLORD', is_verified=True)
+        self.other_landlord = User.objects.create_user(username='wiz_landlord2', password='pw', role='LANDLORD', is_verified=True)
         self.tenant = User.objects.create_user(username='wiz_tenant', password='pw', role='TENANT')
         self.client = Client()
         self.client.login(username='wiz_landlord', password='pw')
@@ -478,7 +478,7 @@ class PropertyWizardTests(TestCase):
 
 class ShareButtonTests(TestCase):
     def setUp(self):
-        landlord = User.objects.create_user(username='share_landlord', password='pw', role='LANDLORD')
+        landlord = User.objects.create_user(username='share_landlord', password='pw', role='LANDLORD', is_verified=True)
         self.property = Property.objects.create(
             landlord=landlord, title='Tom & Jerry "Studio"', location='Ilemela',
             property_type='2BR', monthly_rent=150000, distance_from_center_km=1.0,
@@ -511,7 +511,7 @@ class LinkPreviewImageTests(TestCase):
     """og:image drives the picture WhatsApp/Facebook show for a shared link."""
 
     def setUp(self):
-        landlord = User.objects.create_user(username='og_landlord', password='pw', role='LANDLORD')
+        landlord = User.objects.create_user(username='og_landlord', password='pw', role='LANDLORD', is_verified=True)
         self.property = Property.objects.create(
             landlord=landlord, title='Preview House', location='Ilemela',
             property_type='2BR', monthly_rent=150000, distance_from_center_km=1.0,
@@ -564,3 +564,64 @@ class AllHousesChipTests(TestCase):
             chip = self._chip(query)
             self.assertNotIn('active', chip, query)
             self.assertIn(f'href="{reverse("properties:list")}"', chip, query)
+
+
+class LandlordApprovalTests(TestCase):
+    """New landlords' listings stay hidden until an admin verifies them."""
+
+    def setUp(self):
+        from apps.notifications.models import Notification
+        self.Notification = Notification
+        self.admin = User.objects.create_user(username='appr_admin', password='pw', role='ADMIN', is_superuser=True)
+        self.newbie = User.objects.create_user(username='appr_new', password='pw', role='LANDLORD', phone='0712000000')
+        self.tenant = User.objects.create_user(username='appr_tenant', password='pw', role='TENANT')
+        self.prop = Property.objects.create(
+            landlord=self.newbie, title='Unverified Home', location='Nyegezi',
+            property_type='1BR', monthly_rent=90000, distance_from_center_km=2.0,
+        )
+
+    def _client(self, username):
+        c = Client()
+        c.login(username=username, password='pw')
+        return c
+
+    def test_hidden_from_search_detail_booking_and_messages(self):
+        self.assertNotContains(Client().get(reverse('properties:list')), 'Nyegezi')
+        self.assertEqual(Client().get(reverse('properties:detail', args=[self.prop.pk])).status_code, 404)
+        tenant = self._client('appr_tenant')
+        self.assertEqual(tenant.get(reverse('bookings:create_booking', args=[self.prop.pk])).status_code, 404)
+        self.assertEqual(tenant.get(reverse('messaging:start_conversation', args=[self.prop.pk])).status_code, 404)
+
+    def test_owner_and_admin_can_still_open_it(self):
+        owner = self._client('appr_new').get(reverse('properties:detail', args=[self.prop.pk]))
+        self.assertContains(owner, 'Your listings are not public yet')
+        self.assertEqual(self._client('appr_admin').get(reverse('properties:detail', args=[self.prop.pk])).status_code, 200)
+
+    def test_verifying_landlord_makes_listing_public_and_tells_them(self):
+        self._client('appr_admin').post(reverse('core:verify_user', args=[self.newbie.id]))
+        self.assertContains(Client().get(reverse('properties:list')), 'Nyegezi')
+        detail = Client().get(reverse('properties:detail', args=[self.prop.pk]))
+        self.assertEqual(detail.status_code, 200)
+        note = self.Notification.objects.get(user=self.newbie, kind='account_verified')
+        self.assertIn('visible to renters', note.body)
+
+    def test_publishing_while_unverified_warns_landlord_and_alerts_admin_once(self):
+        owner = self._client('appr_new')
+        self.prop.status, self.prop.is_available = 'paused', False
+        self.prop.save()
+        response = owner.post(reverse('properties:pause', args=[self.prop.pk]), follow=True)
+        self.assertContains(response, "won&#x27;t see it until VOT verifies")
+        owner.post(reverse('properties:pause', args=[self.prop.pk]))
+        owner.post(reverse('properties:pause', args=[self.prop.pk]))
+        alerts = self.Notification.objects.filter(user=self.admin, kind='landlord_awaiting_verification')
+        self.assertEqual(alerts.count(), 1)
+        queue = self._client('appr_admin').get(reverse('core:verification_queue'))
+        self.assertContains(queue, f'id="landlord-{self.newbie.id}"')
+        self.assertContains(queue, reverse('properties:detail', args=[self.prop.pk]))
+
+    def test_tenant_with_existing_booking_keeps_access(self):
+        from apps.bookings.models import Booking
+        from datetime import date, timedelta
+        Booking.objects.create(property=self.prop, tenant=self.tenant, move_in_date=date.today(),
+                               move_out_date=date.today() + timedelta(days=60), status='PENDING')
+        self.assertEqual(self._client('appr_tenant').get(reverse('properties:detail', args=[self.prop.pk])).status_code, 200)

@@ -19,7 +19,7 @@ class HealthzTests(TestCase):
 
 class LandlordAttentionQueueTests(TestCase):
     def setUp(self):
-        self.landlord = User.objects.create_user(username='attn_landlord', password='pw', role='LANDLORD')
+        self.landlord = User.objects.create_user(username='attn_landlord', password='pw', role='LANDLORD', is_verified=True)
         self.tenant = User.objects.create_user(username='attn_tenant', password='pw', role='TENANT')
         self.property = Property.objects.create(
             landlord=self.landlord, title='Attention Test Property', location='Mwanza',
@@ -156,8 +156,19 @@ class LaunchReadinessTests(TestCase):
         self.assertNotIn(settings.ADMIN_URL, body)
 
     def test_listing_form_tells_landlords_area_only(self):
-        landlord = User.objects.create_user(username='hint_landlord', password='pw', role='LANDLORD')
+        landlord = User.objects.create_user(username='hint_landlord', password='pw', role='LANDLORD', is_verified=True)
         client = Client()
         client.login(username='hint_landlord', password='pw')
         draft = client.get(reverse('properties:wizard_start'))
         self.assertContains(client.get(draft['Location']), 'include a street or house number')
+
+
+class LegalPagesTests(TestCase):
+    def test_privacy_and_terms_are_public_and_linked(self):
+        for name, heading in (('privacy', 'Privacy Policy'), ('terms', 'Terms of Use')):
+            response = Client().get(reverse(name))
+            self.assertContains(response, f'<h1>{heading}</h1>', html=False)
+            self.assertContains(response, 'VOT MWANZA LIMITED')
+        register = Client().get(reverse('users:register'))
+        self.assertContains(register, reverse('terms'))
+        self.assertContains(register, reverse('privacy'))

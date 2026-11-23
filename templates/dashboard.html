@@ -43,6 +43,7 @@
     {% endif %}
 </div>
 
+{% include 'properties/_pending_verification_banner.html' %}
 {% if user.role == 'LANDLORD' and attention_items %}
 <div class="card attention-queue">
     <div class="card-header">

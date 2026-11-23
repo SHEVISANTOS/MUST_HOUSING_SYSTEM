@@ -94,9 +94,9 @@ class TenancyTestBase(TestCase):
     """Shared landlord/tenant/property fixtures for the Tenancy test classes below."""
 
     def setUp(self):
-        self.landlord = User.objects.create_user(username='landlord1', password='pw', role='LANDLORD', email='l1@example.com')
+        self.landlord = User.objects.create_user(username='landlord1', password='pw', role='LANDLORD', is_verified=True, email='l1@example.com')
         self.tenant = User.objects.create_user(username='tenant1', password='pw', role='TENANT', email='t1@example.com')
-        self.other_landlord = User.objects.create_user(username='landlord2', password='pw', role='LANDLORD', email='l2@example.com')
+        self.other_landlord = User.objects.create_user(username='landlord2', password='pw', role='LANDLORD', is_verified=True, email='l2@example.com')
         self.other_tenant = User.objects.create_user(username='tenant2', password='pw', role='TENANT', email='t2@example.com')
         self.property = Property.objects.create(
             landlord=self.landlord, title='Test Property', location='Mwanza',

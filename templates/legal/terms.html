@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Terms of Use - VOT House Finding{% endblock %}
+{% comment %}
+DRAFT - have the owner or a lawyer review before relying on it.
+{% endcomment %}
+{% block content %}
+{% include 'legal/_legal_style.html' %}
+<div class="page-heading" style="max-width: 760px; margin-left: auto; margin-right: auto;">
+    <div>
+        <p class="eyebrow">VOT House Finding</p>
+        <h1>Terms of Use</h1>
+        <p class="page-sub">Last updated 23 November 2026</p>
+    </div>
+</div>
+<article class="legal">
+    <p>These terms apply when you use VOT House Finding ({{ site_host }}), run by <strong>VOT MWANZA LIMITED</strong>, Mwanza, Tanzania.
+       By creating an account you agree to them and to our <a href="{% url 'privacy' %}">Privacy Policy</a>.</p>
+
+    <h2>1. What the site does</h2>
+    <p>We help tenants find homes and help landlords and tenants record bookings, contracts and rent payments. The tenancy is an agreement between the <strong>landlord and the tenant</strong>. VOT is not a party to it, is not the landlord's agent, and does not receive or hold rent or deposits.</p>
+
+    <h2>2. Your account</h2>
+    <ul>
+        <li>You must be at least 18 and give true details, including a phone number you can be reached on.</li>
+        <li>Keep your password private. You are responsible for what happens in your account.</li>
+        <li>One person, one account. Don't create accounts for someone else without their permission.</li>
+    </ul>
+
+    <h2>3. Landlords</h2>
+    <ul>
+        <li>You may only list a home you own or have the right to let.</li>
+        <li>Listings must be accurate: real photos, the real rent, and the real condition of the home.</li>
+        <li>Give the area only in the public location; the exact spot is shared once a booking is confirmed.</li>
+        <li>New landlords are checked by VOT before their listings become public. We may contact you to confirm your identity or ownership, and we may refuse or remove a listing.</li>
+        <li>Keep availability up to date, and only confirm a payment in the app after you have actually received it.</li>
+    </ul>
+
+    <h2>4. Tenants</h2>
+    <ul>
+        <li>A booking request is a request, not a guarantee. A tenancy starts only when the landlord approves it.</li>
+        <li>Only mark a payment as paid after you have really paid, and use the correct reference code.</li>
+        <li>Visit the home, or have someone you trust visit it, before paying where you can.</li>
+    </ul>
+
+    <h2>5. Contracts, payments and documents</h2>
+    <ul>
+        <li>Contracts, invoices and payment slips produced by the site carry a QR code and confirmation code. Anyone can check them at <a href="{% url 'verify_by_code' %}">{{ site_host }}/verify/</a>. Altering a document or presenting a fake one is prohibited and may be reported to the authorities.</li>
+        <li>A contract ends early only when <strong>both</strong> the tenant and landlord agree through the site, or as the law otherwise requires.</li>
+        <li>Payments are made directly between tenant and landlord. VOT is not responsible for money paid outside the agreed terms, but you can report a problem to us.</li>
+    </ul>
+
+    <h2>6. Things you must not do</h2>
+    <ul>
+        <li>Post fake, misleading or duplicate listings, or ask for money for a home you can't let.</li>
+        <li>Harass, threaten or discriminate against other users, or use messages for spam.</li>
+        <li>Upload content you don't have the right to use, or anything illegal or offensive.</li>
+        <li>Try to break into accounts or the site, or collect other users' details.</li>
+    </ul>
+    <p>We may hide content, suspend or close accounts that break these terms, and keep the records we need as evidence.</p>
+
+    <h2>7. Your content</h2>
+    <p>You keep ownership of the photos and text you upload. You allow us to show them on the site and in links people share from it, for as long as they are on the site.</p>
+
+    <h2>8. Our responsibility</h2>
+    <p>We work to keep the site accurate and available, and we check new landlords, but we cannot guarantee every listing, landlord or tenant, or that the site will always be available. As far as the law allows, VOT is not liable for losses arising from agreements or payments between landlords and tenants. Nothing in these terms takes away rights you have under Tanzanian law.</p>
+
+    <h2>9. Changes and law</h2>
+    <p>We may update these terms; the date at the top shows the latest version, and we will tell you in the app about important changes. These terms are governed by the laws of the United Republic of Tanzania.</p>
+
+    <h2>10. Contact</h2>
+    <p>Questions or problems: <a href="mailto:info@votmwanza.co.tz">info@votmwanza.co.tz</a></p>
+</article>
+{% endblock %}

@@ -1,3 +1,4 @@
+from django.http import Http404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
@@ -75,6 +76,8 @@ def start_conversation(request, property_id):
         return redirect('properties:detail', pk=property_id)
 
     prop = get_object_or_404(Property, id=property_id)
+    if not prop.landlord.is_verified and not Conversation.objects.filter(property=prop, tenant=request.user).exists():
+        raise Http404("No such property")  # hidden listing - see Property.objects.public()
     if prop.landlord_id == request.user.id:
         messages.error(request, "You can't message yourself about your own listing.")
         return redirect('properties:detail', pk=property_id)

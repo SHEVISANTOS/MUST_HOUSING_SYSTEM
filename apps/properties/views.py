@@ -34,7 +34,7 @@ def property_list(request):
         status__in=_LIVE_TENANCY_STATUSES
     ).order_by('start_date')
 
-    queryset = Property.objects.filter(is_available=True).prefetch_related(
+    queryset = Property.objects.public().prefetch_related(
         'images',
         Prefetch('tenancies', queryset=relevant_tenancies, to_attr='prefetched_tenancies'),
     )
@@ -134,6 +134,16 @@ def property_list(request):
         'budget_chips': budget_chips,
     })
 
+def _can_see_unverified(user, prop):
+    """Admins reviewing a landlord, and tenants who already have a booking
+    on the property, can still open a listing whose landlord is unverified."""
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser or getattr(user, 'role', None) == 'ADMIN':
+        return True
+    return prop.bookings.filter(tenant=user).exists()
+
+
 def property_detail(request, pk):
     """
     Display property details with images & map. Public - no login required
@@ -148,7 +158,13 @@ def property_detail(request, pk):
     from django.utils import timezone
     import datetime as dt
 
-    prop = get_object_or_404(Property.objects.prefetch_related('images'), pk=pk)
+    prop = get_object_or_404(Property.objects.select_related('landlord').prefetch_related('images'), pk=pk)
+    is_owner = request.user.is_authenticated and prop.landlord_id == request.user.id
+    landlord_pending = not prop.landlord.is_verified
+    if landlord_pending and not is_owner and not _can_see_unverified(request.user, prop):
+        # Hidden until VOT verifies the landlord - same answer as a
+        # nonexistent listing, so it can't be found by guessing ids.
+        raise Http404("No such property")
 
     today = timezone.localdate()
     window_days = 365
@@ -202,8 +218,8 @@ def property_detail(request, pk):
     ]
 
     relevant_tenancies = Tenancy.objects.filter(status__in=_LIVE_TENANCY_STATUSES).order_by('start_date')
-    similar_properties = Property.objects.filter(
-        property_type=prop.property_type, is_available=True,
+    similar_properties = Property.objects.public().filter(
+        property_type=prop.property_type,
     ).exclude(pk=prop.pk).prefetch_related(
         'images',
         Prefetch('tenancies', queryset=relevant_tenancies, to_attr='prefetched_tenancies'),
@@ -237,9 +253,36 @@ def property_detail(request, pk):
         'has_confirmed_booking': has_confirmed_booking,
         'approx_latitude': approx_latitude,
         'approx_longitude': approx_longitude,
+        'landlord_pending': landlord_pending,
+        'is_owner': is_owner,
     })
 
 @login_required
+def _after_publish(request, prop, done_message):
+    """Shared tail of every 'make this listing live' action. A verified
+    landlord's listing is public at once; an unverified landlord's waits for
+    VOT, so say so honestly and put them in front of the admins."""
+    if request.user.is_verified:
+        messages.success(request, done_message)
+        return
+    messages.warning(request, f"'{prop.title}' is saved, but renters won't see it until VOT verifies "
+                              "your account. We'll notify you as soon as that happens.")
+    from django.urls import reverse
+    from apps.notifications.models import Notification
+    from apps.users.models import User
+    already_told = Notification.objects.filter(kind='landlord_awaiting_verification',
+                                               link__endswith=f'#landlord-{request.user.id}').exists()
+    if already_told:
+        return
+    admins = User.objects.filter(Q(is_superuser=True) | Q(role='ADMIN'), is_active=True)
+    for admin in admins:
+        Notification.notify(
+            admin, 'landlord_awaiting_verification',
+            f"New landlord {request.user.username} published '{prop.title}' and is waiting for verification.",
+            link=reverse('core:verification_queue') + f'#landlord-{request.user.id}',
+        )
+
+
 def property_create(request):
     """Landlord view to create new property listing with images & map"""
     if request.user.role != 'LANDLORD':
@@ -276,7 +319,7 @@ def property_create(request):
                                 is_primary=(i == 0)  # First uploaded image = primary
                             )
 
-                    messages.success(request, f"✅ Property '{prop.title}' listed successfully with {len(images)} image(s)!")
+                    _after_publish(request, prop, f"✅ Property '{prop.title}' listed successfully with {len(images)} image(s)!")
                     return redirect('properties:detail', pk=prop.id)
 
                 except Exception as e:
@@ -461,7 +504,7 @@ def _wizard_review_step(request, prop, step_index, prev_step):
             prop.status = 'live'
             prop.is_available = True
             prop.save(update_fields=['status', 'is_available', 'updated_at'])
-            messages.success(request, f"✅ '{prop.title}' is now live!")
+            _after_publish(request, prop, f"✅ '{prop.title}' is now live!")
         else:
             messages.success(request, f"✅ '{prop.title}' updated.")
         return redirect('properties:detail', pk=prop.pk)
@@ -485,7 +528,7 @@ def property_pause(request, pk):
     if prop.status == 'paused':
         prop.status = 'live'
         prop.is_available = True
-        messages.success(request, f"'{prop.title}' is live again.")
+        _after_publish(request, prop, f"'{prop.title}' is live again.")
     else:
         prop.status = 'paused'
         prop.is_available = False

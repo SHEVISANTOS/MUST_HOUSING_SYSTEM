@@ -10,6 +10,9 @@ from apps.core import views as core_views
 from apps.payments import views as payment_views
 from apps.bookings import tenancy_views
 
+from urllib.parse import urlsplit
+_LEGAL_CONTEXT = {'site_host': urlsplit(settings.SITE_URL).netloc or 'vothousefinding.com'}
+
 urlpatterns = [
 
     path('healthz', core_views.healthz, name='healthz'),
@@ -17,6 +20,8 @@ urlpatterns = [
     # Short path keeps the QR code printed on payment PDFs small
     path('v/<str:token>/', payment_views.verify_document, name='verify_document'),
     path('verify/', tenancy_views.verify_by_code, name='verify_by_code'),
+    path('privacy/', TemplateView.as_view(template_name='legal/privacy.html', extra_context=_LEGAL_CONTEXT), name='privacy'),
+    path('terms/', TemplateView.as_view(template_name='legal/terms.html', extra_context=_LEGAL_CONTEXT), name='terms'),
 
     path(f'{settings.ADMIN_URL}login/', core_views.admin_login_view, name='admin_login'),
 

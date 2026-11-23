@@ -266,6 +266,7 @@
     /* Similar places */
     .similar-section { margin-top: 28px; }
 </style>
+{% if is_owner %}{% include 'properties/_pending_verification_banner.html' %}{% endif %}
 
 <div class="property-detail-container">
 <div class="detail-layout">
@@ -533,6 +534,7 @@
                 <div class="small text-muted mb-2 fw-bold">Contact Landlord:</div>
                 <div class="contact-item">
                     <span class="me-2">👤</span> <strong>{{ property.landlord.username|title }}</strong>
+                    {% if property.landlord.is_verified %}<span class="badge badge-success ms-2" title="VOT has reviewed this landlord's account">✔ Verified landlord</span>{% endif %}
                 </div>
                 {% if property.landlord.phone and has_confirmed_booking %}
                 <div class="contact-item">

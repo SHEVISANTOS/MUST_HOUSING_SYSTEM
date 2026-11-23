@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Privacy Policy - VOT House Finding{% endblock %}
+{% comment %}
+DRAFT written from what the code actually collects (Nov 2026). Have the owner
+or a lawyer check it against the Personal Data Protection Act, 2022 before
+relying on it, and update it whenever the site starts collecting something new.
+{% endcomment %}
+{% block content %}
+{% include 'legal/_legal_style.html' %}
+<div class="page-heading" style="max-width: 760px; margin-left: auto; margin-right: auto;">
+    <div>
+        <p class="eyebrow">VOT House Finding</p>
+        <h1>Privacy Policy</h1>
+        <p class="page-sub">Last updated 23 November 2026</p>
+    </div>
+</div>
+<article class="legal">
+    <p>VOT House Finding ({{ site_host }}) is run by <strong>VOT MWANZA LIMITED</strong>, Mwanza, Tanzania ("we", "us").
+       This policy explains what personal information we collect, why, who can see it, and the choices you have.
+       We follow Tanzania's Personal Data Protection Act, 2022.</p>
+
+    <h2>1. What we collect</h2>
+    <ul>
+        <li><strong>Your account:</strong> username, email address, phone number, whether you are a tenant or landlord, an optional profile picture, and your password (stored only in scrambled, hashed form &mdash; we can't read it).</li>
+        <li><strong>Listings (landlords):</strong> property title, description, area, rent, photos and, if you add them, map coordinates or a Google Maps link.</li>
+        <li><strong>Bookings and contracts:</strong> the property, move-in and move-out dates, any note you send with a request, renewal and termination requests and the reasons given.</li>
+        <li><strong>Payments:</strong> amount, due date, payment method, the reference code (for example an M-Pesa code), any notes, and a photo of the payment receipt if you upload one. Money is paid directly between tenant and landlord; we never receive or hold it, and we never ask for card or mobile-money PINs.</li>
+        <li><strong>Messages</strong> you send to other users through the site, and the in-app notifications we send you.</li>
+        <li><strong>Technical data:</strong> a login cookie and a security (CSRF) cookie needed for the site to work, the IP address of failed login attempts (used to block password-guessing), and standard web-server logs. We do not use advertising or analytics trackers.</li>
+    </ul>
+
+    <h2>2. Why we use it</h2>
+    <ul>
+        <li>To run your account and let tenants find, book and rent homes from landlords.</li>
+        <li>To produce contracts, invoices and payment slips, and to let anyone check that such a document is genuine using its QR code or confirmation code.</li>
+        <li>To check new landlords before their listings go public, and to prevent fraud and abuse.</li>
+        <li>To keep the site secure and working, and to meet our legal obligations.</li>
+    </ul>
+
+    <h2>3. Who can see your information</h2>
+    <ul>
+        <li><strong>Everyone</strong> can see published listings: photos, description, area, rent, and the dates a home is occupied &mdash; but never who lives there.</li>
+        <li><strong>A landlord</strong> sees the username and phone number of tenants who send them a booking request, and the tenant's name, email and phone on contracts and payment documents.</li>
+        <li><strong>Signed-in users</strong> see a landlord's username and email on their listings. <strong>A tenant</strong> sees the landlord's phone number and the exact location of the home only after the landlord confirms their booking.</li>
+        <li><strong>Someone checking a document</strong> (for example a bank or a new landlord you show your contract to) sees only partly hidden names, the property, dates and amounts &mdash; enough to confirm it is genuine.</li>
+        <li><strong>VOT staff</strong> can see account, listing, booking and payment records to run and protect the service.</li>
+        <li>We do not sell your information. We share it with authorities only when Tanzanian law requires us to.</li>
+    </ul>
+    <p>Pages also load fonts and page styles from Google Fonts and jsDelivr, and property maps load from OpenStreetMap (via unpkg). These services receive your IP address when your browser loads them.</p>
+
+    <h2>4. Where it is kept and for how long</h2>
+    <p>Your information is stored on our own server, with regular backups. We keep account information while your account is open. Contracts and payment records are kept for as long as they may be needed as proof for tenants and landlords and for legal and tax purposes, even after an account is closed. Failed-login records are kept for a short time for security.</p>
+
+    <h2>5. Your rights</h2>
+    <p>You can ask us to show you the information we hold about you, correct it, or delete it (except records we must keep, as explained above), and you can object to how we use it. You can update your email and phone number yourself on your profile page. For anything else, email <a href="mailto:info@votmwanza.co.tz">info@votmwanza.co.tz</a>. If you are unhappy with our answer, you can complain to the Personal Data Protection Commission of Tanzania.</p>
+
+    <h2>6. Security</h2>
+    <p>The site uses HTTPS, hashed passwords, protection against password guessing, and signed codes on every contract, invoice and slip so they can't be forged. No system is perfectly secure, so please use a strong password and don't share your account.</p>
+
+    <h2>7. Children</h2>
+    <p>The site is for adults. You must be 18 or older to create an account.</p>
+
+    <h2>8. Changes</h2>
+    <p>If we change this policy, we will update the date at the top and, for important changes, tell you in the app.</p>
+
+    <h2>9. Contact</h2>
+    <p>VOT MWANZA LIMITED, Mwanza, Tanzania &mdash; <a href="mailto:info@votmwanza.co.tz">info@votmwanza.co.tz</a></p>
+</article>
+{% endblock %}

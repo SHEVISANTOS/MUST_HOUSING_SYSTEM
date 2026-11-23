@@ -8,7 +8,7 @@ from .models import Conversation, Message
 
 class MessagingTests(TestCase):
     def setUp(self):
-        self.landlord = User.objects.create_user(username='msg_landlord', password='pw', role='LANDLORD')
+        self.landlord = User.objects.create_user(username='msg_landlord', password='pw', role='LANDLORD', is_verified=True)
         self.tenant = User.objects.create_user(username='msg_tenant', password='pw', role='TENANT')
         self.other_tenant = User.objects.create_user(username='msg_other_tenant', password='pw', role='TENANT')
         self.property = Property.objects.create(

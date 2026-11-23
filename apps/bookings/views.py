@@ -130,7 +130,7 @@ def create_booking(request, property_id):
         return redirect('properties:detail', pk=property_id)
 
     # Get property and ensure it's available
-    prop = get_object_or_404(Property, id=property_id, is_available=True)
+    prop = get_object_or_404(Property.objects.public(), id=property_id)
 
     conflict_available_from = None
 

@@ -5,6 +5,14 @@ from django.utils import timezone
 from apps.users.models import User
 from config.uploads import RandomName, validate_image_upload
 
+class PropertyQuerySet(models.QuerySet):
+    def public(self):
+        """Listings renters may see: switched on by the landlord AND the
+        landlord's account verified by VOT. New landlords' listings stay
+        hidden until an admin approves them in the Verification Queue."""
+        return self.filter(is_available=True, landlord__is_verified=True, landlord__is_active=True)
+
+
 class Property(models.Model):
     # Richer listing lifecycle, additive alongside `is_available` below -
     # existing code's is_available checks/filters are untouched and keep
@@ -39,6 +47,8 @@ class Property(models.Model):
         ('GUESTHOUSE', 'Guest House'),
     ]
     
+    objects = PropertyQuerySet.as_manager()
+
     landlord = models.ForeignKey(User, on_delete=models.CASCADE, related_name='properties')
     title = models.CharField(max_length=200)
     description = models.TextField()

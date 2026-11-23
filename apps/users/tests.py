@@ -17,7 +17,7 @@ class NextRedirectTests(TestCase):
     """
 
     def setUp(self):
-        self.landlord = User.objects.create_user(username='nr_landlord', password='pw', role='LANDLORD')
+        self.landlord = User.objects.create_user(username='nr_landlord', password='pw', role='LANDLORD', is_verified=True)
         self.tenant = User.objects.create_user(username='nr_tenant', password='pw', role='TENANT')
         self.property = Property.objects.create(
             landlord=self.landlord, title='Next Redirect Property', location='Mwanza',

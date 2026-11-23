@@ -76,7 +76,7 @@ class PaymentNotificationTests(TestCase):
     needs to act on or see it - see apps.notifications.models.Notification."""
 
     def setUp(self):
-        self.landlord = User.objects.create_user(username='pn_landlord', password='pw', role='LANDLORD')
+        self.landlord = User.objects.create_user(username='pn_landlord', password='pw', role='LANDLORD', is_verified=True)
         self.tenant = User.objects.create_user(username='pn_tenant', password='pw', role='TENANT')
         self.property = Property.objects.create(
             landlord=self.landlord, title='Notif Property', location='Mwanza',
@@ -127,7 +127,7 @@ class DocumentVerificationTests(TestCase):
     def setUp(self):
         from apps.payments.verification import make_token
         self.make_token = make_token
-        landlord = User.objects.create_user(username='dv_landlord', password='pw', role='LANDLORD')
+        landlord = User.objects.create_user(username='dv_landlord', password='pw', role='LANDLORD', is_verified=True)
         self.tenant = User.objects.create_user(
             username='dv_tenant', password='pw', role='TENANT',
             first_name='Amina', last_name='Juma', email='amina@example.com', phone='0712000111',

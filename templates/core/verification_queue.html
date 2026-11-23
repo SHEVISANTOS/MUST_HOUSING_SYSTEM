@@ -24,6 +24,7 @@
 
 <div class="card">
     <div class="card-header"><span>🤝 Landlords awaiting verification</span></div>
+    <p class="page-sub" style="padding: 12px 20px 0;">Their listings are hidden from renters until you verify them. Check the listings and call the phone number before approving.</p>
     <div class="card-body" style="padding: 0;">
         {% if pending_landlords %}
         <div class="table-wrapper">
@@ -33,18 +34,18 @@
                         <th>User</th>
                         <th>Email</th>
                         <th>Phone</th>
-                        <th>Properties listed</th>
+                        <th>Listings (hidden)</th>
                         <th>Joined</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for landlord in pending_landlords %}
-                    <tr>
+                    <tr id="landlord-{{ landlord.id }}">
                         <td style="font-weight: 600;">{{ landlord.username }}</td>
                         <td>{{ landlord.email|default:"-" }}</td>
                         <td>{{ landlord.phone|default:"-" }}</td>
-                        <td>{{ landlord.property_count }}</td>
+                        <td>{% for p in landlord.properties.all %}<a href="{% url 'properties:detail' p.pk %}">{{ p.title }}</a>{% if not forloop.last %}<br>{% endif %}{% empty %}None yet{% endfor %}</td>
                         <td>{{ landlord.date_joined|date:"d M Y" }}</td>
                         <td>
                             <form method="post" action="{% url 'core:verify_user' landlord.id %}" style="display:inline;">

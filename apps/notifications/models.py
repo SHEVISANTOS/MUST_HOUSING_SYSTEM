@@ -28,6 +28,7 @@ class Notification(models.Model):
         ('renewal_requested', 'Renewal requested'),
         ('renewal_approved', 'Renewal approved'),
         ('renewal_declined', 'Renewal declined'),
+        ('landlord_awaiting_verification', 'Landlord waiting for verification'),
     ]
 
     KIND_ICONS = {
@@ -47,6 +48,7 @@ class Notification(models.Model):
         'renewal_requested': '🔄',
         'renewal_approved': '✅',
         'renewal_declined': '❌',
+        'landlord_awaiting_verification': '🛡️',
     }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
