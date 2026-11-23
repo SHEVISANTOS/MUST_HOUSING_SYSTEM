@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Please try again{% endblock %}
+{% block content %}
+<div class="empty-state" style="max-width: 520px; margin: 40px auto;">
+    <div style="font-size: 3rem;">⏱️</div>
+    <p class="empty-title">Your session expired</p>
+    <p>For your security, the form couldn't be submitted. Go back, refresh the page, and try again.</p>
+    <a href="javascript:history.back()" class="btn btn-green" style="margin-top: 16px;">Go back</a>
+</div>
+{% endblock %}

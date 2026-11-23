@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /v/
+Disallow: /verify/
+Disallow: /bookings/
+Disallow: /payments/
+Disallow: /messages/
+Disallow: /notifications/
+Disallow: /profile/
+Disallow: /users/

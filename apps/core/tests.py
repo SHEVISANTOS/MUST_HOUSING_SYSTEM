@@ -119,3 +119,45 @@ class VerificationQueueTests(TestCase):
         client.post(reverse('core:verify_user', args=[self.landlord.id]))
         self.landlord.refresh_from_db()
         self.assertFalse(self.landlord.is_verified)
+
+
+def _boom(request):
+    raise RuntimeError('deliberate failure for the 500 page test')
+
+
+urlpatterns = [
+    __import__('django.urls', fromlist=['path']).path('boom/', _boom),
+]
+
+
+class LaunchReadinessTests(TestCase):
+    def test_friendly_404(self):
+        response = Client().get('/no-such-page-here/')
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, "We couldn't find that page", status_code=404)
+
+    def test_friendly_500_without_leaking_details(self):
+        from django.test import override_settings
+        with override_settings(ROOT_URLCONF='apps.core.tests', DEBUG=False):
+            response = Client(raise_request_exception=False).get('/boom/')
+        self.assertEqual(response.status_code, 500)
+        body = response.content.decode()
+        self.assertIn('Something went wrong on our side', body)
+        self.assertNotIn('deliberate failure', body)
+        self.assertNotIn('Traceback', body)
+
+    def test_robots_txt_hides_private_pages_but_not_admin_location(self):
+        from django.conf import settings
+        response = Client().get('/robots.txt')
+        self.assertEqual(response['Content-Type'], 'text/plain')
+        body = response.content.decode()
+        for path in ('/v/', '/verify/', '/payments/', '/messages/'):
+            self.assertIn(f'Disallow: {path}', body)
+        self.assertNotIn(settings.ADMIN_URL, body)
+
+    def test_listing_form_tells_landlords_area_only(self):
+        landlord = User.objects.create_user(username='hint_landlord', password='pw', role='LANDLORD')
+        client = Client()
+        client.login(username='hint_landlord', password='pw')
+        draft = client.get(reverse('properties:wizard_start'))
+        self.assertContains(client.get(draft['Location']), 'include a street or house number')

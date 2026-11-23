@@ -3,6 +3,9 @@
 from django import forms
 from .models import Property, PropertyImage
 
+LOCATION_HELP = ("Area or neighbourhood only, e.g. Nyegezi, Mwanza. Don't include a street or "
+                 "house number - renters only see the exact spot after their booking is confirmed.")
+
 class PropertyForm(forms.ModelForm):
     class Meta:
         model = Property
@@ -12,6 +15,7 @@ class PropertyForm(forms.ModelForm):
             'min_months', 'max_months', 'months_per_payment',
             'latitude', 'longitude', 'google_maps_link', 'is_available'
         ]
+        help_texts = {'location': LOCATION_HELP}
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Spacious 2BR near city center'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe your property...'}),
@@ -34,6 +38,7 @@ class PropertyBasicsForm(forms.ModelForm):
     class Meta:
         model = Property
         fields = ['title', 'description', 'property_type', 'location']
+        help_texts = {'location': LOCATION_HELP}
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Spacious 2BR near city center'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Describe your property...'}),

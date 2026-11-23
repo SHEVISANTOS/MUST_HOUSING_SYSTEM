@@ -1,6 +1,7 @@
 # config/urls.py
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -12,6 +13,7 @@ from apps.bookings import tenancy_views
 urlpatterns = [
 
     path('healthz', core_views.healthz, name='healthz'),
+    path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
     # Short path keeps the QR code printed on payment PDFs small
     path('v/<str:token>/', payment_views.verify_document, name='verify_document'),
     path('verify/', tenancy_views.verify_by_code, name='verify_by_code'),
