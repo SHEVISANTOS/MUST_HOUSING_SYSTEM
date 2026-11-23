@@ -214,6 +214,7 @@ def property_detail(request, pk):
         ('Facebook', f"https://www.facebook.com/sharer/sharer.php?u={enc(og_url)}"),
         ('X', f"https://twitter.com/intent/tweet?text={enc(share_text)}&url={enc(og_url)}"),
         ('Telegram', f"https://t.me/share/url?url={enc(og_url)}&text={enc(share_text)}"),
+        ('SMS', f"sms:?&body={enc(share_text + ' ' + og_url)}"),
         ('Email', f"mailto:?subject={enc(prop.title)}&body={enc(share_text + chr(10) + og_url)}"),
     ]
 

@@ -501,6 +501,18 @@ class ShareButtonTests(TestCase):
         self.assertIn('150%2C000', links['WhatsApp'])
         self.assertNotIn('&amp;', links['WhatsApp'])
 
+    def test_share_options_visible_without_extra_click_and_include_sms(self):
+        response = Client().get(self.url)
+        body = response.content.decode()
+        self.assertIn('Share with friends', body)
+        self.assertNotIn('id="sharePanel" hidden', body)
+        self.assertTrue(dict(response.context['share_links'])['SMS'].startswith('sms:?&body='))
+
+    def test_listing_cards_have_share_button_for_everyone(self):
+        body = Client().get(reverse('properties:list')).content.decode()
+        self.assertIn('shareCard(event, this)', body)
+        self.assertIn('2 Bedroom in Ilemela - TZS 150,000/month', body)
+
     def test_share_data_available_for_native_share_sheet(self):
         body = Client().get(self.url).content.decode()
         self.assertIn('id="share-data"', body)

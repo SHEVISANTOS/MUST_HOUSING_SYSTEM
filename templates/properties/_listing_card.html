@@ -16,6 +16,12 @@ Prefetch('tenancies', to_attr='prefetched_tenancies')):
         <span class="badge {% if tenancy %}badge-warning{% else %}badge-success{% endif %} listing-card-status">
             {% if tenancy %}Free from {{ tenancy.available_from|date:"j M" }}{% else %}Available now{% endif %}
         </span>
+        <button type="button" class="listing-card-share{% if user.is_authenticated %} beside-save{% endif %}"
+                data-share-title="{{ property.get_property_type_display }} in {{ property.location }}"
+                data-share-text="{{ property.get_property_type_display }} in {{ property.location }} - TZS {{ property.monthly_rent|floatformat:0|intcomma }}/month"
+                onclick="shareCard(event, this)" aria-label="Share this property" title="Share">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+        </button>
         {% if user.is_authenticated %}
         <button type="button" class="listing-card-save {% if property.pk in saved_property_ids %}saved{% endif %}"
                 data-save-url="{% url 'properties:toggle_saved' property.pk %}"

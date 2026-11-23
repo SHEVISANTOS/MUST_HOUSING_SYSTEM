@@ -263,6 +263,16 @@
         }
         .listing-card-save:hover { transform: scale(1.08); }
         .listing-card-save.saved { color: var(--coral-deep); }
+        .listing-card-share {
+            position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%;
+            background: rgb(255 255 255 / 90%); border: none; color: var(--forest);
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.1s;
+        }
+        .listing-card-share.beside-save { right: 52px; }
+        .listing-card-share:hover { transform: scale(1.08); }
+        .share-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 2000;
+                       background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 0.9rem;
+                       font-weight: 600; box-shadow: var(--shadow-md); max-width: calc(100% - 32px); }
 
         /* ========================================
            📈 TENANCY PROGRESS / TIMELINE
@@ -422,6 +432,28 @@
                 }
             }
         });
+
+        // Share button on listing cards (also inside the card's <a>). Phones
+        // open the native share sheet (WhatsApp, SMS, Instagram...); other
+        // browsers copy the link and say so.
+        function shareCard(event, btn) {
+            event.preventDefault();
+            event.stopPropagation();
+            const url = new URL(btn.closest('a').getAttribute('href'), window.location.origin).href;
+            const data = { title: btn.dataset.shareTitle, text: btn.dataset.shareText, url: url };
+            if (navigator.share) { navigator.share(data).catch(() => {}); return; }
+            const toast = (msg) => {
+                const el = document.createElement('div');
+                el.className = 'share-toast'; el.setAttribute('role', 'status'); el.textContent = msg;
+                document.body.appendChild(el); setTimeout(() => el.remove(), 2500);
+            };
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => toast('Link copied - paste it to share with friends'),
+                                                        () => window.prompt('Copy this link:', url));
+            } else {
+                window.prompt('Copy this link:', url);
+            }
+        }
 
         // Heart/save button on listing cards (sits inside the card's own
         // <a> link, so this must stop that navigation on click).

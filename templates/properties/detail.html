@@ -15,6 +15,16 @@
 
 {% block content %}
 <style>
+    .share-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; margin-bottom: 16px;
+                 background: var(--leaf, #d9efe4); border-radius: 12px; }
+    .share-bar-label { font-weight: 700; font-size: 0.88rem; color: var(--forest, #176b52); margin-right: 4px; }
+    .share-chip { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; font-size: 0.85rem;
+                  font-weight: 600; background: #fff; color: var(--ink, #172a25); border: 1px solid var(--line, #dce4dc);
+                  text-decoration: none; cursor: pointer; }
+    .share-chip:hover { border-color: var(--forest, #176b52); color: var(--forest, #176b52); }
+    .share-chip.share-whatsapp { background: #25d366; border-color: #25d366; color: #fff; }
+    .share-chip.share-whatsapp:hover { background: #1ebe5b; color: #fff; }
+
     .property-detail-container {
         max-width: 1000px;
         margin: 0 auto;
@@ -447,13 +457,12 @@
                     <button type="button" class="btn btn-sm btn-secondary" onclick="shareProperty()" aria-controls="sharePanel">🔗 Share</button>
                 </div>
             </div>
-            <div id="sharePanel" hidden>
-                <div class="d-flex flex-wrap gap-2 mb-3">
-                    {% for name, url in share_links %}
-                    <a href="{{ url }}" class="btn btn-sm btn-secondary" target="_blank" rel="noopener">{{ name }}</a>
-                    {% endfor %}
-                    <button type="button" class="btn btn-sm btn-secondary" onclick="copyShareLink(this)">📋 Copy link</button>
-                </div>
+            <div class="share-bar" id="sharePanel" aria-label="Share this home">
+                <span class="share-bar-label">Share with friends:</span>
+                {% for name, url in share_links %}
+                <a href="{{ url }}" class="share-chip share-{{ name|lower }}" target="_blank" rel="noopener">{{ name }}</a>
+                {% endfor %}
+                <button type="button" class="share-chip" onclick="copyShareLink(this)">📋 Copy link</button>
             </div>
             {{ share_data|json_script:"share-data" }}
             <script>
@@ -464,8 +473,7 @@
                     if (navigator.share) {
                         navigator.share(data).catch(() => {});
                     } else {
-                        const panel = document.getElementById('sharePanel');
-                        panel.hidden = !panel.hidden;
+                        document.getElementById('sharePanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 }
                 function copyShareLink(btn) {
