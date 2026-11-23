@@ -71,6 +71,7 @@ INSTALLED_APPS = [
 
     # Third party
     'crispy_bootstrap5',
+    'axes',
     'whitenoise.runserver_nostatic',
 
     # ⬇️ CRITICAL FIX: Use simple names now that 'apps' is in sys.path
@@ -99,7 +100,30 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'axes.middleware.AxesMiddleware',  # must stay last
 ]
+
+# Login brute-force protection (django-axes): 5 failed logins from one IP
+# locks that IP out for 1 hour; a successful login resets the count.
+# AxesStandaloneBackend must come first - it only blocks, ModelBackend logs in.
+AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # hours
+AXES_LOCKOUT_PARAMETERS = ['ip_address']
+AXES_RESET_ON_SUCCESS = True
+
+
+def _client_ip(request):
+    # Behind nginx every request comes from 127.0.0.1; nginx passes the real
+    # visitor IP in X-Real-IP. Gunicorn only listens on localhost, so the
+    # header can't be forged by going around nginx.
+    return request.META.get('HTTP_X_REAL_IP') or request.META.get('REMOTE_ADDR')
+
+
+AXES_CLIENT_IP_CALLABLE = _client_ip
 
 # Messages configuration
 from django.contrib.messages import constants as messages
@@ -198,12 +222,19 @@ LOGGING = {
 # always use the default secure hashers.
 if len(sys.argv) > 1 and sys.argv[1] == 'test':
     PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
+    # Test client logins don't pass a request, which axes requires; the
+    # lockout itself is covered by tests that re-enable it explicitly.
+    AXES_ENABLED = False
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 # Tenancy contract tracking
 ENDING_SOON_DAYS = int(os.getenv('ENDING_SOON_DAYS', '30'))
+
+# Admin lives at /admin/ by default; set DJANGO_ADMIN_URL (e.g. "staff-7f3a9c/")
+# to move it off the well-known path bots probe. Links use {% url 'admin:...' %}.
+ADMIN_URL = os.getenv('DJANGO_ADMIN_URL', 'admin/').strip('/') + '/'
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'core:post_login_redirect' # Ensure 'core' app exists, or change to 'users:dashboard' etc.

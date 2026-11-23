@@ -59,7 +59,9 @@ def register(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)  # Auto-login after registration
+            # backend must be named explicitly: with axes there are two
+            # AUTHENTICATION_BACKENDS and this user didn't come from authenticate()
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             messages.success(request, f"Welcome, {user.username}! Your account has been created successfully.")
 
             if next_url:

@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 
 from apps.users.models import User
@@ -210,3 +210,65 @@ class PhoneNumberTests(TestCase):
         })
         self.assertEqual(response.status_code, 302)
         self.assertEqual(User.objects.get(username='spaced_phone').phone, '+255712345678')
+
+
+@override_settings(AXES_ENABLED=True)
+class LoginBruteForceTests(TestCase):
+    """django-axes: 5 failed logins from one IP locks that IP out."""
+
+    def setUp(self):
+        User.objects.create_user(username='axes_user', password='Corr3ct-pass', role='TENANT')
+        self.url = reverse('users:login')
+
+    def _login(self, password, ip='203.0.113.5'):
+        return Client().post(self.url, {'username': 'axes_user', 'password': password}, HTTP_X_REAL_IP=ip)
+
+    def test_locks_out_after_five_failures_even_with_right_password(self):
+        for _ in range(5):
+            self._login('wrong')
+        response = self._login('Corr3ct-pass')
+        self.assertEqual(response.status_code, 429)
+
+    def test_lockout_is_per_visitor_ip_not_global(self):
+        for _ in range(5):
+            self._login('wrong', ip='203.0.113.5')
+        response = self._login('Corr3ct-pass', ip='198.51.100.7')
+        self.assertEqual(response.status_code, 302)  # different visitor still gets in
+
+    def test_registration_still_logs_in_with_axes_enabled(self):
+        response = Client().post(reverse('users:register'), {
+            'username': 'axes_newbie', 'email': 'an@example.com', 'phone': '0712345678',
+            'role': 'TENANT', 'password1': 'Str0ngPassw0rd!', 'password2': 'Str0ngPassw0rd!',
+        }, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['user'].is_authenticated)
+
+
+class AdminUrlTests(TestCase):
+    """DJANGO_ADMIN_URL moves the admin; links must follow it."""
+
+    def setUp(self):
+        User.objects.create_superuser(username='admin_url_su', password='pw', email='su@example.com')
+
+    def _reload_urls(self):
+        import importlib
+        import config.urls
+        from django.urls import clear_url_caches
+        importlib.reload(config.urls)
+        clear_url_caches()
+
+    def test_admin_moves_and_links_follow(self):
+        try:
+            with self.settings(ADMIN_URL='staff-panel/'):
+                self._reload_urls()
+                self.assertEqual(reverse('admin:index'), '/staff-panel/')
+                self.assertEqual(reverse('admin_login'), '/staff-panel/login/')
+                self.assertEqual(Client().get('/admin/').status_code, 404)
+                client = Client()
+                client.login(username='admin_url_su', password='pw')
+                body = client.get(reverse('core:admin_dashboard')).content.decode()
+                self.assertIn('href="/staff-panel/"', body)
+                self.assertNotIn('href="/admin/', body)
+        finally:
+            self._reload_urls()
+        self.assertEqual(reverse('admin:index'), '/admin/')

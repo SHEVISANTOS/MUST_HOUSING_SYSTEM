@@ -11,10 +11,10 @@ urlpatterns = [
 
     path('healthz', core_views.healthz, name='healthz'),
 
-    path('admin/login/', core_views.admin_login_view, name='admin_login'),
-    
+    path(f'{settings.ADMIN_URL}login/', core_views.admin_login_view, name='admin_login'),
+
     # Standard admin URLs (must come AFTER custom login)
-    path('admin/', admin.site.urls),
+    path(settings.ADMIN_URL, admin.site.urls),
     
     # App URLs
     path('', include('apps.core.urls')),

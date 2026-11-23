@@ -9,6 +9,9 @@ gunicorn==22.0.0
 dj-database-url==2.2.0
 psycopg2-binary==2.9.13
 
+# Login brute-force protection
+django-axes==9.1.0
+
 # Forms & UI
 django-crispy-forms==2.3
 crispy-bootstrap5==2024.2
