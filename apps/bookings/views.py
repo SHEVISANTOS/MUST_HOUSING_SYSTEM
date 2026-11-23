@@ -100,6 +100,18 @@ def _create_tenancy(booking, property_obj, duration_months):
 
 # ==================== TENANT VIEWS ====================
 
+_LIVE_TENANCY = ['upcoming', 'active', 'ending_soon']
+
+
+def _occupant_before(property_id, start_date, exclude_tenant_id):
+    """The still-valid tenancy, held by someone else, that ends before
+    start_date - i.e. whoever lives there until a new booking would begin."""
+    return Tenancy.objects.filter(
+        property_id=property_id, status__in=_LIVE_TENANCY,
+        end_date__lt=start_date, end_date__gte=timezone.localdate(),
+    ).exclude(tenant_id=exclude_tenant_id).select_related('tenant', 'property').order_by('-end_date').first()
+
+
 @login_required
 def create_booking(request, property_id):
     """
@@ -161,6 +173,15 @@ def create_booking(request, property_id):
                     f"{request.user.username} requested to book '{prop.title}'",
                     link=reverse('bookings:landlord_bookings'),
                 )
+                occupant = _occupant_before(prop.id, move_in, request.user.id)
+                if occupant:
+                    Notification.notify(
+                        occupant.tenant, 'booking_interest',
+                        f"Someone has asked to rent '{prop.title}' from {date_format(move_in, 'j M Y')}, "
+                        f"after your contract ends {date_format(occupant.end_date, 'j M Y')}. "
+                        f"To stay, request a renewal or message your landlord soon.",
+                        link=reverse('bookings:my_contract'),
+                    )
                 return redirect('bookings:booking_sent', booking_id=booking.id)
 
             except Exception as e:
@@ -206,8 +227,18 @@ def landlord_bookings(request):
     bookings = Booking.objects.filter(
         property__landlord=request.user
     ).select_related('property', 'tenant').order_by('-created_at')
-    
+
+    # Approving a request that starts after a current tenant's contract rules
+    # out their renewal - flag it if that tenant has already asked to renew.
+    renewal_conflicts = set()
+    for b in bookings:
+        if b.status == 'PENDING':
+            occupant = _occupant_before(b.property_id, b.move_in_date, b.tenant_id)
+            if occupant and occupant.renewal_requested:
+                renewal_conflicts.add(b.id)
+
     context = {
+        'renewal_conflicts': renewal_conflicts,
         'bookings': bookings,
         'pending_count': bookings.filter(status='PENDING').count(),
         'confirmed_count': bookings.filter(status='CONFIRMED').count(),
@@ -284,6 +315,15 @@ def approve_booking(request, booking_id):
             f"Your booking for '{property_obj.title}' was approved",
             link=reverse('bookings:my_bookings'),
         )
+        occupant = _occupant_before(property_obj.id, booking.move_in_date, booking.tenant_id)
+        if occupant:
+            Notification.notify(
+                occupant.tenant, 'property_booked_next',
+                f"'{property_obj.title}' is now booked by another tenant from "
+                f"{date_format(booking.move_in_date, 'j M Y')}, so your contract can't be renewed "
+                f"beyond {date_format(occupant.end_date, 'j M Y')}. Message your landlord with any questions.",
+                link=reverse('bookings:my_contract'),
+            )
 
         if declined_count:
             messages.success(
@@ -379,6 +419,11 @@ def request_renewal(request, tenancy_id):
     else:
         tenancy.renewal_requested = True
         tenancy.save(update_fields=['renewal_requested', 'updated_at'])
+        Notification.notify(
+            tenancy.property.landlord, 'renewal_requested',
+            f"{request.user.username} asked to renew the contract for '{tenancy.property.title}'",
+            link=reverse('bookings:landlord_occupancy'),
+        )
         messages.success(request, "✅ Renewal request sent to your landlord.")
 
     return redirect('bookings:my_contract')
@@ -392,8 +437,15 @@ def decline_renewal(request, tenancy_id):
         return redirect('core:dashboard')
 
     tenancy = get_object_or_404(Tenancy, id=tenancy_id, property__landlord=request.user)
+    was_requested = tenancy.renewal_requested
     tenancy.renewal_requested = False
     tenancy.save(update_fields=['renewal_requested', 'updated_at'])
+    if was_requested:
+        Notification.notify(
+            tenancy.tenant, 'renewal_declined',
+            f"Your landlord declined renewing the contract for '{tenancy.property.title}'",
+            link=reverse('bookings:my_contract'),
+        )
     messages.info(request, "Renewal request declined.")
 
     return redirect('bookings:landlord_occupancy')
@@ -454,6 +506,12 @@ def approve_renewal(request, tenancy_id):
             old_tenancy.renewal_requested = False
             old_tenancy.save(update_fields=['status', 'renewal_requested', 'updated_at'])
 
+        Notification.notify(
+            old_tenancy.tenant, 'renewal_approved',
+            f"Your renewal for '{property_obj.title}' was approved: new contract "
+            f"{date_format(new_start, 'j M Y')} to {date_format(new_end, 'j M Y')}",
+            link=reverse('bookings:my_contract'),
+        )
         messages.success(request, f"✅ Renewal approved. New contract runs {new_start} to {new_end}.")
 
     except ValidationError as e:

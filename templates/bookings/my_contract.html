@@ -56,6 +56,20 @@
 
             {% include 'bookings/_termination_panel.html' %}
 
+            {% if tenancy.booked_next %}
+                <div class="alert alert-warning small mb-3">
+                    📅 <strong>This home is booked by another tenant from {{ tenancy.booked_next.start_date|date:"j M Y" }}.</strong>
+                    Your contract ends {{ tenancy.end_date|date:"j M Y" }} and can't be renewed beyond that date.
+                    <a href="{% url 'messaging:start_conversation' tenancy.property.id %}">Message your landlord</a> if you have questions.
+                </div>
+            {% elif tenancy.pending_interest %}
+                <div class="alert alert-info small mb-3">
+                    👀 <strong>Someone has asked to rent this home from {{ tenancy.pending_interest.move_in_date|date:"j M Y" }}</strong>,
+                    after your contract ends on {{ tenancy.end_date|date:"j M Y" }}. If you'd like to stay,
+                    {% if tenancy.display_status == 'active' or tenancy.display_status == 'ending_soon' %}{% if not tenancy.renewal_requested %}<a href="{% url 'bookings:request_renewal' tenancy.id %}">request a renewal</a> or {% endif %}{% endif %}<a href="{% url 'messaging:start_conversation' tenancy.property.id %}">message your landlord</a> soon.
+                </div>
+            {% endif %}
+
             <div class="d-flex gap-2 flex-wrap">
                 {% if tenancy.display_status == 'active' or tenancy.display_status == 'ending_soon' %}
                     {% if tenancy.renewal_requested %}

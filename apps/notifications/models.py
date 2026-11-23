@@ -23,6 +23,11 @@ class Notification(models.Model):
         ('termination_agreed', 'Termination agreed'),
         ('termination_declined', 'Termination declined'),
         ('termination_withdrawn', 'Termination request withdrawn'),
+        ('booking_interest', 'Someone wants to rent your home next'),
+        ('property_booked_next', 'Your home is booked after your contract'),
+        ('renewal_requested', 'Renewal requested'),
+        ('renewal_approved', 'Renewal approved'),
+        ('renewal_declined', 'Renewal declined'),
     ]
 
     KIND_ICONS = {
@@ -37,6 +42,11 @@ class Notification(models.Model):
         'termination_agreed': '🤝',
         'termination_declined': '🚫',
         'termination_withdrawn': '↩️',
+        'booking_interest': '👀',
+        'property_booked_next': '📅',
+        'renewal_requested': '🔄',
+        'renewal_approved': '✅',
+        'renewal_declined': '❌',
     }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
@@ -54,6 +64,9 @@ class Notification(models.Model):
 
     @classmethod
     def notify(cls, user, kind, body, link=''):
+        max_len = cls._meta.get_field('body').max_length
+        if len(body) > max_len:  # long property titles would otherwise make the INSERT fail
+            body = body[:max_len - 1] + '…'
         return cls.objects.create(user=user, kind=kind, body=body, link=link)
 
     @property

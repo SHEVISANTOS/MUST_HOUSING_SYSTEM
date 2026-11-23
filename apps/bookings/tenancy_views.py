@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import Tenancy, TerminationRequest
+from .models import Booking, Tenancy, TerminationRequest
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,13 @@ def my_contract(request):
             payments = list(t.booking.payments.all())
             t.payment_paid = sum(p.amount for p in payments if p.status == 'COMPLETED')
             t.payment_outstanding = sum(p.amount for p in payments if p.status in ('PENDING', 'TENANT_PAID', 'OVERDUE'))
+            # Someone else lined up for this home after this contract? (never says who)
+            t.booked_next = Tenancy.objects.filter(
+                property_id=t.property_id, start_date__gt=t.end_date, status__in=_LIVE_STATUSES,
+            ).exclude(tenant=request.user).order_by('start_date').first()
+            t.pending_interest = None if t.booked_next else Booking.objects.filter(
+                property_id=t.property_id, status='PENDING', move_in_date__gt=t.end_date,
+            ).exclude(tenant=request.user).order_by('move_in_date').first()
             current_tenancies.append(t)
         else:
             history_tenancies.append(t)

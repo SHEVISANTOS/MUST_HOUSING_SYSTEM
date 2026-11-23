@@ -39,6 +39,7 @@
                         <td data-label="Status">
                             {% if b.status == 'PENDING' %}
                                 <span class="badge badge-warning">⏳ Pending</span>
+                                {% if b.id in renewal_conflicts %}<br><small class="text-danger" style="white-space: normal;">⚠️ The current tenant has asked to renew &mdash; approving this rules that out.</small>{% endif %}
                             {% elif b.status == 'CONFIRMED' %}
                                 <span class="badge badge-success">✅ Confirmed</span>
                             {% elif b.status == 'PAID' %}

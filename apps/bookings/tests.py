@@ -765,3 +765,83 @@ class TerminationAgreementTests(TenancyTestBase):
         response = Client().get(reverse('verify_by_code') + '?code=' + confirmation_code(self.tenancy))
         self.assertContains(response, 'ended early by agreement of both tenant and landlord')
         self.assertContains(response, 'Termination agreed by')
+
+
+class NextTenantNoticeTests(TenancyTestBase):
+    """A current tenant hears when someone wants (or has booked) their home
+    for after their contract, so they can renew or talk to the landlord."""
+
+    def setUp(self):
+        super().setUp()
+        today = timezone.localdate()
+        self.tenancy = self.make_tenancy(today - timedelta(days=150), today + timedelta(days=20), status='ending_soon')
+        self.after_end = self.tenancy.end_date + timedelta(days=5)
+        self.seeker = Client()
+        self.seeker.login(username='tenant2', password='pw')
+        self.current = Client()
+        self.current.login(username='tenant1', password='pw')
+        self.landlord_client = Client()
+        self.landlord_client.login(username='landlord1', password='pw')
+
+    def _book(self, client, move_in, months=3):
+        return client.post(reverse('bookings:create_booking', kwargs={'property_id': self.property.id}),
+                           {'move_in_date': move_in.isoformat(), 'months': months})
+
+    def _notes(self, user, kind):
+        return Notification.objects.filter(user=user, kind=kind)
+
+    def test_request_after_contract_notifies_current_tenant_without_naming_seeker(self):
+        self._book(self.seeker, self.after_end)
+        note = self._notes(self.tenant, 'booking_interest').get()
+        self.assertIn(self.property.title, note.body)
+        self.assertNotIn('tenant2', note.body)
+
+    def test_no_notice_when_contract_already_over(self):
+        self.tenancy.end_date = timezone.localdate() - timedelta(days=1)
+        self.tenancy.save()
+        self._book(self.seeker, timezone.localdate() + timedelta(days=10))
+        self.assertFalse(self._notes(self.tenant, 'booking_interest').exists())
+
+    def test_no_notice_to_yourself(self):
+        self._book(self.current, self.after_end)
+        self.assertFalse(self._notes(self.tenant, 'booking_interest').exists())
+
+    def test_my_contract_banner_offers_renewal_and_message(self):
+        self._book(self.seeker, self.after_end)
+        body = self.current.get(reverse('bookings:my_contract')).content.decode()
+        self.assertIn('Someone has asked to rent this home', body)
+        self.assertIn(reverse('bookings:request_renewal', kwargs={'tenancy_id': self.tenancy.id}), body)
+        self.assertIn(reverse('messaging:start_conversation', kwargs={'property_id': self.property.id}), body)
+        self.assertNotIn('tenant2', body)
+
+    def test_approval_tells_current_tenant_renewal_is_ruled_out(self):
+        self._book(self.seeker, self.after_end)
+        booking = Booking.objects.get(tenant=self.other_tenant)
+        self.landlord_client.post(reverse('bookings:approve_booking', kwargs={'booking_id': booking.id}))
+        self.assertTrue(self._notes(self.tenant, 'property_booked_next').exists())
+        body = self.current.get(reverse('bookings:my_contract')).content.decode()
+        self.assertIn('This home is booked by another tenant', body)
+
+    def test_landlord_warned_when_current_tenant_wants_to_renew(self):
+        self.tenancy.renewal_requested = True
+        self.tenancy.save()
+        self._book(self.seeker, self.after_end)
+        body = self.landlord_client.get(reverse('bookings:landlord_bookings')).content.decode()
+        self.assertIn('The current tenant has asked to renew', body)
+
+    def test_renewal_request_and_answers_are_notified(self):
+        self.current.get(reverse('bookings:request_renewal', kwargs={'tenancy_id': self.tenancy.id}))
+        self.assertTrue(self._notes(self.landlord, 'renewal_requested').exists())
+        self.landlord_client.get(reverse('bookings:decline_renewal', kwargs={'tenancy_id': self.tenancy.id}))
+        self.assertTrue(self._notes(self.tenant, 'renewal_declined').exists())
+        self.current.get(reverse('bookings:request_renewal', kwargs={'tenancy_id': self.tenancy.id}))
+        self.landlord_client.get(reverse('bookings:approve_renewal', kwargs={'tenancy_id': self.tenancy.id}))
+        self.assertTrue(self._notes(self.tenant, 'renewal_approved').exists())
+
+    def test_long_property_title_cannot_break_booking(self):
+        self.property.title = 'Spacious family home ' * 9  # ~190 chars, pushes notifications past 255
+        self.property.save()
+        response = self._book(self.seeker, self.after_end)
+        self.assertEqual(response.status_code, 302)
+        note = self._notes(self.tenant, 'booking_interest').get()
+        self.assertLessEqual(len(note.body), 255)
