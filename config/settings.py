@@ -236,6 +236,11 @@ ENDING_SOON_DAYS = int(os.getenv('ENDING_SOON_DAYS', '30'))
 # to move it off the well-known path bots probe. Links use {% url 'admin:...' %}.
 ADMIN_URL = os.getenv('DJANGO_ADMIN_URL', 'admin/').strip('/') + '/'
 
+# Official public address, used for links printed on PDFs (e.g. receipt
+# verification QR codes) so they never point at whatever host served the
+# download. Unset = use the requesting host.
+SITE_URL = os.getenv('SITE_URL', '').rstrip('/')
+
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'core:post_login_redirect' # Ensure 'core' app exists, or change to 'users:dashboard' etc.
 LOGOUT_REDIRECT_URL = 'properties:list'

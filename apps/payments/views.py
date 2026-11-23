@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.urls import reverse
 from .models import Payment
 from .forms import TenantPaymentForm, LandlordConfirmForm
+from .verification import document_context
 from apps.notifications.models import Notification
 
 # xhtml2pdf setup (Serverless friendly - no C dependencies)
@@ -237,6 +238,7 @@ def download_payment_slip(request, payment_id):
     
     try:
         html_string = render_to_string('payments/payment_slip.html', {
+            **document_context(request, payment, 'slip'),
             'payment': payment,
             'now': timezone.now(),
             'user': request.user,
@@ -274,6 +276,7 @@ def download_payment_invoice(request, payment_id):
     
     try:
         html_string = render_to_string('payments/payment_invoice.html', {
+            **document_context(request, payment, 'invoice'),
             'payment': payment,
             'user': request.user,
             'now': timezone.now(),
@@ -487,3 +490,45 @@ def cancel_payment(request, payment_id):
     
     context = {'payment': payment}
     return render(request, 'payments/cancel_payment.html', context)
+
+def _mask_name(name):
+    return ' '.join(word[0] + '*' * (len(word) - 1) for word in name.split())
+
+
+def verify_document(request, token):
+    """Public check for a payment slip/invoice QR code. Shows the official
+    record from the database - never the tenant's contact details."""
+    import uuid
+    from datetime import datetime, timezone as dt_timezone
+    from decimal import Decimal
+    from .verification import DOC_TYPES, read_token
+
+    from urllib.parse import urlparse
+    # Named from settings, not the request: a look-alike site would show its own host.
+    official = {'official_host': urlparse(settings.SITE_URL).netloc or request.get_host()}
+
+    payload = read_token(token)
+    if payload is None:
+        return render(request, 'payments/verify_document.html', {**official, 'valid': False}, status=404)
+
+    payment = Payment.objects.select_related(
+        'booking__property', 'booking__tenant'
+    ).filter(id=uuid.UUID(payload['p'])).first()
+    if payment is None:
+        return render(request, 'payments/verify_document.html', {**official, 'valid': True, 'payment': None})
+
+    tenant = payment.tenant or payment.booking.tenant
+    issued_amount = Decimal(payload['a'])
+    status_labels = dict(Payment.STATUS_CHOICES)
+    return render(request, 'payments/verify_document.html', {
+        **official,
+        'valid': True,
+        'payment': payment,
+        'doc_type': DOC_TYPES[payload['d']],
+        'issued_at': datetime.fromtimestamp(payload['t'], tz=dt_timezone.utc),
+        'issued_amount': issued_amount,
+        'issued_status': status_labels.get(payload['s'], payload['s']),
+        'amount_changed': issued_amount != payment.amount,
+        'confirmation_withdrawn': payload['s'] == 'COMPLETED' and payment.status != 'COMPLETED',
+        'tenant_masked': _mask_name(tenant.get_full_name() or tenant.username),
+    })

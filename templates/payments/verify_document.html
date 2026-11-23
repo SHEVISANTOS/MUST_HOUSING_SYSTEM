@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Document verification{% endblock %}
+
+{% block content %}
+<style>
+    .verify-card { max-width: 640px; margin: 0 auto; }
+    .verdict { padding: 18px 20px; border-radius: 12px; margin-bottom: 18px; font-weight: 700; }
+    .verdict small { display: block; font-weight: 500; margin-top: 4px; }
+    .verdict-ok { background: var(--leaf); color: var(--forest-dark); border: 1px solid var(--forest); }
+    .verdict-bad { background: #fbe4df; color: var(--coral-deep); border: 1px solid var(--coral-deep); }
+    .verdict-warn { background: #fff8e1; color: #7a5a00; border: 1px solid #ecd28b; }
+    .vrow { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.93rem; }
+    .vrow:last-child { border-bottom: none; }
+    .vrow dt { color: var(--text-grey); font-weight: 600; }
+    .vrow dd { margin: 0; text-align: right; font-weight: 600; }
+</style>
+
+<div class="verify-card">
+    <div class="page-heading">
+        <div>
+            <p class="eyebrow">VOT House Finding</p>
+            <h1>Document verification</h1>
+        </div>
+    </div>
+
+    {% if not valid %}
+        <div class="verdict verdict-bad">
+            ❌ Not a valid VOT House Finding document
+            <small>This code was not issued by our system, or it has been altered. Do not accept this document as proof of payment.</small>
+        </div>
+    {% elif not payment %}
+        <div class="verdict verdict-bad">
+            ❌ This document is no longer valid
+            <small>It was issued by our system, but the payment record it refers to no longer exists.</small>
+        </div>
+    {% else %}
+        {% if payment.status == 'COMPLETED' %}
+            <div class="verdict verdict-ok">✅ Genuine document — payment confirmed
+                <small>The landlord confirmed receiving this payment{% if payment.landlord_confirmed_at %} on {{ payment.landlord_confirmed_at|date:"j M Y" }}{% endif %}.</small>
+            </div>
+        {% elif payment.status == 'TENANT_PAID' %}
+            <div class="verdict verdict-warn">✅ Genuine document — payment not yet confirmed
+                <small>The tenant reports having paid; the landlord has not confirmed receiving it yet.</small>
+            </div>
+        {% else %}
+            <div class="verdict verdict-warn">✅ Genuine document — not paid
+                <small>Current status: {{ payment.get_status_display }}. This document is not proof of payment.</small>
+            </div>
+        {% endif %}
+
+        {% if confirmation_withdrawn %}
+            <div class="verdict verdict-bad">⚠️ Payment confirmation withdrawn
+                <small>When this document was issued the payment was confirmed; it no longer is. Treat older printouts as invalid.</small>
+            </div>
+        {% endif %}
+        {% if amount_changed %}
+            <div class="verdict verdict-bad">⚠️ Amount changed since issue
+                <small>Issued for TZS {{ issued_amount|floatformat:0|intcomma }}; the official amount is now TZS {{ payment.amount|floatformat:0|intcomma }}.</small>
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header"><span>Official record — compare with your document</span></div>
+            <div class="card-body">
+                <dl style="margin: 0;">
+                    <div class="vrow"><dt>Document</dt><dd>{% if doc_type == 'slip' %}Payment instruction slip{% else %}Payment invoice{% endif %}</dd></div>
+                    <div class="vrow"><dt>Document ID</dt><dd>#{{ payment.id }}</dd></div>
+                    <div class="vrow"><dt>Booking</dt><dd>#{{ payment.booking.id|stringformat:"04d" }}</dd></div>
+                    <div class="vrow"><dt>Amount</dt><dd>TZS {{ payment.amount|floatformat:0|intcomma }}</dd></div>
+                    <div class="vrow"><dt>Status</dt><dd>{{ payment.get_status_display }}</dd></div>
+                    <div class="vrow"><dt>Property</dt><dd>{{ payment.booking.property.title }}</dd></div>
+                    <div class="vrow"><dt>Tenant</dt><dd>{{ tenant_masked }}</dd></div>
+                    <div class="vrow"><dt>Document issued</dt><dd>{{ issued_at|date:"j M Y, H:i" }} (status then: {{ issued_status }})</dd></div>
+                </dl>
+            </div>
+        </div>
+        <p class="page-sub">If any detail on the paper differs from this official record, the paper has been altered.
+            {% if doc_type == 'slip' %}A payment slip is an instruction to pay, not a receipt — rely on the status above.{% endif %}</p>
+    {% endif %}
+    <p class="page-sub" style="margin-top: 12px;">Only trust this result on <strong>{{ official_host }}</strong> — VOT House Finding's official website. A code pointing anywhere else is fake.</p>
+</div>
+{% endblock %}

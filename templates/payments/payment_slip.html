@@ -132,7 +132,7 @@
                 <li><strong>Cash:</strong> Pay directly to landlord with receipt</li>
             </ul>
             <p><strong>Important:</strong> After payment, contact your landlord immediately to confirm receipt.</p>
-            <p class="notice">⚠️ Notice: This slip is for payment instruction only. Payment status is updated by your landlord after confirming receipt. Keep your M-Pesa/bank confirmation message as proof of payment.</p>
+            <p class="notice">Notice: This slip is for payment instruction only. Payment status is updated by your landlord after confirming receipt. Keep your M-Pesa/bank confirmation message as proof of payment.</p>
         </td></tr></table>
 
         <!-- Signatures -->
@@ -143,6 +143,8 @@
                 <td><strong>Landlord Signature</strong>(Upon verification)</td>
             </tr>
         </table>
+
+        {% include 'payments/_pdf_verify.html' %}
 
         <!-- Footer -->
         <div class="footer">

@@ -1,0 +1,11 @@
+{% if verify_qr %}
+<table class="layout" style="margin-top: 6px;"><tr>
+    <td style="width: 96px; vertical-align: middle;"><img src="{{ verify_qr }}" width="90" height="90" alt="Verification QR code"></td>
+    <td style="vertical-align: middle; font-size: 8pt; line-height: 1.3;">
+        <strong>Verify this document</strong><br>
+        Scan the QR code with a phone camera. It opens the official record on
+        <strong>{{ verify_host }}</strong> showing the real amount and payment status.<br>
+        If anything differs from this paper, or the code opens any other website, the document is not genuine.
+    </td>
+</tr></table>
+{% endif %}

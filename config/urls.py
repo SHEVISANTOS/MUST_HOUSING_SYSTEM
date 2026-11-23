@@ -6,10 +6,13 @@ from django.conf.urls.static import static
 
 # ✅ IMPORT: Your custom views from apps.core
 from apps.core import views as core_views
+from apps.payments import views as payment_views
 
 urlpatterns = [
 
     path('healthz', core_views.healthz, name='healthz'),
+    # Short path keeps the QR code printed on payment PDFs small
+    path('v/<str:token>/', payment_views.verify_document, name='verify_document'),
 
     path(f'{settings.ADMIN_URL}login/', core_views.admin_login_view, name='admin_login'),
 

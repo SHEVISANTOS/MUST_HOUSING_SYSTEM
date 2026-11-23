@@ -131,8 +131,10 @@
                 <li><strong>Cash:</strong> Pay directly to landlord with receipt</li>
             </ul>
             <p><strong>Important:</strong> After payment, mark it as paid in your account and contact your landlord to confirm receipt.</p>
-            <p class="notice">⚠️ Notice: This invoice is a request for payment, not proof of payment. Keep your M-Pesa/bank confirmation message once you pay.</p>
+            <p class="notice">Notice: This invoice is a request for payment, not proof of payment. Keep your M-Pesa/bank confirmation message once you pay.</p>
         </td></tr></table>
+
+        {% include 'payments/_pdf_verify.html' %}
 
         <!-- Footer -->
         <div class="footer">
