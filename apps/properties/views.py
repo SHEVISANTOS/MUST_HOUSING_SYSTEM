@@ -5,6 +5,7 @@ from urllib.parse import quote
 from django.core.paginator import Paginator
 from django.http import JsonResponse, Http404
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Prefetch, Q, Exists, OuterRef
@@ -144,6 +145,73 @@ def _can_see_unverified(user, prop):
     return prop.bookings.filter(tenant=user).exists()
 
 
+SHARE_IMAGE_MAX_PX = 1200
+SHARE_IMAGE_MAX_BYTES = 280 * 1024
+
+
+def _render_share_image(source):
+    """JPEG of the cover photo small enough for every messaging app's link
+    preview, and quick to attach when a phone shares the photo itself."""
+    import io
+    from PIL import Image, ImageOps
+    with Image.open(source) as img:
+        img = ImageOps.exif_transpose(img)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            img = img.convert('RGBA')
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[-1])
+            img = background
+        else:
+            img = img.convert('RGB')
+        img.thumbnail((SHARE_IMAGE_MAX_PX, SHARE_IMAGE_MAX_PX))
+        for quality in (82, 72, 62, 50):
+            out = io.BytesIO()
+            img.save(out, 'JPEG', quality=quality, optimize=True, progressive=True)
+            if out.tell() <= SHARE_IMAGE_MAX_BYTES:
+                break
+            if quality == 62:
+                img.thumbnail((800, 800))
+        return out.getvalue()
+
+
+def share_image(request, pk):
+    """The property's cover photo as a small JPEG, for link previews
+    (og:image) and for attaching the photo when sharing from a phone.
+    Same visibility rule as the listing page itself."""
+    import hashlib
+    from django.contrib.staticfiles import finders
+    from django.core.files.base import ContentFile
+    from django.core.files.storage import default_storage
+    from django.http import HttpResponse
+
+    prop = get_object_or_404(Property.objects.select_related('landlord').prefetch_related('images'), pk=pk)
+    is_owner = request.user.is_authenticated and prop.landlord_id == request.user.id
+    if not prop.landlord.is_verified and not is_owner and not _can_see_unverified(request.user, prop):
+        raise Http404("No such property")
+
+    cover = next(iter(prop.images.all()), None)
+    source_name = cover.image.name if cover else 'static:img/vot_logo.png'
+    key = hashlib.sha256(source_name.encode()).hexdigest()[:16]
+    cached = f'share_previews/{prop.pk}-{key}.jpg'
+    if default_storage.exists(cached):
+        with default_storage.open(cached, 'rb') as f:
+            data = f.read()
+    else:
+        try:
+            if cover:
+                with cover.image.open('rb') as f:
+                    data = _render_share_image(f)
+            else:
+                data = _render_share_image(finders.find('img/vot_logo.png'))
+        except (OSError, ValueError):
+            raise Http404("Photo unavailable")
+        default_storage.save(cached, ContentFile(data))
+
+    response = HttpResponse(data, content_type='image/jpeg')
+    response['Cache-Control'] = 'public, max-age=86400'
+    return response
+
+
 def property_detail(request, pk):
     """
     Display property details with images & map. Public - no login required
@@ -202,7 +270,11 @@ def property_detail(request, pk):
     # serves /media/ publicly - falling back to the logo for photo-less listings.
     # PropertyImage's ordering puts the cover first, same photo the listing card shows.
     cover = next(iter(prop.images.all()), None)
-    og_image_url = request.build_absolute_uri(cover.image.url if cover else static('img/vot_logo.png'))
+    # A resized copy, not the original upload: WhatsApp drops previews whose
+    # image is over ~300 KB, and uploads may be up to 2 MB. ?v= changes with
+    # the cover so apps that cache previews pick up a new cover photo.
+    share_image_path = reverse('properties:share_image', args=[prop.pk]) + f"?v={cover.pk if cover else 0}"
+    og_image_url = request.build_absolute_uri(share_image_path)
     og_url = request.build_absolute_uri(request.path)
 
     # Plain share URLs (no third-party SDKs/trackers), built here rather than
@@ -247,6 +319,7 @@ def property_detail(request, pk):
         'timeline_start': today,
         'timeline_end': window_end,
         'og_image_url': og_image_url,
+        'share_image_path': share_image_path,
         'og_url': og_url,
         'share_links': share_links,
         'share_data': {'title': prop.title, 'text': share_text, 'url': og_url},

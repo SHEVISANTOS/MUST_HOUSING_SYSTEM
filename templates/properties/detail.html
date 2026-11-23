@@ -8,6 +8,8 @@
 <meta property="og:title" content="{{ property.title }} - VOT House Finding">
 <meta property="og:description" content="{{ property.location }} - TZS {{ property.monthly_rent|floatformat:0|intcomma }}/month. {{ property.description|truncatewords:25 }}">
 <meta property="og:image" content="{{ og_image_url }}">
+<meta property="og:image:secure_url" content="{{ og_image_url }}">
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:alt" content="{{ property.title }}">
 <meta property="og:url" content="{{ og_url }}">
 <meta name="twitter:card" content="summary_large_image">
@@ -468,11 +470,11 @@
             <script>
                 // Phones get the native share sheet (WhatsApp, Instagram, SMS, ...);
                 // browsers without navigator.share get the link panel instead.
+                // Fetch the photo now so the Share button can attach it instantly.
+                document.addEventListener('DOMContentLoaded', () => preloadSharePhoto('{{ share_image_path|escapejs }}'));
                 function shareProperty() {
                     const data = JSON.parse(document.getElementById('share-data').textContent);
-                    if (navigator.share) {
-                        navigator.share(data).catch(() => {});
-                    } else {
+                    if (!sharePropertyData(data, '{{ share_image_path|escapejs }}')) {
                         document.getElementById('sharePanel').scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 }

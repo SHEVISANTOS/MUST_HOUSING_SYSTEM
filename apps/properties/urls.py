@@ -19,5 +19,6 @@ urlpatterns = [
     path('<int:pk>/edit/', views.property_edit, name='edit'),
     path('<int:pk>/pause/', views.property_pause, name='pause'),
     path('<int:pk>/save/', views.toggle_saved, name='toggle_saved'),
+    path('<int:pk>/photo.jpg', views.share_image, name='share_image'),
 
 ]

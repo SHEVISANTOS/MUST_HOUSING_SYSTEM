@@ -433,27 +433,60 @@
             }
         });
 
-        // Share button on listing cards (also inside the card's <a>). Phones
-        // open the native share sheet (WhatsApp, SMS, Instagram...); other
-        // browsers copy the link and say so.
+        // Sharing a property sends its photo too. Phones that can share files
+        // (Android Chrome, iOS Safari) get photo + text + link in one go, so a
+        // WhatsApp message arrives with the picture even if no preview loads.
+        // The photo is fetched ahead of the tap: share() has to run straight
+        // from the tap, and some browsers refuse it after a slow download.
+        const sharePhotos = new Map();
+        function preloadSharePhoto(url) {
+            if (!url || sharePhotos.has(url) || !navigator.canShare) return;
+            sharePhotos.set(url, fetch(url).then(r => r.ok ? r.blob() : null)
+                .then(blob => blob && new File([blob], 'vot-house.jpg', { type: 'image/jpeg' }))
+                .then(file => { sharePhotos.set(url, file); return file; })
+                .catch(() => { sharePhotos.set(url, null); return null; }));
+        }
+        function showShareToast(msg) {
+            const el = document.createElement('div');
+            el.className = 'share-toast'; el.setAttribute('role', 'status'); el.textContent = msg;
+            document.body.appendChild(el); setTimeout(() => el.remove(), 2500);
+        }
+        // Returns false when the browser has no share sheet (caller falls back).
+        function sharePropertyData(data, photoUrl) {
+            if (!navigator.share) return false;
+            let photo = sharePhotos.get(photoUrl);
+            if (photo instanceof Promise) photo = null;  // still downloading: share without it
+            if (photo) {
+                const withPhoto = { files: [photo], title: data.title, text: data.text + '\n' + data.url };
+                if (navigator.canShare(withPhoto)) {
+                    navigator.share(withPhoto).catch(err => {
+                        if (err.name !== 'AbortError') navigator.share(data).catch(() => {});
+                    });
+                    return true;
+                }
+            }
+            navigator.share(data).catch(() => {});
+            return true;
+        }
         function shareCard(event, btn) {
             event.preventDefault();
             event.stopPropagation();
             const url = new URL(btn.closest('a').getAttribute('href'), window.location.origin).href;
             const data = { title: btn.dataset.shareTitle, text: btn.dataset.shareText, url: url };
-            if (navigator.share) { navigator.share(data).catch(() => {}); return; }
-            const toast = (msg) => {
-                const el = document.createElement('div');
-                el.className = 'share-toast'; el.setAttribute('role', 'status'); el.textContent = msg;
-                document.body.appendChild(el); setTimeout(() => el.remove(), 2500);
-            };
+            if (sharePropertyData(data, btn.dataset.sharePhoto)) return;
             if (navigator.clipboard) {
-                navigator.clipboard.writeText(url).then(() => toast('Link copied - paste it to share with friends'),
+                navigator.clipboard.writeText(url).then(() => showShareToast('Link copied - paste it to share with friends'),
                                                         () => window.prompt('Copy this link:', url));
             } else {
                 window.prompt('Copy this link:', url);
             }
         }
+        // Card photos are fetched when a finger or mouse reaches the share
+        // button, a moment before the tap itself.
+        ['pointerover', 'touchstart'].forEach(type => document.addEventListener(type, e => {
+            const btn = e.target.closest && e.target.closest('.listing-card-share');
+            if (btn) preloadSharePhoto(btn.dataset.sharePhoto);
+        }, { passive: true }));
 
         // Heart/save button on listing cards (sits inside the card's own
         // <a> link, so this must stop that navigation on click).

@@ -540,24 +540,23 @@ class LinkPreviewImageTests(TestCase):
         return Client().get(self.url).context['og_image_url']
 
     def test_no_photos_falls_back_to_logo(self):
-        self.assertIn('/static/img/vot_logo', self._og_image())
+        self.assertTrue(self._og_image().endswith('/photo.jpg?v=0'))
 
     def test_uses_cover_photo_as_absolute_url(self):
         photo = self._add_photo('cover.png', primary=True)
         og = self._og_image()
-        self.assertTrue(og.startswith('http://testserver/media/'))
-        self.assertTrue(og.endswith(photo.image.name))
+        self.assertEqual(og, f'http://testserver/properties/{self.property.pk}/photo.jpg?v={photo.pk}')
 
     def test_prefers_cover_over_first_photo(self):
         self._add_photo('first.png')
         cover = self._add_photo('cover.png', primary=True)
-        self.assertTrue(self._og_image().endswith(cover.image.name))
+        self.assertTrue(self._og_image().endswith(f'?v={cover.pk}'))
 
     def test_without_cover_matches_listing_card_photo(self):
         self._add_photo('older.png')
         self._add_photo('newer.png')
         card_photo = self.property.images.all()[0]  # what _listing_card.html shows
-        self.assertTrue(self._og_image().endswith(card_photo.image.name))
+        self.assertTrue(self._og_image().endswith(f'?v={card_photo.pk}'))
 
 
 class AllHousesChipTests(TestCase):
@@ -637,3 +636,59 @@ class LandlordApprovalTests(TestCase):
         Booking.objects.create(property=self.prop, tenant=self.tenant, move_in_date=date.today(),
                                move_out_date=date.today() + timedelta(days=60), status='PENDING')
         self.assertEqual(self._client('appr_tenant').get(reverse('properties:detail', args=[self.prop.pk])).status_code, 200)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class ShareImageTests(TestCase):
+    """Shared links and phone shares carry the property's photo, sized so
+    WhatsApp (which drops preview images over ~300 KB) still shows it."""
+
+    def setUp(self):
+        self.landlord = User.objects.create_user(username='si_landlord', password='pw', role='LANDLORD', is_verified=True)
+        self.property = Property.objects.create(
+            landlord=self.landlord, title='Photo House', location='Ilemela',
+            property_type='2BR', monthly_rent=150000, distance_from_center_km=1.0,
+        )
+        self.url = reverse('properties:share_image', args=[self.property.pk])
+
+    def _big_photo(self):
+        import io, os
+        from PIL import Image
+        img = Image.frombytes('RGB', (3000, 2000), os.urandom(3000 * 2000 * 3))  # noise: worst case for JPEG
+        buf = io.BytesIO()
+        img.save(buf, 'PNG')
+        return PropertyImage.objects.create(
+            property=self.property, is_primary=True,
+            image=SimpleUploadedFile('big.png', buf.getvalue(), content_type='image/png'),
+        )
+
+    def test_large_cover_is_shrunk_below_whatsapp_limit(self):
+        import io
+        from PIL import Image
+        from apps.properties.views import SHARE_IMAGE_MAX_BYTES
+        self._big_photo()
+        response = Client().get(self.url)
+        self.assertEqual(response['Content-Type'], 'image/jpeg')
+        self.assertLessEqual(len(response.content), SHARE_IMAGE_MAX_BYTES)
+        self.assertLessEqual(max(Image.open(io.BytesIO(response.content)).size), 1200)
+        # second request is served from the cached copy, byte for byte
+        self.assertEqual(Client().get(self.url).content, response.content)
+
+    def test_photo_less_listing_gets_small_logo(self):
+        from apps.properties.views import SHARE_IMAGE_MAX_BYTES
+        response = Client().get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertLessEqual(len(response.content), SHARE_IMAGE_MAX_BYTES)
+
+    def test_detail_page_points_previews_and_share_button_at_it(self):
+        photo = self._big_photo()
+        body = Client().get(reverse('properties:detail', args=[self.property.pk])).content.decode()
+        self.assertIn(f'content="http://testserver{self.url}?v={photo.pk}"', body)
+        self.assertIn(f"preloadSharePhoto('{self.url}?v\\u003D{photo.pk}')", body)  # escapejs turns = into \u003D
+        cards = Client().get(reverse('properties:list')).content.decode()
+        self.assertIn(f'data-share-photo="{self.url}?v={photo.pk}"', cards)
+
+    def test_hidden_listing_photo_not_served(self):
+        self.landlord.is_verified = False
+        self.landlord.save()
+        self.assertEqual(Client().get(self.url).status_code, 404)
