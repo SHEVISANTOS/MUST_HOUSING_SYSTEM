@@ -130,6 +130,7 @@ def property_list(request):
         'max_price': max_price or '',
         'property_type': property_type or '',
         'location': location or '',
+        'filters_active': any([search_query, max_price, property_type, location, available_now, available_by]),
         'budget_chips': budget_chips,
     })
 

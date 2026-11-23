@@ -69,6 +69,7 @@
 
 <!-- Quick chips: plain links, each carrying the full current query with just their own param toggled -->
 <div class="chip-row">
+    <a href="{% url 'properties:list' %}" class="chip {% if not filters_active %}active{% endif %}">🏠 All houses</a>
     <a href="{{ available_now_url }}" class="chip {% if available_now %}active{% endif %}">🟢 Available now</a>
     {% for label, url, is_active in budget_chips %}
     <a href="{{ url }}" class="chip {% if is_active %}active{% endif %}">{{ label }}</a>

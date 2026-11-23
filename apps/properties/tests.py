@@ -546,3 +546,21 @@ class LinkPreviewImageTests(TestCase):
         self._add_photo('newer.png')
         card_photo = self.property.images.all()[0]  # what _listing_card.html shows
         self.assertTrue(self._og_image().endswith(card_photo.image.name))
+
+
+class AllHousesChipTests(TestCase):
+    def _chip(self, query=''):
+        body = Client().get(reverse('properties:list') + query).content.decode()
+        start = body.index('🏠 All houses')
+        return body[body.rindex('<a ', 0, start):start]
+
+    def test_active_when_no_filters(self):
+        chip = self._chip()
+        self.assertIn(f'href="{reverse("properties:list")}"', chip)
+        self.assertIn('active', chip)
+
+    def test_inactive_and_clears_filters_when_filtered(self):
+        for query in ('?max_price=500000', '?available_now=1', '?q=house', '?location=Nyegezi'):
+            chip = self._chip(query)
+            self.assertNotIn('active', chip, query)
+            self.assertIn(f'href="{reverse("properties:list")}"', chip, query)
