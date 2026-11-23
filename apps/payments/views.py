@@ -507,6 +507,10 @@ def verify_document(request, token):
     # Named from settings, not the request: a look-alike site would show its own host.
     official = {'official_host': urlparse(settings.SITE_URL).netloc or request.get_host()}
 
+    if token.startswith('c'):  # tenancy contract codes share the /v/ endpoint
+        from apps.bookings.tenancy_views import verify_contract
+        return verify_contract(request, token)
+
     payload = read_token(token)
     if payload is None:
         return render(request, 'payments/verify_document.html', {**official, 'valid': False}, status=404)

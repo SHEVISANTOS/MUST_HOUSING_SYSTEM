@@ -96,7 +96,9 @@ def download_contract_pdf(request, tenancy_id):
     total_outstanding = sum(p.amount for p in payments if p.status in ('PENDING', 'TENANT_PAID', 'OVERDUE'))
 
     try:
+        from .verification import contract_document_context
         html_string = render_to_string('bookings/tenancy_contract_pdf.html', {
+            **contract_document_context(request, tenancy),
             'tenancy': tenancy,
             'total_paid': total_paid,
             'total_outstanding': total_outstanding,
@@ -171,3 +173,75 @@ def terminate_tenancy(request, tenancy_id):
         return redirect('bookings:landlord_occupancy')
 
     return render(request, 'bookings/terminate_tenancy.html', {'tenancy': tenancy})
+
+
+# ==================== PUBLIC: CONTRACT VERIFICATION ====================
+
+def _mask(name):
+    return ' '.join(word[0] + '*' * (len(word) - 1) for word in name.split())
+
+
+def _contract_result(request, tenancy, snapshot=None, status=200, **extra):
+    """Render the official record of a contract. `snapshot` = terms recorded
+    in a QR token at issue time; differences from today's record are flagged."""
+    from urllib.parse import urlparse
+    from .verification import confirmation_code
+
+    context = {
+        'official_host': urlparse(settings.SITE_URL).netloc or request.get_host(),
+        'checked': True,
+        **extra,
+    }
+    if tenancy is None:
+        return render(request, 'bookings/verify_contract.html', {**context, 'valid': False}, status=status)
+
+    landlord = tenancy.property.landlord
+    context.update({
+        'valid': True,
+        'tenancy': tenancy,
+        'confirmation_code': confirmation_code(tenancy),
+        'tenant_masked': _mask(tenancy.tenant.get_full_name() or tenancy.tenant.username),
+        'landlord_masked': _mask(landlord.get_full_name() or landlord.username),
+    })
+    if snapshot:
+        from datetime import datetime, timezone as dt_timezone
+        context.update({
+            'issued_at': datetime.fromtimestamp(snapshot['issued'], tz=dt_timezone.utc),
+            'snapshot': snapshot,
+            'dates_changed': (snapshot['start'], snapshot['end']) != (tenancy.start_date, tenancy.end_date),
+            'rent_changed': snapshot['rent'] != tenancy.property.monthly_rent,
+        })
+    return render(request, 'bookings/verify_contract.html', context)
+
+
+def _find_tenancy(tenancy_id):
+    return Tenancy.objects.select_related(
+        'property__landlord', 'tenant', 'booking'
+    ).filter(id=tenancy_id).first()
+
+
+def verify_contract(request, token):
+    """QR code on a contract PDF (dispatched from /v/<token>/)."""
+    from .verification import read_contract_token
+    snapshot = read_contract_token(token)
+    if snapshot is None:
+        return _contract_result(request, None, status=404)
+    tenancy = _find_tenancy(snapshot['id'])
+    if tenancy is None:
+        return _contract_result(request, None, status=404, deleted=True)
+    return _contract_result(request, tenancy, snapshot)
+
+
+def verify_by_code(request):
+    """Public page: type a contract's confirmation code to check it."""
+    from .verification import read_confirmation_code
+    code = request.GET.get('code', '').strip()
+    if not code:
+        from urllib.parse import urlparse
+        return render(request, 'bookings/verify_contract.html', {
+            'official_host': urlparse(settings.SITE_URL).netloc or request.get_host(),
+            'checked': False,
+        })
+    tenancy_id = read_confirmation_code(code)
+    tenancy = _find_tenancy(tenancy_id) if tenancy_id else None
+    return _contract_result(request, tenancy, status=200 if tenancy else 404, entered_code=code)

@@ -47,8 +47,13 @@ def _base36(n):
             return out
 
 
-def _mac(body, secret):
-    return _b64(salted_hmac(SALT, body, secret=secret, algorithm='sha256').digest()[:16])
+def _mac(body, secret, salt=SALT):
+    return _b64(salted_hmac(salt, body, secret=secret, algorithm='sha256').digest()[:16])
+
+
+def _secrets():
+    # Old keys in SECRET_KEY_FALLBACKS keep already-printed codes valid after rotation.
+    return [settings.SECRET_KEY, *getattr(settings, 'SECRET_KEY_FALLBACKS', [])]
 
 
 def make_token(payment, doc_type):
@@ -61,8 +66,7 @@ def make_token(payment, doc_type):
 def read_token(token):
     """{'d','p','a','s','t'} if genuine; None if forged, altered or garbage."""
     body, _, mac = token.rpartition('.')
-    secrets = [settings.SECRET_KEY, *getattr(settings, 'SECRET_KEY_FALLBACKS', [])]
-    if not body or not any(constant_time_compare(mac, _mac(body, s)) for s in secrets):
+    if not body or not any(constant_time_compare(mac, _mac(body, s)) for s in _secrets()):
         return None
     try:
         head, issued = body.split('.')

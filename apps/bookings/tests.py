@@ -510,3 +510,108 @@ class ViewBookingTests(TenancyTestBase):
         client.login(username='tenant2', password='pw')
         response = client.get(self.url)
         self.assertRedirects(response, reverse('core:dashboard'), fetch_redirect_response=False)
+
+
+class ContractVerificationTests(TenancyTestBase):
+    """Contract PDFs are verifiable two independent ways (signed QR token,
+    typed confirmation code); neither can be forged or swapped between docs."""
+
+    def setUp(self):
+        super().setUp()
+        today = timezone.localdate()
+        self.tenancy = self.make_tenancy(today - timedelta(days=10), today + timedelta(days=170))
+
+    def _qr(self):
+        from apps.bookings.verification import make_contract_token
+        return make_contract_token(self.tenancy)
+
+    def _code(self):
+        from apps.bookings.verification import confirmation_code
+        return confirmation_code(self.tenancy)
+
+    def _get(self, url):
+        return Client().get(url)
+
+    def test_qr_round_trip_records_terms(self):
+        from apps.bookings.verification import read_contract_token
+        data = read_contract_token(self._qr())
+        self.assertEqual(data['id'], self.tenancy.id)
+        self.assertEqual((data['start'], data['end']), (self.tenancy.start_date, self.tenancy.end_date))
+        self.assertEqual(data['rent'], self.property.monthly_rent)
+
+    def test_genuine_qr_shows_active_contract(self):
+        response = self._get(reverse('verify_document', kwargs={'token': self._qr()}))
+        self.assertContains(response, 'Genuine contract')
+        self.assertContains(response, self._code())
+
+    def test_altered_qr_is_rejected(self):
+        body, mac = self._qr().rsplit('.', 1)
+        parts = body.split('.')
+        parts[2] = parts[2][:-1] + ('a' if parts[2][-1] != 'a' else 'b')  # end date
+        for tok in ('.'.join(parts) + '.' + mac, body + '.' + 'A' * 22):
+            response = self._get(reverse('verify_document', kwargs={'token': tok}))
+            self.assertEqual(response.status_code, 404)
+
+    def test_codes_cannot_cross_document_types(self):
+        from apps.payments.verification import read_token
+        from apps.bookings.verification import read_contract_token
+        self.assertIsNone(read_token(self._qr()))
+        self.assertIsNone(read_contract_token('c' + self._qr()[1:].replace('.', '-', 1)))
+
+    def test_typed_code_and_forgiving_variants(self):
+        code = self._code()
+        variants = [code, code.lower(), code.replace('-', ''), code.replace('-', ' '),
+                    code.translate(str.maketrans('OIB', '018'))]
+        for variant in variants:
+            response = self._get(reverse('verify_by_code') + '?code=' + variant)
+            self.assertEqual(response.status_code, 200, variant)
+            self.assertContains(response, 'Genuine contract')
+
+    def test_wrong_or_borrowed_code_is_rejected(self):
+        code = self._code()
+        other = self.make_tenancy(timezone.localdate() + timedelta(days=400), timezone.localdate() + timedelta(days=500))
+        borrowed = code.replace(f'C{self.tenancy.id}-', f'C{other.id}-')
+        last = code[-1]
+        mistyped = code[:-1] + ('A' if last != 'A' else 'C')
+        for bad in (borrowed, mistyped, 'VHF-C1-AAAA-BBBB-CC', 'nonsense'):
+            response = self._get(reverse('verify_by_code') + '?code=' + bad)
+            self.assertEqual(response.status_code, 404, bad)
+            self.assertContains(response, 'Not a valid', status_code=404)
+
+    def test_code_entry_page_renders_empty_form(self):
+        response = self._get(reverse('verify_by_code'))
+        self.assertContains(response, 'Enter the confirmation code')
+
+    def test_terminated_contract_is_flagged_not_valid(self):
+        self.tenancy.status = 'terminated'
+        self.tenancy.terminated_at = timezone.now()
+        self.tenancy.save()
+        self.assertContains(self._get(reverse('verify_by_code') + '?code=' + self._code()), 'terminated')
+
+    def test_dates_and_rent_changed_after_printing_are_flagged(self):
+        token = self._qr()
+        self.tenancy.end_date += timedelta(days=60)
+        self.tenancy.save()
+        self.property.monthly_rent = 999999
+        self.property.save()
+        response = self._get(reverse('verify_document', kwargs={'token': token}))
+        self.assertContains(response, 'Dates changed since this document was printed')
+        self.assertContains(response, 'Rent changed since this document was printed')
+
+    def test_deleted_contract_is_reported(self):
+        token = self._qr()
+        self.tenancy.delete()
+        self.assertContains(self._get(reverse('verify_document', kwargs={'token': token})),
+                            'no longer exists', status_code=404)
+
+    def test_no_private_details_shown(self):
+        response = self._get(reverse('verify_by_code') + '?code=' + self._code())
+        for private in ('t1@example.com', 'l1@example.com', 'tenant1', 'landlord1'):
+            self.assertNotContains(response, private)
+
+    def test_contract_pdf_downloads(self):
+        client = Client()
+        client.login(username='tenant1', password='pw')
+        response = client.get(reverse('bookings:download_contract_pdf', kwargs={'tenancy_id': self.tenancy.id}))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')

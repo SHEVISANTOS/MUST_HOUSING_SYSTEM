@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Verify a contract{% endblock %}
+
+{% block content %}
+<style>
+    .verify-card { max-width: 640px; margin: 0 auto; }
+    .verdict { padding: 18px 20px; border-radius: 12px; margin-bottom: 18px; font-weight: 700; }
+    .verdict small { display: block; font-weight: 500; margin-top: 4px; }
+    .verdict-ok { background: var(--leaf); color: var(--forest-dark); border: 1px solid var(--forest); }
+    .verdict-bad { background: #fbe4df; color: var(--coral-deep); border: 1px solid var(--coral-deep); }
+    .verdict-warn { background: #fff8e1; color: #7a5a00; border: 1px solid #ecd28b; }
+    .vrow { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.93rem; }
+    .vrow:last-child { border-bottom: none; }
+    .vrow dt { color: var(--text-grey); font-weight: 600; }
+    .vrow dd { margin: 0; text-align: right; font-weight: 600; }
+    .code-form { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .code-form input { flex: 1; min-width: 220px; font-family: ui-monospace, monospace; letter-spacing: 0.05em; text-transform: uppercase; }
+    .conf-code { font-family: ui-monospace, monospace; letter-spacing: 0.05em; }
+</style>
+
+<div class="verify-card">
+    <div class="page-heading">
+        <div>
+            <p class="eyebrow">VOT House Finding</p>
+            <h1>Verify a contract</h1>
+            {% if not checked %}<p class="page-sub">Enter the confirmation code printed on the tenancy contract.</p>{% endif %}
+        </div>
+    </div>
+
+    <form method="get" action="{% url 'verify_by_code' %}" class="code-form">
+        <input type="text" name="code" class="form-control" placeholder="VHF-C12-XXXX-XXXX-XX"
+               value="{{ entered_code|default:'' }}" autocomplete="off" spellcheck="false" required aria-label="Confirmation code">
+        <button type="submit" class="btn btn-green">Verify</button>
+    </form>
+
+    {% if checked and not valid %}
+        <div class="verdict verdict-bad">
+            ❌ {% if deleted %}This contract no longer exists{% else %}Not a valid VOT House Finding contract{% endif %}
+            <small>{% if deleted %}It was issued by our system, but the record has since been removed.{% else %}This code was not issued by our system, or it was mistyped or altered. Check the code, and do not rely on this contract until it verifies.{% endif %}</small>
+        </div>
+    {% elif valid %}
+        {% with s=tenancy.display_status %}
+        {% if s == 'terminated' %}
+            <div class="verdict verdict-bad">❌ Genuine contract — terminated{% if tenancy.terminated_at %} on {{ tenancy.terminated_at|date:"j M Y" }}{% endif %}
+                <small>This contract was issued by our system but is no longer in force.</small></div>
+        {% elif s == 'ended' %}
+            <div class="verdict verdict-warn">✅ Genuine contract — ended on {{ tenancy.end_date|date:"j M Y" }}
+                <small>It was valid, but its term is over and it is no longer in force.</small></div>
+        {% elif s == 'renewed' %}
+            <div class="verdict verdict-warn">✅ Genuine contract — replaced by a renewal
+                <small>This contract was renewed; ask for the newer contract.</small></div>
+        {% elif s == 'upcoming' %}
+            <div class="verdict verdict-ok">✅ Genuine contract — starts {{ tenancy.start_date|date:"j M Y" }}</div>
+        {% else %}
+            <div class="verdict verdict-ok">✅ Genuine contract — active
+                <small>In force until {{ tenancy.end_date|date:"j M Y" }}.</small></div>
+        {% endif %}
+        {% endwith %}
+
+        {% if dates_changed %}
+            <div class="verdict verdict-bad">⚠️ Dates changed since this document was printed
+                <small>Printed: {{ snapshot.start|date:"j M Y" }} – {{ snapshot.end|date:"j M Y" }}. Official now: {{ tenancy.start_date|date:"j M Y" }} – {{ tenancy.end_date|date:"j M Y" }}.</small></div>
+        {% endif %}
+        {% if rent_changed %}
+            <div class="verdict verdict-warn">⚠️ Rent changed since this document was printed
+                <small>Printed: TZS {{ snapshot.rent|floatformat:0|intcomma }}/month. Official now: TZS {{ tenancy.property.monthly_rent|floatformat:0|intcomma }}/month.</small></div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header"><span>Official record — compare with the contract</span></div>
+            <div class="card-body">
+                <dl style="margin: 0;">
+                    <div class="vrow"><dt>Contract ID</dt><dd>#{{ tenancy.id }}</dd></div>
+                    <div class="vrow"><dt>Confirmation code</dt><dd class="conf-code">{{ confirmation_code }}</dd></div>
+                    <div class="vrow"><dt>Property</dt><dd>{{ tenancy.property.title }}</dd></div>
+                    <div class="vrow"><dt>Tenant</dt><dd>{{ tenant_masked }}</dd></div>
+                    <div class="vrow"><dt>Landlord</dt><dd>{{ landlord_masked }}</dd></div>
+                    <div class="vrow"><dt>Term</dt><dd>{{ tenancy.start_date|date:"j M Y" }} – {{ tenancy.end_date|date:"j M Y" }} ({{ tenancy.duration_months }} month{{ tenancy.duration_months|pluralize }})</dd></div>
+                    <div class="vrow"><dt>Monthly rent</dt><dd>TZS {{ tenancy.property.monthly_rent|floatformat:0|intcomma }}</dd></div>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><span>Agreement trail</span></div>
+            <div class="card-body">
+                <dl style="margin: 0;">
+                    <div class="vrow"><dt>Requested by tenant</dt><dd>{{ tenancy.booking.created_at|date:"j M Y, H:i" }}</dd></div>
+                    <div class="vrow"><dt>Approved by landlord</dt><dd>{{ tenancy.created_at|date:"j M Y, H:i" }}</dd></div>
+                    {% if tenancy.terminated_at %}<div class="vrow"><dt>Terminated</dt><dd>{{ tenancy.terminated_at|date:"j M Y, H:i" }}</dd></div>{% endif %}
+                    {% if issued_at %}<div class="vrow"><dt>This document printed</dt><dd>{{ issued_at|date:"j M Y, H:i" }}</dd></div>{% endif %}
+                </dl>
+            </div>
+        </div>
+        <p class="page-sub">If the contract's ID, confirmation code, names, dates or rent differ from this official record, the paper has been altered.</p>
+    {% endif %}
+
+    <p class="page-sub" style="margin-top: 12px;">Only trust this result on <strong>{{ official_host }}</strong> — VOT House Finding's official website.</p>
+</div>
+{% endblock %}
