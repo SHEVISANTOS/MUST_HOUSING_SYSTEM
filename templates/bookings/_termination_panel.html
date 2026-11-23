@@ -1,0 +1,42 @@
+{% comment %}
+Early-termination status for one tenancy, from the viewer's side. Needs
+`tenancy.termination_list` (newest first, prefetched by the view) and `user`.
+{% endcomment %}
+{% with tr=tenancy.termination_list|first %}
+{% if tr.status == 'pending' %}
+    {% if tr.requested_by_id == user.id %}
+    <div class="termination-panel termination-waiting">
+        <strong>⏳ You asked to end this contract early</strong> on {{ tr.created_at|date:"j M Y" }}.
+        Waiting for the {% if tr.requested_by_landlord %}tenant{% else %}landlord{% endif %} to agree or disagree &mdash;
+        the contract stays in force until they agree.
+        <div class="termination-reason">Your reason: &ldquo;{{ tr.reason }}&rdquo;</div>
+        <form method="post" action="{% url 'bookings:withdraw_termination' tr.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-secondary"
+                    onclick="return confirm('Withdraw your request to end this contract?');">↩️ Withdraw request</button>
+        </form>
+    </div>
+    {% else %}
+    <div class="termination-panel termination-action">
+        <strong>⚠️ {{ tr.requested_by.username|title }} ({% if tr.requested_by_landlord %}your landlord{% else %}your tenant{% endif %}) wants to end this contract early</strong>
+        <span class="text-muted small">&middot; requested {{ tr.created_at|date:"j M Y" }}</span>
+        <div class="termination-reason">Reason: &ldquo;{{ tr.reason }}&rdquo;</div>
+        <form method="post" action="{% url 'bookings:respond_termination' tr.id %}">
+            {% csrf_token %}
+            <textarea name="note" class="form-control mb-2" rows="2" maxlength="1000"
+                      placeholder="Optional: if you disagree, tell them why"></textarea>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="submit" name="action" value="agree" class="btn btn-sm btn-danger"
+                        onclick="return confirm('Agree to end this contract? It will be terminated immediately. This cannot be undone.');">🤝 Agree &mdash; end contract</button>
+                <button type="submit" name="action" value="decline" class="btn btn-sm btn-secondary">🚫 Disagree &mdash; keep contract</button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+{% elif tr.status == 'declined' and tr.requested_by_id == user.id %}
+    <div class="termination-panel termination-waiting">
+        <strong>🚫 Your request to end this contract was declined</strong> on {{ tr.responded_at|date:"j M Y" }}. The contract continues.
+        {% if tr.response_note %}<div class="termination-reason">Their reply: &ldquo;{{ tr.response_note }}&rdquo;</div>{% endif %}
+    </div>
+{% endif %}
+{% endwith %}

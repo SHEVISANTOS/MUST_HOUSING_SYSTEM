@@ -122,6 +122,19 @@ def dashboard(request):
                 'url': reverse('messaging:inbox'),
                 'cta': 'Open inbox',
             })
+        from apps.bookings.models import TerminationRequest
+        terminations_count = TerminationRequest.objects.filter(
+            status='pending', tenancy__property__landlord=request.user,
+        ).exclude(requested_by=request.user).count()
+        if terminations_count:
+            attention_items.append({
+                'icon': '📄',
+                'label': 'Termination request' if terminations_count == 1 else 'Termination requests',
+                'detail': 'A tenant wants to end a contract early - agree or disagree',
+                'count': terminations_count,
+                'url': reverse('bookings:landlord_occupancy'),
+                'cta': 'Respond',
+            })
         context['attention_items'] = attention_items
 
     return render(request, 'dashboard.html', context)

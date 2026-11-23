@@ -9,7 +9,7 @@ from django.utils import timezone
 from datetime import timedelta
 from apps.users.models import User
 from apps.properties.models import Property
-from apps.bookings.models import Booking, Tenancy
+from apps.bookings.models import Booking, Tenancy, TerminationRequest
 from apps.bookings.services import sync_tenancy_statuses
 from apps.payments.models import Payment
 from apps.notifications.models import Notification
@@ -381,7 +381,7 @@ class AccessControlTests(TenancyTestBase):
     def test_unrelated_landlord_cannot_terminate(self):
         client = Client()
         client.login(username='landlord2', password='pw')  # not this property's landlord
-        response = client.get(reverse('bookings:terminate_tenancy', kwargs={'tenancy_id': self.tenancy.id}))
+        response = client.get(reverse('bookings:request_termination', kwargs={'tenancy_id': self.tenancy.id}))
         self.assertEqual(response.status_code, 404)
 
     def test_unrelated_landlord_cannot_approve_renewal(self):
@@ -615,3 +615,153 @@ class ContractVerificationTests(TenancyTestBase):
         response = client.get(reverse('bookings:download_contract_pdf', kwargs={'tenancy_id': self.tenancy.id}))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
+
+
+class TerminationAgreementTests(TenancyTestBase):
+    """Early termination needs both parties: request (with reason) ->
+    the other party agrees (terminated) or disagrees (continues)."""
+
+    REASON = 'Relocating to Dodoma for a new job next month'
+
+    def setUp(self):
+        super().setUp()
+        today = timezone.localdate()
+        self.tenancy = self.make_tenancy(today - timedelta(days=10), today + timedelta(days=170), status='active')
+        self.tenant_client = Client()
+        self.tenant_client.login(username='tenant1', password='pw')
+        self.landlord_client = Client()
+        self.landlord_client.login(username='landlord1', password='pw')
+
+    def _request(self, client, reason=REASON):
+        return client.post(reverse('bookings:request_termination', kwargs={'tenancy_id': self.tenancy.id}),
+                           {'reason': reason})
+
+    def _respond(self, client, tr, action, note=''):
+        return client.post(reverse('bookings:respond_termination', kwargs={'request_id': tr.id}),
+                           {'action': action, 'note': note})
+
+    def _status(self):
+        self.tenancy.refresh_from_db()
+        return self.tenancy.status
+
+    def test_tenant_request_does_not_end_contract_and_notifies_landlord(self):
+        self._request(self.tenant_client)
+        tr = TerminationRequest.objects.get(tenancy=self.tenancy)
+        self.assertEqual((tr.status, tr.requested_by, tr.reason), ('pending', self.tenant, self.REASON))
+        self.assertEqual(self._status(), 'active')
+        self.assertTrue(Notification.objects.filter(user=self.landlord, kind='termination_requested').exists())
+
+    def test_reason_is_required(self):
+        self._request(self.tenant_client, reason='bye')
+        self.assertFalse(TerminationRequest.objects.exists())
+
+    def test_landlord_sees_reason_and_choices_tenant_sees_waiting(self):
+        self._request(self.tenant_client)
+        body = self.landlord_client.get(reverse('bookings:landlord_occupancy')).content.decode()
+        self.assertIn(self.REASON, body)
+        self.assertIn('Agree', body)
+        self.assertIn('Disagree', body)
+        body = self.tenant_client.get(reverse('bookings:my_contract')).content.decode()
+        self.assertIn('You asked to end this contract early', body)
+        self.assertIn('Withdraw request', body)
+        self.assertNotIn('value="agree"', body)  # requester can't approve their own request
+
+    def test_landlord_agrees_contract_terminates(self):
+        self._request(self.tenant_client)
+        tr = TerminationRequest.objects.get()
+        self._respond(self.landlord_client, tr, 'agree')
+        tr.refresh_from_db()
+        self.assertEqual(tr.status, 'agreed')
+        self.assertEqual(self._status(), 'terminated')
+        self.assertIn(self.REASON, self.tenancy.termination_reason)
+        self.tenancy.booking.refresh_from_db()
+        self.assertEqual(self.tenancy.booking.status, 'CANCELLED')
+        self.assertTrue(Notification.objects.filter(user=self.tenant, kind='termination_agreed').exists())
+
+    def test_landlord_disagrees_contract_continues_with_reply(self):
+        self._request(self.tenant_client)
+        tr = TerminationRequest.objects.get()
+        self._respond(self.landlord_client, tr, 'decline', note='Please give 30 days notice per our agreement')
+        tr.refresh_from_db()
+        self.assertEqual((tr.status, tr.response_note), ('declined', 'Please give 30 days notice per our agreement'))
+        self.assertEqual(self._status(), 'active')
+        self.assertTrue(Notification.objects.filter(user=self.tenant, kind='termination_declined').exists())
+        self.assertContains(self.tenant_client.get(reverse('bookings:my_contract')), 'Please give 30 days notice')
+
+    def test_landlord_can_request_and_tenant_agrees(self):
+        self._request(self.landlord_client, reason='Property is being sold at the end of the month')
+        tr = TerminationRequest.objects.get()
+        self.assertTrue(Notification.objects.filter(user=self.tenant, kind='termination_requested').exists())
+        self.assertEqual(self._status(), 'active')
+        self._respond(self.tenant_client, tr, 'agree')
+        self.assertEqual(self._status(), 'terminated')
+        self.assertTrue(Notification.objects.filter(user=self.landlord, kind='termination_agreed').exists())
+
+    def test_requester_cannot_answer_own_request(self):
+        self._request(self.landlord_client)
+        tr = TerminationRequest.objects.get()
+        self.assertEqual(self._respond(self.landlord_client, tr, 'agree').status_code, 404)
+        self.assertEqual(self._status(), 'active')
+
+    def test_outsiders_cannot_request_or_answer(self):
+        outsider = Client()
+        outsider.login(username='landlord2', password='pw')
+        self.assertEqual(self._request(outsider).status_code, 404)
+        self._request(self.tenant_client)
+        tr = TerminationRequest.objects.get()
+        self.assertEqual(self._respond(outsider, tr, 'agree').status_code, 404)
+        self.assertEqual(self._status(), 'active')
+
+    def test_only_one_open_request_at_a_time(self):
+        self._request(self.tenant_client)
+        self._request(self.landlord_client, reason='Another request while one is open')
+        self.assertEqual(TerminationRequest.objects.filter(status='pending').count(), 1)
+        from django.db import IntegrityError, transaction
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            TerminationRequest.objects.create(tenancy=self.tenancy, requested_by=self.landlord, reason='x' * 20)
+
+    def test_answering_twice_does_not_change_outcome(self):
+        self._request(self.tenant_client)
+        tr = TerminationRequest.objects.get()
+        self._respond(self.landlord_client, tr, 'decline')
+        self._respond(self.landlord_client, tr, 'agree')
+        tr.refresh_from_db()
+        self.assertEqual(tr.status, 'declined')
+        self.assertEqual(self._status(), 'active')
+
+    def test_requester_can_withdraw_others_cannot(self):
+        self._request(self.tenant_client)
+        tr = TerminationRequest.objects.get()
+        url = reverse('bookings:withdraw_termination', kwargs={'request_id': tr.id})
+        self.assertEqual(self.landlord_client.post(url).status_code, 404)
+        self.tenant_client.post(url)
+        tr.refresh_from_db()
+        self.assertEqual(tr.status, 'withdrawn')
+        self.assertTrue(Notification.objects.filter(user=self.landlord, kind='termination_withdrawn').exists())
+        self._request(self.tenant_client)  # a fresh request is allowed after withdrawing
+        self.assertEqual(TerminationRequest.objects.filter(status='pending').count(), 1)
+
+    def test_answer_requires_post(self):
+        self._request(self.tenant_client)
+        tr = TerminationRequest.objects.get()
+        response = self.landlord_client.get(reverse('bookings:respond_termination', kwargs={'request_id': tr.id}))
+        self.assertEqual(response.status_code, 405)
+
+    def test_cannot_request_on_ended_contract(self):
+        self.tenancy.status = 'terminated'
+        self.tenancy.save()
+        self._request(self.tenant_client)
+        self.assertFalse(TerminationRequest.objects.exists())
+
+    def test_landlord_dashboard_shows_pending_request(self):
+        self._request(self.tenant_client)
+        body = self.landlord_client.get(reverse('core:dashboard')).content.decode()
+        self.assertIn('Termination request', body)
+
+    def test_verification_page_shows_mutual_agreement_trail(self):
+        from apps.bookings.verification import confirmation_code
+        self._request(self.tenant_client)
+        self._respond(self.landlord_client, TerminationRequest.objects.get(), 'agree')
+        response = Client().get(reverse('verify_by_code') + '?code=' + confirmation_code(self.tenancy))
+        self.assertContains(response, 'ended early by agreement of both tenant and landlord')
+        self.assertContains(response, 'Termination agreed by')

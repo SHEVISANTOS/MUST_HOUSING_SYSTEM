@@ -43,7 +43,7 @@
         {% with s=tenancy.display_status %}
         {% if s == 'terminated' %}
             <div class="verdict verdict-bad">❌ Genuine contract — terminated{% if tenancy.terminated_at %} on {{ tenancy.terminated_at|date:"j M Y" }}{% endif %}
-                <small>This contract was issued by our system but is no longer in force.</small></div>
+                <small>This contract was issued by our system but is no longer in force{% if agreed_termination %} &mdash; ended early by agreement of both tenant and landlord{% endif %}.</small></div>
         {% elif s == 'ended' %}
             <div class="verdict verdict-warn">✅ Genuine contract — ended on {{ tenancy.end_date|date:"j M Y" }}
                 <small>It was valid, but its term is over and it is no longer in force.</small></div>
@@ -88,7 +88,10 @@
                 <dl style="margin: 0;">
                     <div class="vrow"><dt>Requested by tenant</dt><dd>{{ tenancy.booking.created_at|date:"j M Y, H:i" }}</dd></div>
                     <div class="vrow"><dt>Approved by landlord</dt><dd>{{ tenancy.created_at|date:"j M Y, H:i" }}</dd></div>
-                    {% if tenancy.terminated_at %}<div class="vrow"><dt>Terminated</dt><dd>{{ tenancy.terminated_at|date:"j M Y, H:i" }}</dd></div>{% endif %}
+                    {% if agreed_termination %}
+                    <div class="vrow"><dt>Termination requested by</dt><dd>{% if agreed_termination.requested_by_landlord %}Landlord{% else %}Tenant{% endif %}, {{ agreed_termination.created_at|date:"j M Y, H:i" }}</dd></div>
+                    <div class="vrow"><dt>Termination agreed by</dt><dd>{% if agreed_termination.requested_by_landlord %}Tenant{% else %}Landlord{% endif %}, {{ agreed_termination.responded_at|date:"j M Y, H:i" }}</dd></div>
+                    {% elif tenancy.terminated_at %}<div class="vrow"><dt>Terminated</dt><dd>{{ tenancy.terminated_at|date:"j M Y, H:i" }}</dd></div>{% endif %}
                     {% if issued_at %}<div class="vrow"><dt>This document printed</dt><dd>{{ issued_at|date:"j M Y, H:i" }}</dd></div>{% endif %}
                 </dl>
             </div>

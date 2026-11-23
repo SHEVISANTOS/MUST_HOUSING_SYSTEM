@@ -8,15 +8,26 @@ import logging
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
-from django.http import HttpResponse
+from django.db.models import Prefetch, Q
+from django.http import Http404, HttpResponse
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from .models import Tenancy
+from .models import Tenancy, TerminationRequest
 
 logger = logging.getLogger(__name__)
+
+# Each tenancy's termination requests, newest first, for _termination_panel.html.
+_TERMINATIONS = Prefetch(
+    'termination_requests',
+    queryset=TerminationRequest.objects.select_related('requested_by', 'tenancy__property'),
+    to_attr='termination_list',
+)
+
 
 
 # ==================== TENANT: MY CONTRACT ====================
@@ -35,7 +46,7 @@ def my_contract(request):
 
     tenancies = Tenancy.objects.filter(tenant=request.user).select_related(
         'property', 'property__landlord', 'booking'
-    ).order_by('-start_date')
+    ).prefetch_related(_TERMINATIONS).order_by('-start_date')
 
     current_tenancies = []
     history_tenancies = []
@@ -129,7 +140,7 @@ def landlord_occupancy(request):
 
     tenancies = Tenancy.objects.filter(property__landlord=request.user).select_related(
         'property', 'tenant', 'booking'
-    ).order_by('-start_date')
+    ).prefetch_related(_TERMINATIONS).order_by('-start_date')
 
     ending_soon_days = getattr(settings, 'ENDING_SOON_DAYS', 30)
 
@@ -139,40 +150,134 @@ def landlord_occupancy(request):
     })
 
 
+# ==================== EARLY TERMINATION (BOTH PARTIES MUST AGREE) ====================
+
+_LIVE_STATUSES = ('upcoming', 'active', 'ending_soon')
+
+
+def _party_tenancy(user, tenancy_id):
+    """The tenancy, if this user is its tenant or landlord (404 otherwise)."""
+    return get_object_or_404(
+        Tenancy.objects.select_related('property__landlord', 'tenant', 'booking'),
+        Q(tenant=user) | Q(property__landlord=user),
+        id=tenancy_id,
+    )
+
+
+def _contract_page(user, tenancy):
+    if user.id == tenancy.property.landlord_id:
+        return redirect('bookings:landlord_occupancy')
+    return redirect('bookings:my_contract')
+
+
+def _notify_party(user, tenancy, kind, body):
+    from apps.notifications.models import Notification
+    page = 'bookings:landlord_occupancy' if user.id == tenancy.property.landlord_id else 'bookings:my_contract'
+    Notification.notify(user, kind, body, link=reverse(page))
+
+
 @login_required
-def terminate_tenancy(request, tenancy_id):
-    """
-    Landlord ends a tenancy early with a reason. Routed through the same
-    "cancel the booking" mechanism the rest of the app uses (see
-    apps.bookings.signals) rather than mutating Tenancy directly, so there
-    is exactly one place that decides what happens when a booking ends -
-    the landlord-supplied reason is applied as a follow-up update.
-    """
-    if request.user.role != 'LANDLORD':
-        messages.error(request, "Unauthorized access.")
-        return redirect('core:dashboard')
+def request_termination(request, tenancy_id):
+    """Either party asks to end the tenancy early, with a reason. Nothing ends
+    until the other party agrees (see respond_termination)."""
+    tenancy = _party_tenancy(request.user, tenancy_id)
 
-    tenancy = get_object_or_404(Tenancy, id=tenancy_id, property__landlord=request.user)
+    if tenancy.display_status not in _LIVE_STATUSES:
+        messages.warning(request, "This contract has already ended.")
+        return _contract_page(request.user, tenancy)
+    pending = tenancy.termination_requests.filter(status='pending').first()
+    if pending:
+        messages.info(request, "There is already a termination request waiting for an answer.")
+        return _contract_page(request.user, tenancy)
 
-    if tenancy.display_status in ('ended', 'terminated', 'renewed'):
-        messages.warning(request, "This tenancy has already ended.")
-        return redirect('bookings:landlord_occupancy')
-
+    reason = request.POST.get('reason', '').strip()
     if request.method == 'POST':
-        reason = request.POST.get('reason', '').strip() or 'Terminated early by landlord'
+        if len(reason) < 10:
+            messages.error(request, "Please explain the reason (at least 10 characters).")
+        else:
+            termination = TerminationRequest.objects.create(
+                tenancy=tenancy, requested_by=request.user, reason=reason,
+            )
+            _notify_party(
+                termination.responder, tenancy, 'termination_requested',
+                f"{request.user.username} asked to end the contract for '{tenancy.property.title}' - please agree or disagree",
+            )
+            messages.success(request, "Termination requested. The contract continues unless the other party agrees.")
+            return _contract_page(request.user, tenancy)
 
-        booking = tenancy.booking
-        booking.status = 'CANCELLED'
-        booking.save()  # triggers the cancellation signal -> tenancy becomes 'terminated'
+    return render(request, 'bookings/request_termination.html', {
+        'tenancy': tenancy,
+        'is_landlord': request.user.id == tenancy.property.landlord_id,
+        'reason': reason,
+    })
 
-        tenancy.refresh_from_db()
-        tenancy.termination_reason = reason
-        tenancy.save(update_fields=['termination_reason'])
 
-        messages.success(request, "Tenancy terminated.")
-        return redirect('bookings:landlord_occupancy')
+@require_POST
+@login_required
+def respond_termination(request, request_id):
+    """The other party agrees (tenancy terminates) or declines (it continues)."""
+    action = request.POST.get('action')
+    note = request.POST.get('note', '').strip()
 
-    return render(request, 'bookings/terminate_tenancy.html', {'tenancy': tenancy})
+    with transaction.atomic():
+        termination = get_object_or_404(
+            TerminationRequest.objects.select_for_update().select_related(
+                'tenancy__property__landlord', 'tenancy__tenant', 'tenancy__booking', 'requested_by',
+            ),
+            id=request_id,
+        )
+        tenancy = termination.tenancy
+        if request.user.id != termination.responder.id:
+            raise Http404  # only the other party can answer - not the requester, not outsiders
+        if termination.status != 'pending' or action not in ('agree', 'decline'):
+            messages.warning(request, "This request has already been answered.")
+            return _contract_page(request.user, tenancy)
+
+        termination.responded_at = timezone.now()
+        if tenancy.display_status not in _LIVE_STATUSES:  # ended on its own while waiting
+            termination.status = 'withdrawn'
+            termination.save()
+            messages.info(request, "This contract has already ended, so the request was closed.")
+            return _contract_page(request.user, tenancy)
+        if action == 'agree':
+            termination.status = 'agreed'
+            termination.save()
+            booking = tenancy.booking
+            booking.status = 'CANCELLED'
+            booking.save()  # cancellation signal marks the tenancy terminated and frees the property
+            tenancy.refresh_from_db()
+            tenancy.termination_reason = f"Agreed by both parties: {termination.reason}"[:255]
+            tenancy.save(update_fields=['termination_reason'])
+        else:
+            termination.status = 'declined'
+            termination.response_note = note
+            termination.save()
+
+    if termination.status == 'agreed':
+        _notify_party(termination.requested_by, tenancy, 'termination_agreed',
+                      f"{request.user.username} agreed: the contract for '{tenancy.property.title}' is terminated")
+        messages.success(request, "You agreed. The contract has been terminated.")
+    else:
+        _notify_party(termination.requested_by, tenancy, 'termination_declined',
+                      f"{request.user.username} disagreed with ending the contract for '{tenancy.property.title}' - it continues")
+        messages.info(request, "You disagreed. The contract continues.")
+    return _contract_page(request.user, tenancy)
+
+
+@require_POST
+@login_required
+def withdraw_termination(request, request_id):
+    termination = get_object_or_404(
+        TerminationRequest.objects.select_related('tenancy__property__landlord', 'tenancy__tenant'),
+        id=request_id, requested_by=request.user, status='pending',
+    )
+    termination.status = 'withdrawn'
+    termination.responded_at = timezone.now()
+    termination.save()
+    _notify_party(termination.responder, termination.tenancy, 'termination_withdrawn',
+                  f"{request.user.username} withdrew the request to end the contract for '{termination.tenancy.property.title}'")
+    messages.success(request, "Termination request withdrawn.")
+    return _contract_page(request.user, termination.tenancy)
 
 
 # ==================== PUBLIC: CONTRACT VERIFICATION ====================
@@ -202,6 +307,8 @@ def _contract_result(request, tenancy, snapshot=None, status=200, **extra):
         'confirmation_code': confirmation_code(tenancy),
         'tenant_masked': _mask(tenancy.tenant.get_full_name() or tenancy.tenant.username),
         'landlord_masked': _mask(landlord.get_full_name() or landlord.username),
+        'agreed_termination': tenancy.termination_requests.filter(status='agreed').select_related(
+            'tenancy__property').first(),
     })
     if snapshot:
         from datetime import datetime, timezone as dt_timezone

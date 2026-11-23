@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Booking, Tenancy
+from .models import Booking, Tenancy, TerminationRequest
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
@@ -64,3 +64,10 @@ class TenancyAdmin(admin.ModelAdmin):
             color, obj.display_status.upper(),
         )
     status_badge.short_description = 'Status'
+
+@admin.register(TerminationRequest)
+class TerminationRequestAdmin(admin.ModelAdmin):
+    list_display = ('tenancy', 'requested_by', 'status', 'created_at', 'responded_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('tenancy__property__title', 'requested_by__username', 'reason')
+    readonly_fields = ('created_at',)

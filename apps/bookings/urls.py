@@ -25,5 +25,7 @@ urlpatterns = [
 
     # Landlord: Occupancy
     path('occupancy/', tenancy_views.landlord_occupancy, name='landlord_occupancy'),
-    path('tenancy/<int:tenancy_id>/terminate/', tenancy_views.terminate_tenancy, name='terminate_tenancy'),
+    path('tenancy/<int:tenancy_id>/terminate/', tenancy_views.request_termination, name='request_termination'),
+    path('termination/<int:request_id>/respond/', tenancy_views.respond_termination, name='respond_termination'),
+    path('termination/<int:request_id>/withdraw/', tenancy_views.withdraw_termination, name='withdraw_termination'),
 ]

@@ -222,3 +222,43 @@ class Tenancy(models.Model):
     @builtin_property
     def is_ending_soon(self):
         return self.display_status == 'ending_soon'
+
+class TerminationRequest(models.Model):
+    """Ending a tenancy early takes both parties: one side requests it with a
+    reason, the other agrees (tenancy terminates) or declines (it continues)."""
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('agreed', 'Agreed'),
+        ('declined', 'Declined'),
+        ('withdrawn', 'Withdrawn'),
+    ]
+
+    tenancy = models.ForeignKey(Tenancy, on_delete=models.CASCADE, related_name='termination_requests')
+    requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='termination_requests_made')
+    reason = models.TextField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    response_note = models.TextField(blank=True, help_text="Why the other party declined, if they said")
+    responded_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenancy'], condition=models.Q(status='pending'),
+                name='one_pending_termination_request_per_tenancy',
+            ),
+        ]
+
+    def __str__(self):
+        return f"Termination of tenancy #{self.tenancy_id} requested by {self.requested_by} ({self.status})"
+
+    @builtin_property
+    def requested_by_landlord(self):
+        return self.requested_by_id == self.tenancy.property.landlord_id
+
+    @builtin_property
+    def responder(self):
+        """The party who must agree or decline."""
+        return self.tenancy.tenant if self.requested_by_landlord else self.tenancy.property.landlord

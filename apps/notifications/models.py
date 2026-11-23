@@ -19,6 +19,10 @@ class Notification(models.Model):
         ('payment_confirmed', 'Payment confirmed'),
         ('payment_rejected', 'Payment not received'),
         ('account_verified', 'Account verified'),
+        ('termination_requested', 'Termination requested'),
+        ('termination_agreed', 'Termination agreed'),
+        ('termination_declined', 'Termination declined'),
+        ('termination_withdrawn', 'Termination request withdrawn'),
     ]
 
     KIND_ICONS = {
@@ -29,6 +33,10 @@ class Notification(models.Model):
         'payment_confirmed': '✅',
         'payment_rejected': '⚠️',
         'account_verified': '🎉',
+        'termination_requested': '📄',
+        'termination_agreed': '🤝',
+        'termination_declined': '🚫',
+        'termination_withdrawn': '↩️',
     }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')

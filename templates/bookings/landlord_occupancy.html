@@ -6,6 +6,15 @@
 <div class="card">
     <div class="card-header">🏘️ Occupancy</div>
     <div class="card-body">
+        {% for tenancy in tenancies %}
+        {% with panel_tr=tenancy.termination_list|first %}
+        {% if panel_tr.status == 'pending' or panel_tr.status == 'declined' and panel_tr.requested_by_id == user.id %}
+        <div class="mt-2"><strong>{{ tenancy.property.title }}</strong> &middot; tenant {{ tenancy.tenant.username|title }}
+            &middot; {{ tenancy.start_date|date:"j M Y" }} – {{ tenancy.end_date|date:"j M Y" }}</div>
+        {% include 'bookings/_termination_panel.html' %}
+        {% endif %}
+        {% endwith %}
+        {% endfor %}
         {% if tenancies %}
         <div class="table-wrapper">
             <table class="table-custom">
@@ -49,12 +58,14 @@
                                     ❌ Decline Renewal
                                 </a>
                             {% endif %}
-                            {% if tenancy.display_status == 'upcoming' or tenancy.display_status == 'active' or tenancy.display_status == 'ending_soon' %}
-                                <a href="{% url 'bookings:terminate_tenancy' tenancy.id %}"
-                                   class="btn btn-sm btn-danger" style="display:block; margin-bottom:4px; text-align:center;">
-                                    ⛔ Terminate
+                            {% with tr=tenancy.termination_list|first %}
+                            {% if tenancy.display_status in 'upcoming active ending_soon' and tr.status != 'pending' %}
+                                <a href="{% url 'bookings:request_termination' tenancy.id %}"
+                                   class="btn btn-sm btn-outline-danger" style="display:block; margin-bottom:4px; text-align:center;">
+                                    📄 Request Termination
                                 </a>
                             {% endif %}
+                            {% endwith %}
                             <a href="{% url 'bookings:download_contract_pdf' tenancy.id %}"
                                class="btn btn-sm" style="background:#f8f9fa; color:#333; display:block; text-align:center;">
                                 📥 Contract

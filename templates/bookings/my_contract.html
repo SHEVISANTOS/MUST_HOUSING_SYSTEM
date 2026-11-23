@@ -54,6 +54,8 @@
                 </div>
             {% endif %}
 
+            {% include 'bookings/_termination_panel.html' %}
+
             <div class="d-flex gap-2 flex-wrap">
                 {% if tenancy.display_status == 'active' or tenancy.display_status == 'ending_soon' %}
                     {% if tenancy.renewal_requested %}
@@ -66,6 +68,11 @@
                            onclick="return confirm('Give notice to leave at the end of this contract?');">🚪 Give Notice</a>
                     {% endif %}
                 {% endif %}
+                {% with tr=tenancy.termination_list|first %}
+                {% if tenancy.display_status in 'upcoming active ending_soon' and tr.status != 'pending' %}
+                    <a href="{% url 'bookings:request_termination' tenancy.id %}" class="btn btn-outline-danger">📄 Request Termination</a>
+                {% endif %}
+                {% endwith %}
                 <a href="{% url 'bookings:download_contract_pdf' tenancy.id %}" class="btn btn-secondary">📥 Download Contract Summary</a>
             </div>
         </div>
