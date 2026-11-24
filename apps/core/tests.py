@@ -289,6 +289,11 @@ class SeoTests(TestCase):
         self.assertIn('Sitemap: http://testserver/sitemap.xml', body)
         self.assertIn('Disallow: /sw/bookings/', body)
 
+    def test_search_console_verification_file_is_served(self):
+        r = Client().get('/googlea6274c7c17e11000.html')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content.decode().strip(), 'google-site-verification: googlea6274c7c17e11000.html')
+
     def test_search_console_tag_only_when_configured(self):
         from django.test import override_settings
         self.assertNotContains(Client().get('/'), 'google-site-verification')
