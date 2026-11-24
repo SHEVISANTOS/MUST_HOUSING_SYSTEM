@@ -1,0 +1,26 @@
+# VOT House Finding
+
+> Houses, rooms, self contained units and apartments for rent in Mwanza, Tanzania. Run by VOT Mwanza Limited. Every landlord is checked by VOT before their homes appear. The whole site is in English and Kiswahili (Kiswahili pages are under /sw/).
+
+{{ listing_count }} home{{ listing_count|pluralize }} currently listed. Tenants search by area, rent and type of house, send a booking request, pay the landlord directly and get a rental contract with a QR code that can be checked at {{ base }}/verify/.
+
+## Main pages
+
+- [Houses for rent in Mwanza]({{ base }}/): home page
+- [Search all houses]({{ base }}/properties/): filter by area, rent and type
+- [Nyumba za kupanga Mwanza]({{ base }}/sw/): the same site in Kiswahili
+{% if areas %}
+## Areas with homes listed now
+{% for a in areas %}
+- [Houses for rent in {{ a.name }}]({{ base }}{% url 'area' a.slug %}){% if a.note %}: {{ a.note }}{% endif %} ({{ a.count }} home{{ a.count|pluralize }})
+{% endfor %}{% endif %}
+## Questions and answers
+{% for f in faq %}
+### {{ f.q }}
+{{ f.a }}
+{% endfor %}
+## More
+
+- [Sitemap]({{ base }}/sitemap.xml)
+- [Privacy]({{ base }}/privacy/)
+- [Terms]({{ base }}/terms/)

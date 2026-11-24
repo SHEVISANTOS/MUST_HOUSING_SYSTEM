@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse, translate_url
 from django.utils.html import mark_safe
+from django.utils.translation import gettext as _
 
 
 def ld_json(data):
@@ -88,4 +89,55 @@ def organization_ld(request):
         'email': 'info@votmwanza.co.tz',
         'address': {'@type': 'PostalAddress', 'addressLocality': 'Mwanza', 'addressCountry': 'TZ'},
         'areaServed': {'@type': 'City', 'name': 'Mwanza'},
+        'alternateName': ['VOT Mwanza', 'VOT House Finding Mwanza'],
+        'description': _('Houses, rooms, self contained units and apartments for rent in Mwanza, Tanzania, from landlords checked by VOT.'),
+        'knowsLanguage': ['en', 'sw'],
+    }
+
+
+COMMERCIAL_TYPES = ('SHOP', 'OFFICE', 'GODOWN')
+
+
+def home_faq():
+    """Questions people in Mwanza actually search for, answered from what the
+    site really does (and today's real rents). Shown on the home page and
+    sent as FAQPage structured data, in the active language."""
+    from django.db.models import Max, Min
+    from apps.properties.models import Property
+    rents = (Property.objects.public().exclude(property_type__in=COMMERCIAL_TYPES)
+             .aggregate(lo=Min('monthly_rent'), hi=Max('monthly_rent')))
+    if rents['lo'] is not None:
+        rent_answer = _('On VOT House Finding, homes in Mwanza currently rent from TZS %(lo)s to TZS %(hi)s per month. '
+                        'Single rooms and self contained units are usually the cheapest; apartments and family houses cost more.') % {
+            'lo': f"{int(rents['lo']):,}", 'hi': f"{int(rents['hi']):,}"}
+    else:
+        rent_answer = _('Rent depends on the area and the type of house. Single rooms and self contained units are usually '
+                        'the cheapest; apartments and family houses cost more. Every listing shows its monthly rent.')
+    return [
+        {'q': _('How much is rent for a house in Mwanza?'), 'a': rent_answer},
+        {'q': _('Where can students find a room near SAUT or CUHAS?'),
+         'a': _('Students at St. Augustine University (SAUT) usually look in Nyegezi, and students at CUHAS and '
+                'Bugando Medical Centre look in Bugando. Each area has its own page listing the rooms available there.')},
+        {'q': _('What kinds of houses can I rent in Mwanza?'),
+         'a': _('Single rooms, bedsitters, self contained rooms, 1 to 4+ bedroom houses, apartments, standalone houses, '
+                'maisonettes and servant quarters - as well as shops, offices and godowns for business.')},
+        {'q': _('How do I know the landlord is genuine?'),
+         'a': _("Every landlord is checked by VOT before their homes appear on the site. Each listing also shows "
+                "reviews from the tenants who lived there.")},
+        {'q': _('How do I rent a house through VOT House Finding?'),
+         'a': _('Search by area, rent and type of house, then send a booking request with your move-in date. '
+                'When the landlord approves, you pay the landlord directly and get a rental contract.')},
+        {'q': _('Can I check that a rental contract is real?'),
+         'a': _('Yes. Every contract has a QR code. Scanning it opens a page on vothousefinding.com that shows '
+                'whether the contract is genuine.')},
+        {'q': _('Is VOT House Finding available in Kiswahili?'),
+         'a': _('Yes. Every page is available in both English and Kiswahili.')},
+    ]
+
+
+def faq_ld(faq):
+    return {
+        '@context': 'https://schema.org', '@type': 'FAQPage',
+        'mainEntity': [{'@type': 'Question', 'name': f['q'],
+                        'acceptedAnswer': {'@type': 'Answer', 'text': f['a']}} for f in faq],
     }

@@ -764,8 +764,10 @@ def area_page(request, slug):
              .prefetch_related('images', Prefetch('tenancies', queryset=live, to_attr='prefetched_tenancies')))
     homes = list(homes)
     rents = [h.monthly_rent for h in homes]
+    from collections import Counter
+    type_counts = Counter(h.get_property_type_display() for h in homes).most_common()
     return render(request, 'properties/area.html', {
-        'area': area, 'homes': homes,
+        'area': area, 'homes': homes, 'type_counts': type_counts,
         'min_rent': min(rents) if rents else None,
         'other_areas': [a for a in AREAS if a['slug'] != slug],
         'noindex': not homes,   # an empty page shouldn't be in Google

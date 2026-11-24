@@ -1,12 +1,13 @@
 {% extends 'base.html' %}
 {% load i18n humanize %}
-{% block title %}{% translate "Houses for Rent in Mwanza" %} | VOT House Finding{% endblock %}
+{% block title %}{% translate "Houses & Rooms for Rent in Mwanza" %} | VOT House Finding{% endblock %}
 {% block meta_description %}{% blocktranslate count n=listing_count %}{{ n }} house for rent in Mwanza right now - rooms, self contained, apartments and family homes in Nyegezi, Ilemela, Buswelu and more. Verified landlords, real photos, book online.{% plural %}{{ n }} houses for rent in Mwanza right now - rooms, self contained, apartments and family homes in Nyegezi, Ilemela, Buswelu and more. Verified landlords, real photos, book online.{% endblocktranslate %}{% endblock %}
 {% block meta_tags %}
 <meta property="og:type" content="website">
 <meta property="og:title" content="{% translate 'Houses for Rent in Mwanza' %} | VOT House Finding">
 <meta property="og:url" content="{{ canonical_url }}">
 <script type="application/ld+json">{{ org_ld }}</script>
+<script type="application/ld+json">{{ faq_ld }}</script>
 {% endblock %}
 
 {% block content %}
@@ -29,6 +30,9 @@
     .home-step { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
     .home-step strong { display: block; margin-bottom: 4px; }
     .home-step p { margin: 0; color: var(--text-grey); font-size: 0.92rem; }
+    .home-faq details { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; }
+    .home-faq summary { font-weight: 700; cursor: pointer; }
+    .home-faq p { margin: 8px 0 0; color: var(--text-grey); }
     @media (max-width: 576px) { .home-hero { padding: 26px 18px; } .home-hero h1 { font-size: 1.6rem; } }
 </style>
 
@@ -74,6 +78,11 @@
         <div class="home-step"><strong>📅 {% translate "2. Book" %}</strong><p>{% translate "Choose your move-in date and how many months. The landlord approves your request on the site." %}</p></div>
         <div class="home-step"><strong>📄 {% translate "3. Move in" %}</strong><p>{% translate "Pay the landlord directly and get a contract with a QR code anyone can verify." %}</p></div>
     </div>
+</section>
+
+<section class="home-section home-faq">
+    <h2>{% translate "Questions about renting in Mwanza" %}</h2>
+    {% for f in faq %}<details{% if forloop.first %} open{% endif %}><summary>{{ f.q }}</summary><p>{{ f.a }}</p></details>{% endfor %}
 </section>
 
 <section class="home-section">

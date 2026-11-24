@@ -289,6 +289,31 @@ class SeoTests(TestCase):
         self.assertIn('Sitemap: http://testserver/sitemap.xml', body)
         self.assertIn('Disallow: /sw/bookings/', body)
 
+    def test_home_faq_in_both_languages_with_structured_data(self):
+        r = Client().get('/')
+        self.assertContains(r, '"@type": "FAQPage"')
+        self.assertContains(r, 'Where can students find a room near SAUT or CUHAS?')
+        self.assertContains(r, 'from TZS 250,000 to TZS 250,000')   # only public, non-commercial homes
+        self.assertContains(r, '<title>Houses & Rooms for Rent in Mwanza')
+        sw = Client().get('/sw/')
+        self.assertContains(sw, 'Kodi ya nyumba Mwanza ni shilingi ngapi?')
+        self.assertContains(sw, '<title>Nyumba na Vyumba vya Kupanga Mwanza')
+
+    def test_area_page_lists_types_available(self):
+        r = Client().get(reverse('area', args=['nyegezi']))
+        self.assertContains(r, 'Renting in Nyegezi')
+        self.assertContains(r, 'Apartment/Flat (1)')
+
+    def test_llms_txt_summarises_site_for_ai(self):
+        r = Client().get('/llms.txt')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r['Content-Type'].startswith('text/plain'))
+        body = r.content.decode()
+        self.assertIn('# VOT House Finding', body)
+        self.assertIn('/houses-for-rent/nyegezi/', body)
+        self.assertNotIn('buswelu', body.lower().split('## questions')[0].split('## areas')[-1])  # hidden landlord's area isn't listed
+        self.assertIn('How much is rent for a house in Mwanza?', body)
+
     def test_search_console_verification_file_is_served(self):
         r = Client().get('/googlea6274c7c17e11000.html')
         self.assertEqual(r.status_code, 200)

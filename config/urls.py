@@ -24,6 +24,7 @@ urlpatterns = [
     path('healthz', core_views.healthz, name='healthz'),
     path('i18n/setlang/', core_views.set_language, name='set_language'),  # the EN | SW switch
     path('robots.txt', core_views.robots_txt),
+    path('llms.txt', core_views.llms_txt),
     # Google Search Console ownership check (URL-prefix property, HTML file method).
     path('googlea6274c7c17e11000.html', TemplateView.as_view(template_name='googlea6274c7c17e11000.html')),
     path('sitemap.xml', sitemap_view, {'sitemaps': SITEMAPS}, name='django.contrib.sitemaps.views.sitemap'),

@@ -3,7 +3,7 @@ import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.http import HttpResponse, JsonResponse
 from django.db import connection
 from django.db.models import Sum, Count, Q
@@ -45,7 +45,6 @@ def set_language(request):
     language it's written in. Stock set_language resolves /sw/... while
     English is active (English has no /en/ prefix), fails to match, and so
     leaves a Swahili reader stuck on /sw/ after choosing English."""
-    from django.utils import translation
     from django.views.i18n import set_language as django_set_language
     next_url = request.POST.get('next', request.GET.get('next', ''))
     with translation.override(translation.get_language_from_path(next_url) or settings.LANGUAGE_CODE):
@@ -60,19 +59,37 @@ def robots_txt(request):
     }, content_type='text/plain')
 
 
+def llms_txt(request):
+    """/llms.txt - a plain-language summary of the site for AI assistants
+    (the emerging llms.txt convention), built from live data."""
+    from apps.properties.areas import areas_with_counts
+    from apps.core.seo import home_faq
+    base = settings.SITE_URL or request.build_absolute_uri('/').rstrip('/')
+    with translation.override('en'):
+        faq = home_faq()
+    return render(request, 'llms.txt', {
+        'base': base, 'faq': faq,
+        'areas': [a for a in areas_with_counts() if a['count']],
+        'listing_count': Property.objects.public().count(),
+    }, content_type='text/plain; charset=utf-8')
+
+
 def home(request):
     """Public home page - what Google and first-time visitors see at '/'
     (signed-in users get their dashboard at the same address)."""
     from django.db.models import Prefetch
     from apps.bookings.models import Tenancy
     from apps.properties.areas import areas_with_counts
-    from apps.core.seo import ld_json, organization_ld
+    from apps.core.seo import faq_ld, home_faq, ld_json, organization_ld
 
     live = Tenancy.objects.exclude(status__in=['terminated', 'renewed']).order_by('start_date')
     latest = (Property.objects.public().order_by('-created_at')
               .prefetch_related('images', Prefetch('tenancies', queryset=live, to_attr='prefetched_tenancies'))[:8])
     areas = areas_with_counts()
+    faq = home_faq()
     return render(request, 'core/home.html', {
+        'faq': faq,
+        'faq_ld': ld_json(faq_ld(faq)),
         'latest': latest,
         'areas': sorted(areas, key=lambda a: (-a['count'], a['name'])),
         'listing_count': Property.objects.public().count(),

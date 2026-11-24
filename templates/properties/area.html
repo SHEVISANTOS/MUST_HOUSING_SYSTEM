@@ -35,6 +35,14 @@
 </div>
 {% endif %}
 
+<div class="card" style="margin-bottom: 16px;"><div class="card-body">
+    <h2 class="h5" style="font-weight: 700;">{% blocktranslate with area=area.name %}Renting in {{ area }}{% endblocktranslate %}</h2>
+    <p style="margin: 0; color: var(--text-grey);">
+        {% blocktranslate with area=area.name %}Looking for a room, self contained unit, apartment or family house to rent in {{ area }}, Mwanza? Every home here comes from a landlord checked by VOT, with real photos and the monthly rent shown up front.{% endblocktranslate %}
+        {% if type_counts %}{% translate "Available now:" %} {% for label, n in type_counts %}{{ label }} ({{ n }}){% if not forloop.last %}, {% endif %}{% endfor %}.{% endif %}
+    </p>
+</div></div>
+
 <div class="card"><div class="card-body">
     <h2 class="h5" style="font-weight: 700;">{% translate "Other areas in Mwanza" %}</h2>
     <div class="area-links">
