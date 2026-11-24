@@ -95,6 +95,13 @@ class ReminderTests(TestCase):
         self._run(); self._run(5)
         self.assertEqual(self.kinds(self.tenant), [])
 
+    def test_no_nagging_for_finished_bookings_or_very_old_debts(self):
+        self._run(70)   # 68 days late
+        self.assertEqual(self.kinds(self.tenant), [])
+        self.Booking.objects.filter(pk=self.booking.pk).update(status='COMPLETED')
+        self._run(5)
+        self.assertEqual(self.kinds(self.tenant), [])
+
     def test_contract_ending_notices_at_30_and_7_days(self):
         t = self.Tenancy.objects.create(booking=self.booking, property=self.prop, tenant=self.tenant,
                                         start_date=self.today - self.timedelta(days=60),

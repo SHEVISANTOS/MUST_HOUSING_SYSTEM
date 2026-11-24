@@ -18,6 +18,7 @@ from .models import Notification, SentReminder
 
 DUE_SOON_DAYS = 3
 OVERDUE_REPEAT_DAYS = 7
+OVERDUE_STOP_DAYS = 60       # after this it's a matter for the landlord, not weekly nags
 CONTRACT_NOTICES = (30, 7)   # days before the end date
 REVIEW_INVITE_WINDOW = 30    # only invite for tenancies that ended this recently
 
@@ -40,7 +41,8 @@ def _rent_reminders(today, counts):
     from apps.payments.models import Payment
 
     unpaid = (Payment.objects.filter(status__in=['PENDING', 'OVERDUE'])
-              .exclude(booking__status='CANCELLED')
+              .exclude(booking__status__in=['CANCELLED', 'COMPLETED'])
+              .filter(due_date__gte=today - timezone.timedelta(days=OVERDUE_STOP_DAYS))
               .select_related('booking__property__landlord', 'booking__tenant'))
     for p in unpaid:
         prop, tenant = p.booking.property, p.booking.tenant
