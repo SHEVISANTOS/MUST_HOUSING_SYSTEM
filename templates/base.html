@@ -1,6 +1,6 @@
-{% load static %}
+{% load static i18n %}{% get_current_language as LANGUAGE_CODE %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -266,6 +266,9 @@
         }
         .listing-card-save:hover { transform: scale(1.08); }
         .listing-card-save.saved { color: var(--coral-deep); }
+        .lang-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #fff; }
+        .lang-switch button { border: none; background: none; padding: 6px 10px; font-size: 0.75rem; font-weight: 700; color: var(--text-grey); cursor: pointer; }
+        .lang-switch button[aria-current] { background: var(--forest); color: #fff; }
         .listing-card-share {
             position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%;
             background: rgb(255 255 255 / 90%); border: none; color: var(--forest);
@@ -336,18 +339,22 @@
         <div class="page">
             <!-- Top bar -->
             <header class="top-bar">
-                <button class="mobile-menu-btn" type="button" onclick="toggleSidebar()" aria-label="Open menu">
+                <button class="mobile-menu-btn" type="button" onclick="toggleSidebar()" aria-label="{% translate 'Open menu' %}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
                 <nav class="breadcrumb" aria-label="Breadcrumb">
-                    <a href="{% url 'core:dashboard' %}">Home</a>
-                    {% if request.resolver_match.url_name != 'dashboard' %}
-                        <span class="crumb-sep">/</span> <span>{{ request.resolver_match.url_name|title }}</span>
+                    <a href="{% url 'core:dashboard' %}">{% translate "Home" %}</a>
+                    {% if crumb_label %}
+                        <span class="crumb-sep">/</span> <span>{{ crumb_label }}</span>
                     {% endif %}
                 </nav>
                 <div class="header-user">
+                    <form method="post" action="{% url 'set_language' %}" class="lang-switch" aria-label="{% translate 'Language' %}">
+                        {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button type="submit" name="language" value="en" {% if LANGUAGE_CODE == 'en' %}aria-current="true"{% endif %} lang="en">EN</button><button type="submit" name="language" value="sw" {% if LANGUAGE_CODE == 'sw' %}aria-current="true"{% endif %} lang="sw" title="Kiswahili">SW</button>
+                    </form>
                     {% if user.is_authenticated %}
-                        <a href="{% url 'notifications:inbox' %}" class="top-btn top-btn-ghost bell-btn" aria-label="Notifications">
+                        <a href="{% url 'notifications:inbox' %}" class="top-btn top-btn-ghost bell-btn" aria-label="{% translate 'Notifications' %}">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
                             {% if unread_notification_count %}<span class="bell-badge">{{ unread_notification_count }}</span>{% endif %}
                         </a>
@@ -357,14 +364,14 @@
                         </div>
                         <form method="post" action="{% url 'users:logout' %}">
                             {% csrf_token %}
-                            <button type="submit" class="top-btn top-btn-ghost" aria-label="Log out">
+                            <button type="submit" class="top-btn top-btn-ghost" aria-label="{% translate 'Sign out' %}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                                <span class="top-btn-label">Sign out</span>
+                                <span class="top-btn-label">{% translate "Sign out" %}</span>
                             </button>
                         </form>
                     {% else %}
-                        <a href="{% url 'users:login' %}" class="top-btn top-btn-ghost">Sign in</a>
-                        <a href="{% url 'users:register' %}" class="top-btn top-btn-solid">Register</a>
+                        <a href="{% url 'users:login' %}" class="top-btn top-btn-ghost">{% translate "Sign in" %}</a>
+                        <a href="{% url 'users:register' %}" class="top-btn top-btn-solid">{% translate "Register" %}</a>
                     {% endif %}
                 </div>
             </header>
@@ -376,7 +383,7 @@
                 {% for message in messages %}
                 <div class="flash flash-{% if message.tags == 'error' or message.tags == 'danger' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}" role="status">
                     <span>{{ message }}</span>
-                    <button type="button" onclick="this.parentElement.style.display='none';" aria-label="Dismiss">&times;</button>
+                    <button type="button" onclick="this.parentElement.style.display='none';" aria-label="{% translate 'Dismiss' %}">&times;</button>
                 </div>
                 {% endfor %}
             </div>
@@ -388,8 +395,8 @@
             <!-- Footer -->
             <footer class="footer">
                 <p>© 2023-2026 <a href="https://volunteertotanzania.com" target="_blank" rel="noopener noreferrer">VOT MWANZA LIMITED</a></p>
-                <p>Designed and Developed by <a href="https://shevisantos.netlify.app" target="_blank" rel="noopener noreferrer">Shevi_Santos</a></p>
-                <p><a href="{% url 'verify_by_code' %}">Verify a contract</a> &middot; <a href="{% url 'privacy' %}">Privacy Policy</a> &middot; <a href="{% url 'terms' %}">Terms of Use</a></p>
+                <p>{% translate "Designed and Developed by" %} <a href="https://shevisantos.netlify.app" target="_blank" rel="noopener noreferrer">Shevi_Santos</a></p>
+                <p><a href="{% url 'verify_by_code' %}">{% translate "Verify a contract" %}</a> &middot; <a href="{% url 'privacy' %}">{% translate "Privacy Policy" %}</a> &middot; <a href="{% url 'terms' %}">{% translate "Terms of Use" %}</a></p>
             </footer>
         </div>
     </div>
@@ -441,6 +448,8 @@
         // WhatsApp message arrives with the picture even if no preview loads.
         // The photo is fetched ahead of the tap: share() has to run straight
         // from the tap, and some browsers refuse it after a slow download.
+        const SHARE_COPIED = "{% translate 'Link copied - paste it to share with friends' as t %}{{ t|escapejs }}";
+        const COPY_THIS_LINK = "{% translate 'Copy this link:' as t %}{{ t|escapejs }}";
         const sharePhotos = new Map();
         function preloadSharePhoto(url) {
             if (!url || sharePhotos.has(url) || !navigator.canShare) return;
@@ -478,10 +487,10 @@
             const data = { title: btn.dataset.shareTitle, text: btn.dataset.shareText, url: url };
             if (sharePropertyData(data, btn.dataset.sharePhoto)) return;
             if (navigator.clipboard) {
-                navigator.clipboard.writeText(url).then(() => showShareToast('Link copied - paste it to share with friends'),
-                                                        () => window.prompt('Copy this link:', url));
+                navigator.clipboard.writeText(url).then(() => showShareToast(SHARE_COPIED),
+                                                        () => window.prompt(COPY_THIS_LINK, url));
             } else {
-                window.prompt('Copy this link:', url);
+                window.prompt(COPY_THIS_LINK, url);
             }
         }
         // Card photos are fetched when a finger or mouse reaches the share

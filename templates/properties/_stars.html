@@ -1,2 +1,2 @@
 {# Usage: {% include 'properties/_stars.html' with value=4.3 %} - rounded to whole stars #}
-<span class="stars" role="img" aria-label="{{ value|floatformat:1 }} out of 5">{% with v=value|floatformat:0|add:0 %}{% for i in "12345" %}{% if forloop.counter <= v %}★{% else %}<span class="star-off">★</span>{% endif %}{% endfor %}{% endwith %}</span>
+<span class="stars" role="img" aria-label="{{ value|floatformat:1 }}/5">{% with v=value|floatformat:0|add:0 %}{% for i in "12345" %}{% if forloop.counter <= v %}★{% else %}<span class="star-off">★</span>{% endif %}{% endfor %}{% endwith %}</span>

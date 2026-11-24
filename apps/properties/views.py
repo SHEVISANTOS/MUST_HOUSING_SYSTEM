@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse, Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
+from django.utils.translation import gettext as _
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Avg, Count, Prefetch, Q, Exists, OuterRef
@@ -118,7 +119,7 @@ def property_list(request):
     available_now_url = _chip_url(available_now=None if available_now else '1')
     budget_chips = [
         (label, _chip_url(max_price=str(value)), max_price == str(value))
-        for label, value in [('Under 100k', 100000), ('Under 200k', 200000), ('Under 500k', 500000)]
+        for label, value in [(_('Under 100k'), 100000), (_('Under 200k'), 200000), (_('Under 500k'), 500000)]
     ]
 
     return render(request, 'properties/list.html', {

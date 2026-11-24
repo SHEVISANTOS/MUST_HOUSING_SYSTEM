@@ -3,6 +3,7 @@ import builtins
 
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from apps.users.models import User
 from config.uploads import RandomName, validate_image_upload
 
@@ -31,21 +32,21 @@ class Property(models.Model):
     ]
 
     PROPERTY_TYPES = [
-        ('SINGLE', 'Single Room'),
-        ('BEDSITTER', 'Bedsitter'),
-        ('SELFCON', 'Self Contained'),
-        ('1BR', '1 Bedroom'),
-        ('2BR', '2 Bedroom'),
-        ('3BR', '3 Bedroom'),
-        ('4BR', '4+ Bedroom'),
-        ('SQ', 'Servant Quarter (SQ)'),
-        ('STANDALONE', 'Standalone House'),
-        ('APARTMENT', 'Apartment/Flat'),
-        ('MAISONETTE', 'Maisonette'),
-        ('SHOP', 'Shop/Commercial Space'),
-        ('OFFICE', 'Office Space'),
-        ('GODOWN', 'Godown/Warehouse'),
-        ('GUESTHOUSE', 'Guest House'),
+        ('SINGLE', _('Single Room')),
+        ('BEDSITTER', _('Bedsitter')),
+        ('SELFCON', _('Self Contained')),
+        ('1BR', _('1 Bedroom')),
+        ('2BR', _('2 Bedroom')),
+        ('3BR', _('3 Bedroom')),
+        ('4BR', _('4+ Bedroom')),
+        ('SQ', _('Servant Quarter (SQ)')),
+        ('STANDALONE', _('Standalone House')),
+        ('APARTMENT', _('Apartment/Flat')),
+        ('MAISONETTE', _('Maisonette')),
+        ('SHOP', _('Shop/Commercial Space')),
+        ('OFFICE', _('Office Space')),
+        ('GODOWN', _('Godown/Warehouse')),
+        ('GUESTHOUSE', _('Guest House')),
     ]
     
     objects = PropertyQuerySet.as_manager()

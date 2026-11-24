@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load humanize %}
 
-{% block title %}Search Houses - VOT House Finding{% endblock %}
+{% block title %}{% translate 'Search Houses' %} - VOT House Finding{% endblock %}
 
 {% block content %}
 <style>
@@ -47,16 +48,16 @@
 
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Search</p>
-        <h1>Available Houses</h1>
+        <p class="eyebrow">{% translate "Search" %}</p>
+        <h1>{% translate "Available Houses" %}</h1>
     </div>
 </div>
 
 <form method="get" id="searchForm">
     <div class="search-bar-row">
-        <input type="text" name="q" class="form-control" placeholder="Search by title, description or location..." value="{{ search_query }}">
-        <button type="submit" class="btn btn-green">🔍 Search</button>
-        <button type="button" class="btn btn-secondary" onclick="toggleFilterSheet(true)">⚙️ Filters</button>
+        <input type="text" name="q" class="form-control" placeholder="{% translate 'Search by title, description or location...' %}" value="{{ search_query }}">
+        <button type="submit" class="btn btn-green">🔍 {% translate 'Search' %}</button>
+        <button type="button" class="btn btn-secondary" onclick="toggleFilterSheet(true)">⚙️ {% translate 'Filters' %}</button>
     </div>
 
     {% if property_type %}<input type="hidden" name="type" value="{{ property_type }}">{% endif %}
@@ -69,15 +70,15 @@
 
 <!-- Quick chips: plain links, each carrying the full current query with just their own param toggled -->
 <div class="chip-row">
-    <a href="{% url 'properties:list' %}" class="chip {% if not filters_active %}active{% endif %}">🏠 All houses</a>
-    <a href="{{ available_now_url }}" class="chip {% if available_now %}active{% endif %}">🟢 Available now</a>
+    <a href="{% url 'properties:list' %}" class="chip {% if not filters_active %}active{% endif %}">🏠 {% translate 'All houses' %}</a>
+    <a href="{{ available_now_url }}" class="chip {% if available_now %}active{% endif %}">🟢 {% translate 'Available now' %}</a>
     {% for label, url, is_active in budget_chips %}
     <a href="{{ url }}" class="chip {% if is_active %}active{% endif %}">{{ label }}</a>
     {% endfor %}
 </div>
 
 <div class="list-toolbar">
-    <span class="result-count">{{ page_obj.paginator.count }} propert{{ page_obj.paginator.count|pluralize:"y,ies" }} found</span>
+    <span class="result-count">{% blocktranslate count n=page_obj.paginator.count %}{{ n }} property found{% plural %}{{ n }} properties found{% endblocktranslate %}</span>
     <form method="get" id="sortForm">
         {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
         {% if max_price %}<input type="hidden" name="max_price" value="{{ max_price }}">{% endif %}
@@ -86,10 +87,10 @@
         {% if available_now %}<input type="hidden" name="available_now" value="1">{% endif %}
         {% if available_by %}<input type="hidden" name="available_by" value="{{ available_by }}">{% endif %}
         <select name="sort" class="form-select sort-select" onchange="this.form.submit()">
-            <option value="recommended" {% if sort == 'recommended' %}selected{% endif %}>Recommended</option>
-            <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>Lowest price</option>
-            <option value="nearest" {% if sort == 'nearest' %}selected{% endif %}>Nearest</option>
-            <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+            <option value="recommended" {% if sort == 'recommended' %}selected{% endif %}>{% translate "Recommended" %}</option>
+            <option value="price_low" {% if sort == 'price_low' %}selected{% endif %}>{% translate "Lowest price" %}</option>
+            <option value="nearest" {% if sort == 'nearest' %}selected{% endif %}>{% translate "Nearest" %}</option>
+            <option value="newest" {% if sort == 'newest' %}selected{% endif %}>{% translate "Newest" %}</option>
         </select>
     </form>
 </div>
@@ -103,30 +104,30 @@
     </div>
 
     {% if page_obj.paginator.num_pages > 1 %}
-    <nav class="pagination" aria-label="Search results pages">
+    <nav class="pagination" aria-label="{% translate 'Search results pages' %}">
         {% if page_obj.has_previous %}
-            <a href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">← Prev</a>
+            <a href="?{{ querystring }}&page={{ page_obj.previous_page_number }}">← {% translate 'Prev' %}</a>
         {% endif %}
-        <span class="current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        <span class="current">{% blocktranslate with n=page_obj.number total=page_obj.paginator.num_pages %}Page {{ n }} of {{ total }}{% endblocktranslate %}</span>
         {% if page_obj.has_next %}
-            <a href="?{{ querystring }}&page={{ page_obj.next_page_number }}">Next →</a>
+            <a href="?{{ querystring }}&page={{ page_obj.next_page_number }}">{% translate 'Next' %} →</a>
         {% endif %}
     </nav>
     {% endif %}
 {% else %}
     <div class="empty-state">
-        <p class="empty-title">No properties found</p>
-        <p>Try adjusting your search or filters, or check back later for new listings.</p>
-        <a href="{% url 'properties:wizard_start' %}" class="btn btn-green mt-3">+ List a Property</a>
+        <p class="empty-title">{% translate "No properties found" %}</p>
+        <p>{% translate "Try adjusting your search or filters, or check back later for new listings." %}</p>
+        <a href="{% url 'properties:wizard_start' %}" class="btn btn-green mt-3">+ {% translate 'List a Property' %}</a>
     </div>
 {% endif %}
 
 <!-- Filter sheet (bottom on phones, side on tablet+) -->
 <div class="filter-sheet-overlay" id="filterSheetOverlay" onclick="toggleFilterSheet(false)"></div>
-<div class="filter-sheet" id="filterSheet" role="dialog" aria-label="Filters">
+<div class="filter-sheet" id="filterSheet" role="dialog" aria-label="{% translate 'Filters' %}">
     <div class="filter-sheet-header">
-        <strong>Filters</strong>
-        <button type="button" class="filter-sheet-close" onclick="toggleFilterSheet(false)" aria-label="Close filters">&times;</button>
+        <strong>{% translate "Filters" %}</strong>
+        <button type="button" class="filter-sheet-close" onclick="toggleFilterSheet(false)" aria-label="{% translate 'Close filters' %}">&times;</button>
     </div>
     <form method="get" class="filter-sheet-body">
         {% if search_query %}<input type="hidden" name="q" value="{{ search_query }}">{% endif %}
@@ -134,29 +135,29 @@
         {% if sort != 'recommended' %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
 
         <div class="form-group">
-            <label class="form-label">Property type</label>
+            <label class="form-label">{% translate "Property type" %}</label>
             <select name="type" class="form-select">
-                <option value="">All types</option>
+                <option value="">{% translate "All types" %}</option>
                 {% for value, label in property_types %}
                 <option value="{{ value }}" {% if property_type == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="form-group">
-            <label class="form-label">Location</label>
-            <input type="text" name="location" class="form-control" placeholder="e.g., Ilemela" value="{{ location }}">
+            <label class="form-label">{% translate "Location" %}</label>
+            <input type="text" name="location" class="form-control" placeholder="{% translate 'e.g., Ilemela' %}" value="{{ location }}">
         </div>
         <div class="form-group">
-            <label class="form-label">Max price (TZS)</label>
+            <label class="form-label">{% translate "Max price (TZS)" %}</label>
             <input type="number" name="max_price" class="form-control" value="{{ max_price }}">
         </div>
         <div class="form-group">
-            <label class="form-label">Available by</label>
+            <label class="form-label">{% translate "Available by" %}</label>
             <input type="date" name="available_by" class="form-control" value="{{ available_by }}">
         </div>
         <div class="filter-sheet-footer" style="margin: 0 -20px -16px; position: sticky; bottom: 0; background: #fff;">
-            <a href="{% url 'properties:list' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">Clear</a>
-            <button type="submit" class="btn btn-green" style="flex: 1;">Show results</button>
+            <a href="{% url 'properties:list' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">{% translate "Clear" %}</a>
+            <button type="submit" class="btn btn-green" style="flex: 1;">{% translate "Show results" %}</button>
         </div>
     </form>
 </div>

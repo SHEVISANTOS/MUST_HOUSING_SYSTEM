@@ -16,6 +16,7 @@ _LEGAL_CONTEXT = {'site_host': urlsplit(settings.SITE_URL).netloc or 'vothousefi
 urlpatterns = [
 
     path('healthz', core_views.healthz, name='healthz'),
+    path('i18n/', include('django.conf.urls.i18n')),  # set_language: the EN | SW switch
     path('robots.txt', TemplateView.as_view(template_name='robots.txt', content_type='text/plain')),
     # Short path keeps the QR code printed on payment PDFs small
     path('v/<str:token>/', payment_views.verify_document, name='verify_document'),

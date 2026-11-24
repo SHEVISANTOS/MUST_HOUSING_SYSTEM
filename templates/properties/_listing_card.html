@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 Listing card for search results. Include from a parent that has already
 loaded humanize and prefetched images/tenancies (see property_list's
@@ -14,19 +15,19 @@ Prefetch('tenancies', to_attr='prefetched_tenancies')):
             <div class="listing-card-media-empty">🏠</div>
         {% endif %}
         <span class="badge {% if tenancy %}badge-warning{% else %}badge-success{% endif %} listing-card-status">
-            {% if tenancy %}Free from {{ tenancy.available_from|date:"j M" }}{% else %}Available now{% endif %}
+            {% if tenancy %}{% blocktranslate with d=tenancy.available_from|date:"j M" %}Free from {{ d }}{% endblocktranslate %}{% else %}{% translate 'Available now' %}{% endif %}
         </span>
         <button type="button" class="listing-card-share{% if user.is_authenticated %} beside-save{% endif %}"
                 data-share-title="{{ property.get_property_type_display }} in {{ property.location }}"
                 data-share-text="{{ property.get_property_type_display }} in {{ property.location }} - TZS {{ property.monthly_rent|floatformat:0|intcomma }}/month"
                 data-share-photo="{% url 'properties:share_image' property.pk %}?v={{ photo.pk|default:0 }}"
-                onclick="shareCard(event, this)" aria-label="Share this property" title="Share">
+                onclick="shareCard(event, this)" aria-label="{% translate 'Share this property' %}" title="{% translate 'Share' %}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
         </button>
         {% if user.is_authenticated %}
         <button type="button" class="listing-card-save {% if property.pk in saved_property_ids %}saved{% endif %}"
                 data-save-url="{% url 'properties:toggle_saved' property.pk %}"
-                onclick="toggleSaveProperty(event, this)" aria-label="Save property" aria-pressed="{% if property.pk in saved_property_ids %}true{% else %}false{% endif %}">
+                onclick="toggleSaveProperty(event, this)" aria-label="{% translate 'Save property' %}" aria-pressed="{% if property.pk in saved_property_ids %}true{% else %}false{% endif %}">
             ♥
         </button>
         {% endif %}
@@ -34,10 +35,10 @@ Prefetch('tenancies', to_attr='prefetched_tenancies')):
     <div class="listing-card-body">
         <h3 class="listing-card-title">{{ property.get_property_type_display }} · {{ property.location }}</h3>
         <p class="listing-card-meta">
-            {{ property.distance_from_center_km|floatformat:1 }} km from city center
+            {% blocktranslate with km=property.distance_from_center_km|floatformat:1 %}{{ km }} km from city center{% endblocktranslate %}
             {% for a in property.amenities_list|slice:":3" %}· {{ a }} {% endfor %}
         </p>
-        <p class="listing-card-price"><strong>TZS {{ property.monthly_rent|floatformat:0|intcomma }}</strong> <span>/ month</span>{% if property.review_count %}<span class="listing-card-rating">★ {{ property.review_avg|floatformat:1 }} ({{ property.review_count }})</span>{% endif %}</p>
+        <p class="listing-card-price"><strong>TZS {{ property.monthly_rent|floatformat:0|intcomma }}</strong> <span>/ {% translate 'month' %}</span>{% if property.review_count %}<span class="listing-card-rating">★ {{ property.review_avg|floatformat:1 }} ({{ property.review_count }})</span>{% endif %}</p>
     </div>
 </a>
 {% endwith %}

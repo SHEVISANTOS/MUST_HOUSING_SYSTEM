@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load humanize %}
-{% block title %}My Contract - VOT House Finding{% endblock %}
+{% block title %}{% translate 'My Contract' %} - VOT House Finding{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">📄 My Contract</h2>
+<h2 class="mb-4">📄 {% translate 'My Contract' %}</h2>
 
 {% if current_tenancies %}
     {% for tenancy in current_tenancies %}
@@ -15,7 +16,7 @@
         <div class="card-body">
             <div class="row mb-3">
                 <div class="col-md-6 mb-2">
-                    <p class="text-muted mb-1 small text-uppercase">Landlord</p>
+                    <p class="text-muted mb-1 small text-uppercase">{% translate "Landlord" %}</p>
                     <p class="fw-bold mb-0">{{ tenancy.property.landlord.username|title }}</p>
                     {% if tenancy.property.landlord.phone %}
                         <small class="text-muted">📱 <a href="tel:{{ tenancy.property.landlord.phone }}">{{ tenancy.property.landlord.phone }}</a></small><br>
@@ -25,9 +26,9 @@
                     {% endif %}
                 </div>
                 <div class="col-md-6 mb-2">
-                    <p class="text-muted mb-1 small text-uppercase">Contract Period</p>
+                    <p class="text-muted mb-1 small text-uppercase">{% translate "Contract Period" %}</p>
                     <p class="fw-bold mb-0">{{ tenancy.start_date|date:"j M Y" }} → {{ tenancy.end_date|date:"j M Y" }}</p>
-                    <small class="text-muted">{{ tenancy.duration_months }} month{{ tenancy.duration_months|pluralize }}</small>
+                    <small class="text-muted">{% blocktranslate count n=tenancy.duration_months %}{{ n }} month{% plural %}{{ n }} months{% endblocktranslate %}</small>
                 </div>
             </div>
 
@@ -37,11 +38,11 @@
 
             <div class="row mb-3">
                 <div class="col-md-6 mb-2">
-                    <p class="text-muted mb-1 small text-uppercase">Paid so far</p>
+                    <p class="text-muted mb-1 small text-uppercase">{% translate "Paid so far" %}</p>
                     <p class="fw-bold text-success mb-0">TZS {{ tenancy.payment_paid|floatformat:0|intcomma }}</p>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <p class="text-muted mb-1 small text-uppercase">Outstanding</p>
+                    <p class="text-muted mb-1 small text-uppercase">{% translate "Outstanding" %}</p>
                     <p class="fw-bold {% if tenancy.payment_outstanding %}text-danger{% else %}text-success{% endif %} mb-0">
                         TZS {{ tenancy.payment_outstanding|floatformat:0|intcomma }}
                     </p>
@@ -50,7 +51,7 @@
 
             {% if tenancy.notice_given_at %}
                 <div class="alert alert-info small mb-3">
-                    ℹ️ You gave notice to leave on {{ tenancy.notice_given_at|date:"j M Y" }}.
+                    ℹ️ {% blocktranslate with d=tenancy.notice_given_at|date:"j M Y" %}You gave notice to leave on {{ d }}.{% endblocktranslate %}
                 </div>
             {% endif %}
 
@@ -58,36 +59,37 @@
 
             {% if tenancy.booked_next %}
                 <div class="alert alert-warning small mb-3">
-                    📅 <strong>This home is booked by another tenant from {{ tenancy.booked_next.start_date|date:"j M Y" }}.</strong>
-                    Your contract ends {{ tenancy.end_date|date:"j M Y" }} and can't be renewed beyond that date.
-                    <a href="{% url 'messaging:start_conversation' tenancy.property.id %}">Message your landlord</a> if you have questions.
+                    {% url 'messaging:start_conversation' tenancy.property.id as msg_url %}📅 {% blocktranslate trimmed with next=tenancy.booked_next.start_date|date:"j M Y" end=tenancy.end_date|date:"j M Y" %}
+                    <strong>This home is booked by another tenant from {{ next }}.</strong>
+                    Your contract ends {{ end }} and can't be renewed beyond that date.
+                    <a href="{{ msg_url }}">Message your landlord</a> if you have questions.{% endblocktranslate %}
                 </div>
             {% elif tenancy.pending_interest %}
                 <div class="alert alert-info small mb-3">
-                    👀 <strong>Someone has asked to rent this home from {{ tenancy.pending_interest.move_in_date|date:"j M Y" }}</strong>,
-                    after your contract ends on {{ tenancy.end_date|date:"j M Y" }}. If you'd like to stay,
-                    {% if tenancy.display_status == 'active' or tenancy.display_status == 'ending_soon' %}{% if not tenancy.renewal_requested %}<a href="{% url 'bookings:request_renewal' tenancy.id %}">request a renewal</a> or {% endif %}{% endif %}<a href="{% url 'messaging:start_conversation' tenancy.property.id %}">message your landlord</a> soon.
+                    {% url 'messaging:start_conversation' tenancy.property.id as msg_url %}{% url 'bookings:request_renewal' tenancy.id as renew_url %}👀 {% blocktranslate trimmed with from=tenancy.pending_interest.move_in_date|date:"j M Y" end=tenancy.end_date|date:"j M Y" %}
+                    <strong>Someone has asked to rent this home from {{ from }}</strong>, after your contract ends on {{ end }}.{% endblocktranslate %}
+                    {% if tenancy.display_status == 'active' or tenancy.display_status == 'ending_soon' %}{% if not tenancy.renewal_requested %}{% blocktranslate %}If you'd like to stay, <a href="{{ renew_url }}">request a renewal</a> or <a href="{{ msg_url }}">message your landlord</a> soon.{% endblocktranslate %}{% else %}{% blocktranslate %}If you'd like to stay, <a href="{{ msg_url }}">message your landlord</a> soon.{% endblocktranslate %}{% endif %}{% else %}{% blocktranslate %}If you'd like to stay, <a href="{{ msg_url }}">message your landlord</a> soon.{% endblocktranslate %}{% endif %}
                 </div>
             {% endif %}
 
             <div class="d-flex gap-2 flex-wrap">
                 {% if tenancy.display_status == 'active' or tenancy.display_status == 'ending_soon' %}
                     {% if tenancy.renewal_requested %}
-                        <button class="btn btn-secondary" disabled>⏳ Renewal Requested</button>
+                        <button class="btn btn-secondary" disabled>⏳ {% translate 'Renewal Requested' %}</button>
                     {% else %}
-                        <a href="{% url 'bookings:request_renewal' tenancy.id %}" class="btn btn-green">🔄 Request Renewal</a>
+                        <a href="{% url 'bookings:request_renewal' tenancy.id %}" class="btn btn-green">🔄 {% translate 'Request Renewal' %}</a>
                     {% endif %}
                     {% if not tenancy.notice_given_at %}
                         <a href="{% url 'bookings:give_notice' tenancy.id %}" class="btn btn-outline-secondary"
-                           onclick="return confirm('Give notice to leave at the end of this contract?');">🚪 Give Notice</a>
+                           onclick="return confirm('{% translate "Give notice to leave at the end of this contract?" as t %}{{ t|escapejs }}');">🚪 {% translate 'Give Notice' %}</a>
                     {% endif %}
                 {% endif %}
                 {% with tr=tenancy.termination_list|first %}
                 {% if tenancy.display_status in 'upcoming active ending_soon' and tr.status != 'pending' %}
-                    <a href="{% url 'bookings:request_termination' tenancy.id %}" class="btn btn-outline-danger">📄 Request Termination</a>
+                    <a href="{% url 'bookings:request_termination' tenancy.id %}" class="btn btn-outline-danger">📄 {% translate 'Request Termination' %}</a>
                 {% endif %}
                 {% endwith %}
-                <a href="{% url 'bookings:download_contract_pdf' tenancy.id %}" class="btn btn-secondary">📥 Download Contract Summary</a>
+                <a href="{% url 'bookings:download_contract_pdf' tenancy.id %}" class="btn btn-secondary">📥 {% translate 'Download Contract Summary' %}</a>
             </div>
         </div>
     </div>
@@ -96,31 +98,31 @@
     <div class="card mb-4">
         <div class="card-body text-center py-5" style="color: var(--text-grey);">
             <div style="font-size: 3rem; margin-bottom: 15px;">📄</div>
-            <p class="mb-2">You don't have an active contract right now.</p>
-            <a href="{% url 'properties:list' %}" class="btn btn-green">🔍 Browse Houses</a>
+            <p class="mb-2">{% translate "You don't have an active contract right now." %}</p>
+            <a href="{% url 'properties:list' %}" class="btn btn-green">🔍 {% translate 'Browse Houses' %}</a>
         </div>
     </div>
 {% endif %}
 
 {% if history_tenancies %}
 <div class="card">
-    <div class="card-header">📜 Contract History</div>
+    <div class="card-header">📜 {% translate 'Contract History' %}</div>
     <div class="card-body">
         <div class="table-wrapper">
             <table class="table-custom">
                 <thead>
                     <tr>
-                        <th>Property</th>
-                        <th>Period</th>
-                        <th>Status</th>
+                        <th>{% translate "Property" %}</th>
+                        <th>{% translate "Period" %}</th>
+                        <th>{% translate "Status" %}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for tenancy in history_tenancies %}
                     <tr>
-                        <td data-label="Property">{{ tenancy.property.title|truncatewords:4 }}</td>
-                        <td data-label="Period">{{ tenancy.start_date|date:"j M Y" }} → {{ tenancy.end_date|date:"j M Y" }}</td>
-                        <td data-label="Status">{% include 'bookings/_tenancy_status_badge.html' with tenancy=tenancy mode="contract" %}</td>
+                        <td data-label="{% translate 'Property' %}">{{ tenancy.property.title|truncatewords:4 }}</td>
+                        <td data-label="{% translate 'Period' %}">{{ tenancy.start_date|date:"j M Y" }} → {{ tenancy.end_date|date:"j M Y" }}</td>
+                        <td data-label="{% translate 'Status' %}">{% include 'bookings/_tenancy_status_badge.html' with tenancy=tenancy mode="contract" %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

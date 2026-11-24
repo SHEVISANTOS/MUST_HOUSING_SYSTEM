@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 Renders a status badge. Two modes:
 
@@ -16,20 +17,20 @@ seekers must never see who is renting a property.
 {% endcomment %}
 {% if mode == "contract" and tenancy %}
     {% if tenancy.display_status == 'upcoming' %}
-        <span class="badge badge-info">🔵 Upcoming</span>
+        <span class="badge badge-info">🔵 {% translate 'Upcoming' %}</span>
     {% elif tenancy.display_status == 'active' %}
-        <span class="badge badge-success">🟢 Active</span>
+        <span class="badge badge-success">🟢 {% translate 'Active' %}</span>
     {% elif tenancy.display_status == 'ending_soon' %}
-        <span class="badge badge-warning">🟡 Ending Soon</span>
+        <span class="badge badge-warning">🟡 {% translate 'Ending Soon' %}</span>
     {% elif tenancy.display_status == 'ended' %}
-        <span class="badge badge-secondary">⚪ Ended</span>
+        <span class="badge badge-secondary">⚪ {% translate 'Ended' %}</span>
     {% elif tenancy.display_status == 'terminated' %}
-        <span class="badge badge-danger">🔴 Terminated</span>
+        <span class="badge badge-danger">🔴 {% translate 'Terminated' %}</span>
     {% elif tenancy.display_status == 'renewed' %}
-        <span class="badge badge-secondary">🔁 Renewed</span>
+        <span class="badge badge-secondary">🔁 {% translate 'Renewed' %}</span>
     {% endif %}
 {% elif tenancy %}
-    <span class="badge badge-warning">🟡 Available from {{ tenancy.available_from|date:"j M Y" }}</span>
+    <span class="badge badge-warning">🟡 {% blocktranslate with d=tenancy.available_from|date:"j M Y" %}Available from {{ d }}{% endblocktranslate %}</span>
 {% else %}
-    <span class="badge badge-success">🟢 Available Now</span>
+    <span class="badge badge-success">🟢 {% translate 'Available Now' %}</span>
 {% endif %}

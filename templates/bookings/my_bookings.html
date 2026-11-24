@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
-{% block title %}My Bookings{% endblock %}
+{% load i18n %}
+{% block title %}{% translate 'My Bookings' %}{% endblock %}
 
 {% block content %}
 <div class="card">
-    <div class="card-header">📋 My Bookings</div>
+    <div class="card-header">📋 {% translate 'My Bookings' %}</div>
     <div class="card-body">
         {% if bookings %}
         <!-- Responsive Table Wrapper -->
@@ -11,42 +12,42 @@
             <table class="table-custom">
                 <thead>
                     <tr>
-                        <th>Ref No</th>
-                        <th>Property</th>
-                        <th>Location</th>
-                        <th>Move-in Date</th>
-                        <th>Move-out Date</th>
-                        <th>Status</th>
-                        <th>Action</th>
+                        <th>{% translate "Ref No" %}</th>
+                        <th>{% translate "Property" %}</th>
+                        <th>{% translate "Location" %}</th>
+                        <th>{% translate "Move-in Date" %}</th>
+                        <th>{% translate "Move-out Date" %}</th>
+                        <th>{% translate "Status" %}</th>
+                        <th>{% translate "Action" %}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for booking in bookings %}
                     <tr>
-                        <td data-label="Ref No" style="font-weight: 600;">BK/{{ booking.id|stringformat:"04d" }}</td>
-                        <td data-label="Property">{{ booking.property.title }}</td>
-                        <td data-label="Location">{{ booking.property.location }}</td>
-                        <td data-label="Move-in Date">{{ booking.move_in_date|date:"d-m-Y" }}</td>
-                        <td data-label="Move-out Date">{{ booking.move_out_date|date:"d-m-Y" }}</td>
-                        <td data-label="Status">
+                        <td data-label="{% translate 'Ref No' %}" style="font-weight: 600;">BK/{{ booking.id|stringformat:"04d" }}</td>
+                        <td data-label="{% translate 'Property' %}">{{ booking.property.title }}</td>
+                        <td data-label="{% translate 'Location' %}">{{ booking.property.location }}</td>
+                        <td data-label="{% translate 'Move-in Date' %}">{{ booking.move_in_date|date:"d-m-Y" }}</td>
+                        <td data-label="{% translate 'Move-out Date' %}">{{ booking.move_out_date|date:"d-m-Y" }}</td>
+                        <td data-label="{% translate 'Status' %}">
                             {% if booking.status == 'CONFIRMED' %}
-                                <span class="badge badge-success">CONFIRMED</span>
+                                <span class="badge badge-success">{% translate 'CONFIRMED' %}</span>
                             {% elif booking.status == 'CANCELLED' %}
-                                <span class="badge badge-danger">CANCELLED</span>
+                                <span class="badge badge-danger">{% translate 'CANCELLED' %}</span>
                             {% elif booking.status == 'PENDING' %}
-                                <span class="badge badge-warning">PENDING</span>
+                                <span class="badge badge-warning">{% translate 'PENDING' %}</span>
                             {% elif booking.status == 'PAID' %}
-                                <span class="badge badge-info">PAID</span>
+                                <span class="badge badge-info">{% translate 'PAID' %}</span>
                             {% else %}
-                                <span class="badge badge-secondary">{{ booking.status }}</span>
+                                <span class="badge badge-secondary">{% translate booking.status %}</span>
                             {% endif %}
                         </td>
-                        <td data-label="Action">
+                        <td data-label="{% translate 'Action' %}">
                             <!-- View Property Button -->
                             <a href="{% url 'properties:detail' booking.property.id %}" 
                                class="btn btn-sm btn-secondary" 
                                style="margin-bottom: 6px; display: inline-block;">
-                                👁️ View
+                                👁️ {% translate 'View' %}
                             </a>
                             
                             <!-- Payment Action Buttons -->
@@ -56,15 +57,15 @@
                                         <a href="{% url 'payments:payment_detail' booking.payment.id %}" 
                                            class="btn btn-sm" 
                                            style="background:#ffc107; color:#000; display: inline-block;">
-                                            ⏳ Awaiting Landlord
+                                            ⏳ {% translate 'Awaiting Landlord' %}
                                         </a>
                                     {% elif booking.payment.payment_status == 'CONFIRMED' %}
-                                        <span class="badge badge-success" style="display: inline-block;">✅ Payment Confirmed</span>
+                                        <span class="badge badge-success" style="display: inline-block;">✅ {% translate 'Payment Confirmed' %}</span>
                                     {% else %}
                                         <a href="{% url 'payments:payment_detail' booking.payment.id %}" 
                                            class="btn btn-sm btn-info" 
                                            style="display: inline-block;">
-                                            📄 View Payment
+                                            📄 {% translate 'View Payment' %}
                                         </a>
                                     {% endif %}
                                 {% else %}
@@ -72,14 +73,14 @@
                                     <a href="{% url 'payments:mark_payment' booking.id %}" 
                                        class="btn btn-sm btn-green" 
                                        style="display: inline-block;">
-                                        💳 Pay Now
+                                        💳 {% translate 'Pay Now' %}
                                     </a>
                                 {% endif %}
                             {% elif booking.status == 'PAID' %}
-                                <span class="badge badge-success" style="display: inline-block;">✅ Booking Active</span>
+                                <span class="badge badge-success" style="display: inline-block;">✅ {% translate 'Booking Active' %}</span>
                             {% endif %}
                             {% if booking.review_tenancy_id %}
-                                <a href="{% url 'properties:write_review' booking.review_tenancy_id %}" class="btn btn-sm btn-green" style="display: inline-block;">⭐ Rate this home</a>
+                                <a href="{% url 'properties:write_review' booking.review_tenancy_id %}" class="btn btn-sm btn-green" style="display: inline-block;">⭐ {% translate 'Rate this home' %}</a>
                             {% endif %}
                         </td>
                     </tr>
@@ -90,9 +91,9 @@
         {% else %}
         <div style="text-align: center; padding: 40px; color: var(--text-grey);">
             <div style="font-size: 3rem; margin-bottom: 10px;">📭</div>
-            <p>You haven't made any bookings yet.</p>
+            <p>{% translate "You haven't made any bookings yet." %}</p>
             <a href="{% url 'properties:list' %}" class="btn btn-green" style="margin-top: 15px; display: inline-block; text-decoration: none;">
-                🔍 Search for Houses
+                🔍 {% translate 'Search for Houses' %}
             </a>
         </div>
         {% endif %}

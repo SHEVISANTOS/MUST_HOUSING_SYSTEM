@@ -1,6 +1,7 @@
 # apps/properties/forms.py
 
 from django import forms
+from django.utils.translation import gettext_lazy as _
 from .models import Property, PropertyImage, PropertyReview
 
 LOCATION_HELP = ("Area or neighbourhood only, e.g. Nyegezi, Mwanza. Don't include a street or "
@@ -88,10 +89,10 @@ class ReviewForm(forms.ModelForm):
     class Meta:
         model = PropertyReview
         fields = ['home_rating', 'landlord_rating', 'comment']
-        labels = {'home_rating': 'The home', 'landlord_rating': 'The landlord', 'comment': 'Your review'}
+        labels = {'home_rating': _('The home'), 'landlord_rating': _('The landlord'), 'comment': _('Your review')}
         widgets = {
             'home_rating': forms.RadioSelect,
             'landlord_rating': forms.RadioSelect,
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'maxlength': 1000,
-                                             'placeholder': 'What was it like to live here? Water, power, security, how the landlord handled problems...'}),
+                                             'placeholder': _('What was it like to live here? Water, power, security, how the landlord handled problems...')}),
         }

@@ -172,3 +172,41 @@ class LegalPagesTests(TestCase):
         register = Client().get(reverse('users:register'))
         self.assertContains(register, reverse('terms'))
         self.assertContains(register, reverse('privacy'))
+
+
+class SwahiliTests(TestCase):
+    def setUp(self):
+        landlord = User.objects.create_user(username='sw_landlord', password='pw', role='LANDLORD', is_verified=True)
+        self.prop = Property.objects.create(landlord=landlord, title='Nyumba Test', location='Ilemela',
+                                            property_type='2BR', monthly_rent=150000, distance_from_center_km=1.0)
+
+    def test_english_by_default(self):
+        body = Client().get(reverse('properties:list')).content.decode()
+        self.assertIn('<html lang="en">', body)
+        self.assertIn('Available Houses', body)
+
+    def test_switch_to_swahili_and_back_keeps_page(self):
+        c = Client()
+        detail = reverse('properties:detail', args=[self.prop.pk])
+        response = c.post(reverse('set_language'), {'language': 'sw', 'next': detail})
+        self.assertRedirects(response, detail, fetch_redirect_response=False)
+        body = c.get(detail).content.decode()
+        self.assertIn('<html lang="sw">', body)
+        for text in ('Ingia Ili Kupanga', 'Shiriki na marafiki', 'Vyumba 2 vya kulala', 'Taarifa za Kodi'):
+            self.assertIn(text, body)
+        self.assertIn('Nyumba Test', body)   # landlord's own text is never translated
+        c.post(reverse('set_language'), {'language': 'en', 'next': detail})
+        self.assertIn('Sign in to Book', c.get(detail).content.decode())
+
+    def test_phone_set_to_swahili_gets_it_automatically(self):
+        body = Client(HTTP_ACCEPT_LANGUAGE='sw').get(reverse('users:register')).content.decode()
+        self.assertIn('Fungua Akaunti', body)
+        self.assertIn('Masharti ya Matumizi', body)
+        self.assertIn('id="register-form"', body)
+
+    def test_verification_links_and_admin_link_unaffected(self):
+        login = Client().get(reverse('users:login')).content.decode()
+        from django.conf import settings
+        self.assertNotIn(settings.ADMIN_URL, login)   # hidden admin address is not linked publicly
+        self.assertNotIn('XXX XXX', login)
+        self.assertEqual(Client(HTTP_ACCEPT_LANGUAGE='sw').get('/verify/').status_code, 200)

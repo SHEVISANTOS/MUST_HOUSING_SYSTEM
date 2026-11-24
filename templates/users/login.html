@@ -1,10 +1,10 @@
-{% load static %}
+{% load static i18n %}
 <!DOCTYPE html>
-<html lang="en">
+{% get_current_language as LANGUAGE_CODE %}<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - VOT House Finding</title>
+    <title>{% translate 'Login' %} - VOT House Finding</title>
     <link rel="icon" type="image/png" href="{% static 'img/vot_icon.png' %}">
     <link rel="shortcut icon" type="image/png" href="{% static 'img/vot_icon.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -328,6 +328,9 @@
             position: relative;
         }
 
+        .login-lang { display: inline-flex; border: 1px solid rgb(255 255 255 / 50%); border-radius: 999px; overflow: hidden; margin-left: auto; margin-right: 12px; }
+        .login-lang button { border: none; background: none; color: #fff; padding: 6px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+        .login-lang button[aria-current] { background: #fff; color: #14746c; }
         .register-link {
             text-align: center;
             padding: 15px 0;
@@ -438,7 +441,7 @@
     <div class="header">
         <div class="header-left">
             <div class="logo-container">
-              <img src="{% static 'img/vot_icon.png' %}" alt="VOT House Finding Logo" class="logo"
+              <img src="{% static 'img/vot_icon.png' %}" alt="VOT House Finding" class="logo"
               onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22 viewBox=%220 0 70 70%22><rect width=%2270%22 height=%2270%22 fill=%22%2314746c%22/><text x=%2250%%22 y=%2250%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22Arial,sans-serif%22 font-size=%2224%22 font-weight=%22bold%22 fill=%22white%22>V</text></svg>'">
            </div>
             <div class="header-text">
@@ -446,8 +449,12 @@
                 <h2>VOT MWANZA LIMITED</h2>
             </div>
         </div>
+        <form method="post" action="{% url 'set_language' %}" class="login-lang">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" name="language" value="en" {% if LANGUAGE_CODE == 'en' %}aria-current="true"{% endif %}>EN</button><button type="submit" name="language" value="sw" {% if LANGUAGE_CODE == 'sw' %}aria-current="true"{% endif %} title="Kiswahili">SW</button>
+        </form>
         <div class="season-badge">
-            SEASON &nbsp;<strong>2025/2026</strong>
+            {% translate 'SEASON' %} &nbsp;<strong>2025/2026</strong>
         </div>
     </div>
     
@@ -471,7 +478,7 @@
         };
 
         document.getElementById("current-date").innerHTML =
-            now.toLocaleString('en-US', options);
+            now.toLocaleString(document.documentElement.lang === 'sw' ? 'sw-TZ' : 'en-US', options);
     }
 
     updateDateTime();
@@ -483,37 +490,37 @@
         <!-- Left Panel -->
         <div class="left-panel">
             <div class="welcome-text">
-                <h3>Welcome to VOT House Finding</h3>
-                <p>The House Finding System facilitates property listings, bookings, and rent payments for tenants and landlords, brought to you by VOT Mwanza Limited.</p>
+                <h3>{% translate "Welcome to VOT House Finding" %}</h3>
+                <p>{% translate "The House Finding System facilitates property listings, bookings, and rent payments for tenants and landlords, brought to you by VOT Mwanza Limited." %}</p>
             </div>
             
             <div class="feature-section">
-                <h4>🏠 Tenants</h4>
+                <h4>{% translate "🏠 Tenants" %}</h4>
                 <ul class="feature-list">
-                    <li>Search available houses nearby</li>
-                    <li>Book properties online</li>
-                    <li>Track payment history</li>
-                    <li>View booking status</li>
+                    <li>{% translate "Search available houses nearby" %}</li>
+                    <li>{% translate "Book properties online" %}</li>
+                    <li>{% translate "Track payment history" %}</li>
+                    <li>{% translate "View booking status" %}</li>
                 </ul>
             </div>
             
             <div class="feature-section">
-                <h4>🔑 Landlords</h4>
+                <h4>{% translate "🔑 Landlords" %}</h4>
                 <ul class="feature-list">
-                    <li>List properties for rent</li>
-                    <li>Manage booking requests</li>
-                    <li>Verify tenant payments</li>
-                    <li>Track rental income</li>
+                    <li>{% translate "List properties for rent" %}</li>
+                    <li>{% translate "Manage booking requests" %}</li>
+                    <li>{% translate "Verify tenant payments" %}</li>
+                    <li>{% translate "Track rental income" %}</li>
                 </ul>
             </div>
             
             <div class="feature-section">
-                <h4>⚙️ Administrators</h4>
+                <h4>{% translate "⚙️ Administrators" %}</h4>
                 <ul class="feature-list">
-                    <li>Monitor system usage</li>
-                    <li>Manage user accounts</li>
-                    <li>Generate reports</li>
-                    <li>System configuration</li>
+                    <li>{% translate "Monitor system usage" %}</li>
+                    <li>{% translate "Manage user accounts" %}</li>
+                    <li>{% translate "Generate reports" %}</li>
+                    <li>{% translate "System configuration" %}</li>
                 </ul>
             </div>
         </div>
@@ -521,7 +528,7 @@
         <!-- Right Panel (Login Form) -->
         <div class="right-panel">
             <div class="login-box">
-                <h3>Login</h3>
+                <h3>{% translate "Login" %}</h3>
                 
                 <!-- Success Message -->
                 {% if messages %}
@@ -535,9 +542,9 @@
                 <!-- Error Message -->
                 <div id="error-message" class="error-message {% if form.errors %}show{% endif %}">
                     {% if form.errors %}
-                        <strong>Login Failed:</strong> Invalid login.
+                        <strong>{% translate 'Login Failed' %}:</strong> {% translate 'Wrong username or password.' %}
                     {% else %}
-                        <strong>Error:</strong> Please fill in all required fields.
+                        <strong>{% translate 'Error' %}:</strong> {% translate 'Please fill in all required fields.' %}
                     {% endif %}
                 </div>
                 
@@ -546,12 +553,12 @@
                     {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
                     <div class="form-group">
-                        <label for="id_username">Username <span style="color: #ef4444;">*</span></label>
+                        <label for="id_username">{% translate "Username" %} <span style="color: #ef4444;">*</span></label>
                         <div class="input-wrapper">
                             <input type="text" 
                                    name="username" 
                                    id="id_username" 
-                                   placeholder="Enter your username" 
+                                   placeholder="{% translate 'Enter your username' %}" 
                                    required 
                                    autofocus
                                    
@@ -560,15 +567,15 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="id_password">Password <span style="color: #ef4444;">*</span></label>
+                        <label for="id_password">{% translate "Password" %} <span style="color: #ef4444;">*</span></label>
                         <div class="input-wrapper">
                             <input type="password" 
                                    name="password" 
                                    id="id_password" 
-                                   placeholder="Enter your password" 
+                                   placeholder="{% translate 'Enter your password' %}" 
                                    required
                                    autocomplete="current-password">
-                            <span class="toggle-password" onclick="togglePassword()" title="Show/Hide Password">
+                            <span class="toggle-password" onclick="togglePassword()" title="{% translate 'Show/Hide Password' %}">
                                 👁️
                             </span>
                         </div>
@@ -577,29 +584,26 @@
                     <div class="form-options">
                         <label class="remember-me">
                             <input type="checkbox" name="remember" id="remember-me">
-                            <span>Remember me</span>
+                            <span>{% translate "Remember me" %}</span>
                         </label>
                         <a href="#" class="forgot-password" onclick="showForgotPassword(); return false;">
-                            Forgot password?
+                            {% translate 'Forgot password?' %}
                         </a>
                     </div>
                     
                     <button type="submit" class="login-btn" id="login-btn">
-                        Login to Your Account
+                        {% translate 'Login to Your Account' %}
                     </button>
                 </form>
                 
                 <div class="divider">
-                    <span>OR</span>
+                    <span>{% translate "OR" %}</span>
                 </div>
                 
                 <div class="register-link">
-                    Don't have an account? <a href="{% url 'users:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Register here</a>
+                    {% translate "Don't have an account?" %} <a href="{% url 'users:register' %}{% if next %}?next={{ next|urlencode }}{% endif %}">{% translate 'Register here' %}</a>
                 </div>
                 
-                <div class="admin-link">
-                    <a href="{% url 'admin:index' %}">🔐Admin Login</a>
-                </div>
             </div>
         </div>
     </div>
@@ -609,9 +613,9 @@
         <span>© 2023 - 2026 <a href="https://volunteertotanzania.com" target="_blank" rel="noopener noreferrer" style="color:inherit;">VOT MWANZA LIMITED</a></span>
         <div>
             
-            <span>Designed and Developed by: <a href="https://shevisantos.netlify.app" target="_blank" rel="noopener noreferrer" style="color:inherit;">Shevi Santos</a></span>
+            <span>{% translate 'Designed and Developed by' %}: <a href="https://shevisantos.netlify.app" target="_blank" rel="noopener noreferrer" style="color:inherit;">Shevi Santos</a></span>
         </div>
-        <div><a href="{% url 'privacy' %}" style="color:inherit;">Privacy Policy</a> &middot; <a href="{% url 'terms' %}" style="color:inherit;">Terms of Use</a></div>
+        <div><a href="{% url 'privacy' %}" style="color:inherit;">{% translate "Privacy Policy" %}</a> &middot; <a href="{% url 'terms' %}" style="color:inherit;">{% translate "Terms of Use" %}</a></div>
     </div>
     
     <!-- JavaScript for Enhanced Functionality -->
@@ -624,11 +628,11 @@
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
                 toggleBtn.textContent = '🙈';
-                toggleBtn.title = 'Hide Password';
+                toggleBtn.title = '{% translate "Hide Password" as t %}{{ t|escapejs }}';
             } else {
                 passwordInput.type = 'password';
                 toggleBtn.textContent = '👁️';
-                toggleBtn.title = 'Show Password';
+                toggleBtn.title = '{% translate "Show Password" as t %}{{ t|escapejs }}';
             }
         }
         
@@ -658,7 +662,7 @@
             }
             
             if (hasError) {
-                errorMessage.innerHTML = '<strong>Validation Error:</strong> Please fill in all required fields.';
+                errorMessage.innerHTML = '<strong>{% translate "Error" as t %}{{ t|escapejs }}:</strong> {% translate "Please fill in all required fields." as t %}{{ t|escapejs }}';
                 errorMessage.classList.add('show');
                 e.preventDefault();
                 return false;
@@ -697,7 +701,7 @@
         
         // Show forgot password modal (placeholder)
         function showForgotPassword() {
-            alert('Password recovery feature will be available soon.\n\nPlease contact the system administrator at:\n📧 info@votmwanza.co.tz\n📞 +255 XXX XXX XXX');
+            alert('{% translate "Forgot your password? Email info@votmwanza.co.tz from the email address on your account, with your username, and we will reset it for you." as t %}{{ t|escapejs }}');
         }
         
         // Auto-hide success messages after 5 seconds

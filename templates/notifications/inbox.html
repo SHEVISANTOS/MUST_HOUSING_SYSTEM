@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load humanize %}
-{% block title %}Notifications{% endblock %}
+{% block title %}{% translate 'Notifications' %}{% endblock %}
 
 {% block content %}
 <style>
@@ -18,8 +19,8 @@
 
 <div class="page-heading">
     <div>
-        <p class="eyebrow">Inbox</p>
-        <h1>Notifications</h1>
+        <p class="eyebrow">{% translate "Inbox" %}</p>
+        <h1>{% translate "Notifications" %}</h1>
     </div>
 </div>
 
@@ -44,8 +45,8 @@
 </div>
 {% else %}
 <div class="empty-state">
-    <p class="empty-title">No notifications yet</p>
-    <p>Updates on your bookings, payments, and account will show up here.</p>
+    <p class="empty-title">{% translate "No notifications yet" %}</p>
+    <p>{% translate "Updates on your bookings, payments, and account will show up here." %}</p>
 </div>
 {% endif %}
 {% endblock %}

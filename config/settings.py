@@ -95,6 +95,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',  # English / Kiswahili, from the switcher or the phone's language
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -152,6 +153,7 @@ TEMPLATES = [{
             'apps.properties.context_processors.saved_property_ids',
             'apps.messaging.context_processors.unread_message_count',
             'apps.notifications.context_processors.unread_notification_count',
+            'apps.core.context_processors.breadcrumb',
         ],
     },
 }]
@@ -169,7 +171,12 @@ DATABASES = {
 # This now perfectly matches the simplified INSTALLED_APPS name
 AUTH_USER_MODEL = 'users.User'
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en'
+LANGUAGES = [('en', 'English'), ('sw', 'Kiswahili')]
+LOCALE_PATHS = [BASE_DIR / 'locale']
+FORMAT_MODULE_PATH = ['config.formats']
+LANGUAGE_COOKIE_AGE = 365 * 24 * 60 * 60
+LANGUAGE_COOKIE_SECURE = not DEBUG
 TIME_ZONE = 'Africa/Dar_es_Salaam'
 USE_I18N = True
 USE_TZ = True

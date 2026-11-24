@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 Progress bar for a tenant's/landlord's contract view.
 Usage: {% include 'bookings/_tenancy_progress.html' with tenancy=tenancy %}
@@ -5,8 +6,8 @@ Green while active, gold once ending soon, grey once ended.
 {% endcomment %}
 <div class="tenancy-progress">
     <div class="d-flex justify-content-between mb-1" style="font-size:0.85rem; color:var(--text-grey);">
-        <span>Month {{ tenancy.current_month_number }} of {{ tenancy.duration_months }}</span>
-        <span>{{ tenancy.days_remaining }} day{{ tenancy.days_remaining|pluralize }} remaining</span>
+        <span>{% blocktranslate with n=tenancy.current_month_number total=tenancy.duration_months %}Month {{ n }} of {{ total }}{% endblocktranslate %}</span>
+        <span>{% blocktranslate count n=tenancy.days_remaining %}{{ n }} day remaining{% plural %}{{ n }} days remaining{% endblocktranslate %}</span>
     </div>
     <div class="progress" style="height:10px; border-radius:6px; background:#e9ecef;">
         <div class="progress-bar {% if tenancy.display_status == 'ended' %}bg-secondary{% elif tenancy.display_status == 'ending_soon' %}progress-bar-gold{% else %}progress-bar-teal{% endif %}"

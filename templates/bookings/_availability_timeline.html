@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
 A 12-month horizontal availability timeline for a property. Occupied
 periods are shown as blocks with NO tenant details - only start/end dates -
@@ -18,13 +19,13 @@ leak a tenant's name/phone/etc even by accident):
         {% for block in timeline_blocks %}
         <div class="timeline-block{% if block.is_ending_soon %} ending-soon{% endif %}"
              style="left: {{ block.left_pct }}%; width: {{ block.width_pct }}%;"
-             title="Occupied {{ block.start_date|date:'j M Y' }} - {{ block.end_date|date:'j M Y' }}">
+             title="{% translate 'Occupied' %} {{ block.start_date|date:'j M Y' }} - {{ block.end_date|date:'j M Y' }}">
         </div>
         {% endfor %}
     </div>
     <div class="timeline-legend">
-        <span><span class="swatch" style="background:var(--vot-gold);"></span> Occupied</span>
-        <span><span class="swatch" style="background:var(--vot-teal);"></span> Ending soon</span>
-        <span><span class="swatch" style="background:#f1f3f5; border:1px solid #ddd;"></span> Available</span>
+        <span><span class="swatch" style="background:var(--vot-gold);"></span> {% translate 'Occupied' %}</span>
+        <span><span class="swatch" style="background:var(--vot-teal);"></span> {% translate 'Ending soon' %}</span>
+        <span><span class="swatch" style="background:#f1f3f5; border:1px solid #ddd;"></span> {% translate 'Available' %}</span>
     </div>
 </div>

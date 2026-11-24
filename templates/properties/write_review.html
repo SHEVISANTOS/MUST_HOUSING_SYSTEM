@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Review {{ tenancy.property.title }}{% endblock %}
+{% load i18n %}
+{% block title %}{% translate 'Review' %} {{ tenancy.property.title }}{% endblock %}
 {% block content %}
 <style>
     .review-form { max-width: 620px; margin: 0 auto; }
@@ -14,9 +15,9 @@
 </style>
 <div class="review-form">
     <div class="page-heading"><div>
-        <p class="eyebrow">Rate your stay</p>
+        <p class="eyebrow">{% translate "Rate your stay" %}</p>
         <h1>{{ tenancy.property.title }}</h1>
-        <p class="page-sub">{{ tenancy.start_date|date:"j M Y" }} – {{ tenancy.end_date|date:"j M Y" }}. Your review is public and shows a shortened name.</p>
+        <p class="page-sub">{{ tenancy.start_date|date:"j M Y" }} – {{ tenancy.end_date|date:"j M Y" }}. {% translate "Your review is public and shows a shortened name." %}</p>
     </div></div>
     <div class="card"><div class="card-body">
         <form method="post">
@@ -27,18 +28,18 @@
                 <div class="star-input" role="radiogroup" aria-label="{{ field.label }}">
                     {% for i in "54321" %}
                     <input type="radio" name="{{ field.html_name }}" value="{{ i }}" id="{{ field.auto_id }}_{{ i }}" {% if field.value|stringformat:"s" == i %}checked{% endif %} required>
-                    <label for="{{ field.auto_id }}_{{ i }}" title="{{ i }} star{{ i|pluralize }}">★</label>
+                    <label for="{{ field.auto_id }}_{{ i }}" title="{{ i }}/5">★</label>
                     {% endfor %}
                 </div>
                 {% if field.errors %}<div class="text-danger small">{{ field.errors|join:" " }}</div>{% endif %}
             </div>
             {% endif %}{% endfor %}
             <div class="rating-row">
-                <label for="{{ form.comment.auto_id }}">{{ form.comment.label }}</label>
+                <label for="{{ form.comment.auto_id }}">{% translate "Your review" %}</label>
                 {{ form.comment }}
                 {% if form.comment.errors %}<div class="text-danger small">{{ form.comment.errors|join:" " }}</div>{% endif %}
             </div>
-            <button type="submit" class="btn btn-green">Post review</button>
+            <button type="submit" class="btn btn-green">{% translate "Post review" %}</button>
         </form>
     </div></div>
 </div>

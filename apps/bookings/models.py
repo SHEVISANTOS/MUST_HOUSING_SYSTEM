@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.utils.translation import gettext_noop
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -16,6 +17,10 @@ class Booking(models.Model):
         ('CANCELLED', 'Cancelled'),
         ('COMPLETED', 'Completed'),
     ]
+    # Templates show the raw codes as badges, translated with
+    # {% translate booking.status %}; listed here so makemessages finds them.
+    _STATUS_CODE_WORDS = [gettext_noop('PENDING'), gettext_noop('CONFIRMED'), gettext_noop('PAID'),
+                          gettext_noop('CANCELLED'), gettext_noop('COMPLETED')]
 
     # Field Definitions - Ensure all parentheses are closed
     property = models.ForeignKey(
