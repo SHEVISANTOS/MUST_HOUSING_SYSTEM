@@ -29,6 +29,12 @@ class Notification(models.Model):
         ('renewal_approved', 'Renewal approved'),
         ('renewal_declined', 'Renewal declined'),
         ('landlord_awaiting_verification', 'Landlord waiting for verification'),
+        ('rent_due_soon', 'Rent due soon'),
+        ('rent_due_today', 'Rent due today'),
+        ('rent_overdue', 'Rent overdue'),
+        ('contract_ending', 'Contract ending soon'),
+        ('review_invite', 'Rate your stay'),
+        ('new_review', 'New review'),
     ]
 
     KIND_ICONS = {
@@ -49,6 +55,12 @@ class Notification(models.Model):
         'renewal_approved': '✅',
         'renewal_declined': '❌',
         'landlord_awaiting_verification': '🛡️',
+        'rent_due_soon': '⏰',
+        'rent_due_today': '💳',
+        'rent_overdue': '⚠️',
+        'contract_ending': '📆',
+        'review_invite': '⭐',
+        'new_review': '⭐',
     }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
@@ -74,3 +86,14 @@ class Notification(models.Model):
     @property
     def icon(self):
         return self.KIND_ICONS.get(self.kind, '🔔')
+
+
+class SentReminder(models.Model):
+    """One row per reminder already sent, so the daily job can run any
+    number of times (or catch up after downtime) without repeating itself.
+    key looks like 'rent_due_soon:<payment id>'."""
+    key = models.CharField(max_length=120, unique=True)
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.key

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Property, PropertyImage, SavedProperty
+from .models import Property, PropertyImage, PropertyReview, SavedProperty
 
 # ✅ INLINE: Allows adding images directly on the Property form
 class PropertyImageInline(admin.TabularInline):
@@ -53,3 +53,11 @@ class SavedPropertyAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     search_fields = ('user__username', 'property__title')
     readonly_fields = ('created_at',)
+
+@admin.register(PropertyReview)
+class PropertyReviewAdmin(admin.ModelAdmin):
+    list_display = ('property', 'tenant', 'home_rating', 'landlord_rating', 'is_hidden', 'created_at')
+    list_filter = ('is_hidden', 'home_rating')
+    list_editable = ('is_hidden',)
+    search_fields = ('property__title', 'tenant__username', 'comment')
+    readonly_fields = ('tenancy', 'property', 'tenant', 'created_at', 'replied_at')

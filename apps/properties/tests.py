@@ -692,3 +692,72 @@ class ShareImageTests(TestCase):
         self.landlord.is_verified = False
         self.landlord.save()
         self.assertEqual(Client().get(self.url).status_code, 404)
+
+
+class ReviewTests(TestCase):
+    def setUp(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.bookings.models import Booking, Tenancy
+        today = timezone.localdate()
+        self.landlord = User.objects.create_user(username='rv_landlord', password='pw', role='LANDLORD', is_verified=True)
+        self.tenant = User.objects.create_user(username='rv_tenant', password='pw', role='TENANT')
+        self.other = User.objects.create_user(username='rv_other', password='pw', role='TENANT')
+        self.prop = Property.objects.create(landlord=self.landlord, title='Review Home', location='Buswelu',
+                                            property_type='1BR', monthly_rent=100000, distance_from_center_km=1)
+        booking = Booking.objects.create(property=self.prop, tenant=self.tenant, status='COMPLETED',
+                                         move_in_date=today - timedelta(days=90), move_out_date=today - timedelta(days=1))
+        self.tenancy = Tenancy.objects.create(booking=booking, property=self.prop, tenant=self.tenant,
+                                              start_date=today - timedelta(days=90), end_date=today - timedelta(days=1),
+                                              duration_months=3, status='ended')
+        self.url = reverse('properties:write_review', args=[self.tenancy.id])
+
+    def _login(self, username):
+        c = Client()
+        c.login(username=username, password='pw')
+        return c
+
+    def _post(self, client):
+        return client.post(self.url, {'home_rating': 4, 'landlord_rating': 5, 'comment': 'Water every day, kind landlord.'})
+
+    def test_former_tenant_reviews_once_and_it_shows_everywhere(self):
+        tenant = self._login('rv_tenant')
+        self.assertContains(tenant.get(reverse('bookings:my_bookings')), 'Rate this home')
+        self._post(tenant)
+        self._post(tenant)
+        self.assertEqual(self.prop.reviews.count(), 1)
+        detail = Client().get(reverse('properties:detail', args=[self.prop.pk]))
+        self.assertContains(detail, 'Water every day, kind landlord.')
+        self.assertContains(detail, 'r***t')   # rv_tenant shortened
+        self.assertNotContains(detail, 'rv_tenant')
+        self.assertContains(Client().get(reverse('properties:list')), '★ 4.0 (1)')
+        from apps.notifications.models import Notification
+        self.assertTrue(Notification.objects.filter(user=self.landlord, kind='new_review').exists())
+        self.assertNotContains(tenant.get(reverse('bookings:my_bookings')), 'Rate this home')
+
+    def test_others_and_current_tenants_cannot_review(self):
+        self._post(self._login('rv_other'))
+        self.assertEqual(self.prop.reviews.count(), 0)
+        from datetime import timedelta
+        from django.utils import timezone
+        self.tenancy.end_date = timezone.localdate() + timedelta(days=30)
+        self.tenancy.status = 'active'
+        self.tenancy.save()
+        self._post(self._login('rv_tenant'))
+        self.assertEqual(self.prop.reviews.count(), 0)
+
+    def test_landlord_replies_once_and_hidden_reviews_disappear(self):
+        self._post(self._login('rv_tenant'))
+        review = self.prop.reviews.get()
+        landlord = self._login('rv_landlord')
+        reply_url = reverse('properties:reply_review', args=[review.id])
+        self._login('rv_other').post(reply_url, {'reply': 'not mine'})
+        landlord.post(reply_url, {'reply': 'Thank you for staying!'})
+        landlord.post(reply_url, {'reply': 'second try'})
+        review.refresh_from_db()
+        self.assertEqual(review.landlord_reply, 'Thank you for staying!')
+        review.is_hidden = True
+        review.save()
+        detail = Client().get(reverse('properties:detail', args=[self.prop.pk]))
+        self.assertNotContains(detail, 'Water every day')
+        self.assertContains(detail, 'No reviews yet')

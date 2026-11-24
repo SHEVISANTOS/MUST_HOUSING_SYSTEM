@@ -275,6 +275,13 @@
         .property-detail-container { padding-bottom: 76px; }
     }
 
+    /* Reviews */
+    .review-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid var(--line, #dce4dc); }
+    .review-big { font-size: 1.6rem; font-weight: 800; color: var(--ink, #172a25); }
+    .review-item { padding: 14px 0; border-bottom: 1px solid var(--line, #dce4dc); }
+    .review-item:last-child { border-bottom: none; }
+    .review-reply { margin-top: 8px; padding: 10px 12px; background: var(--leaf, #d9efe4); border-radius: 10px; font-size: 0.92rem; }
+
     /* Similar places */
     .similar-section { margin-top: 28px; }
 </style>
@@ -544,6 +551,7 @@
                 <div class="small text-muted mb-2 fw-bold">Contact Landlord:</div>
                 <div class="contact-item">
                     <span class="me-2">👤</span> <strong>{{ property.landlord.username|title }}</strong>
+                    {% if review_summary.count %}<span class="small text-muted ms-1">★ {{ review_summary.landlord|floatformat:1 }}</span>{% endif %}
                     {% if property.landlord.is_verified %}<span class="badge badge-success ms-2" title="VOT has reviewed this landlord's account">✔ Verified landlord</span>{% endif %}
                 </div>
                 {% if property.landlord.phone and has_confirmed_booking %}
@@ -581,6 +589,8 @@
 
 </div>
 <!-- /.detail-layout -->
+
+{% include 'properties/_reviews.html' %}
 
 <!-- Similar places -->
 {% if similar_properties %}

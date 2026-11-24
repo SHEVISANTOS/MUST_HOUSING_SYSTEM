@@ -1,7 +1,7 @@
 # apps/properties/forms.py
 
 from django import forms
-from .models import Property, PropertyImage
+from .models import Property, PropertyImage, PropertyReview
 
 LOCATION_HELP = ("Area or neighbourhood only, e.g. Nyegezi, Mwanza. Don't include a street or "
                  "house number - renters only see the exact spot after their booking is confirmed.")
@@ -82,4 +82,16 @@ class PropertyImageForm(forms.ModelForm):
             'image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'caption': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Optional caption'}),
             'is_primary': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = PropertyReview
+        fields = ['home_rating', 'landlord_rating', 'comment']
+        labels = {'home_rating': 'The home', 'landlord_rating': 'The landlord', 'comment': 'Your review'}
+        widgets = {
+            'home_rating': forms.RadioSelect,
+            'landlord_rating': forms.RadioSelect,
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'maxlength': 1000,
+                                             'placeholder': 'What was it like to live here? Water, power, security, how the landlord handled problems...'}),
         }

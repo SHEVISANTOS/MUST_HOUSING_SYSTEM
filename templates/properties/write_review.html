@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Review {{ tenancy.property.title }}{% endblock %}
+{% block content %}
+<style>
+    .review-form { max-width: 620px; margin: 0 auto; }
+    .rating-row { margin-bottom: 18px; }
+    .rating-row > label { display: block; font-weight: 700; margin-bottom: 6px; }
+    .star-input { display: inline-flex; flex-direction: row-reverse; gap: 4px; }
+    .star-input div { display: contents; }
+    .star-input input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+    .star-input label { font-size: 2rem; line-height: 1; color: #d0d7d0; cursor: pointer; }
+    .star-input input:checked ~ label, .star-input label:hover, .star-input label:hover ~ label { color: #e0a100; }
+    .star-input input:focus-visible + label { outline: 2px solid var(--forest); border-radius: 4px; }
+</style>
+<div class="review-form">
+    <div class="page-heading"><div>
+        <p class="eyebrow">Rate your stay</p>
+        <h1>{{ tenancy.property.title }}</h1>
+        <p class="page-sub">{{ tenancy.start_date|date:"j M Y" }} – {{ tenancy.end_date|date:"j M Y" }}. Your review is public and shows a shortened name.</p>
+    </div></div>
+    <div class="card"><div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}{% if field.name != 'comment' %}
+            <div class="rating-row">
+                <label>{{ field.label }}</label>
+                <div class="star-input" role="radiogroup" aria-label="{{ field.label }}">
+                    {% for i in "54321" %}
+                    <input type="radio" name="{{ field.html_name }}" value="{{ i }}" id="{{ field.auto_id }}_{{ i }}" {% if field.value|stringformat:"s" == i %}checked{% endif %} required>
+                    <label for="{{ field.auto_id }}_{{ i }}" title="{{ i }} star{{ i|pluralize }}">★</label>
+                    {% endfor %}
+                </div>
+                {% if field.errors %}<div class="text-danger small">{{ field.errors|join:" " }}</div>{% endif %}
+            </div>
+            {% endif %}{% endfor %}
+            <div class="rating-row">
+                <label for="{{ form.comment.auto_id }}">{{ form.comment.label }}</label>
+                {{ form.comment }}
+                {% if form.comment.errors %}<div class="text-danger small">{{ form.comment.errors|join:" " }}</div>{% endif %}
+            </div>
+            <button type="submit" class="btn btn-green">Post review</button>
+        </form>
+    </div></div>
+</div>
+{% endblock %}

@@ -37,7 +37,7 @@ Prefetch('tenancies', to_attr='prefetched_tenancies')):
             {{ property.distance_from_center_km|floatformat:1 }} km from city center
             {% for a in property.amenities_list|slice:":3" %}· {{ a }} {% endfor %}
         </p>
-        <p class="listing-card-price"><strong>TZS {{ property.monthly_rent|floatformat:0|intcomma }}</strong> <span>/ month</span></p>
+        <p class="listing-card-price"><strong>TZS {{ property.monthly_rent|floatformat:0|intcomma }}</strong> <span>/ month</span>{% if property.review_count %}<span class="listing-card-rating">★ {{ property.review_avg|floatformat:1 }} ({{ property.review_count }})</span>{% endif %}</p>
     </div>
 </a>
 {% endwith %}

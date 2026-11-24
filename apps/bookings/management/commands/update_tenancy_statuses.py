@@ -16,3 +16,7 @@ class Command(BaseCommand):
             f"Tenancy statuses updated: {result['tenancies_updated']}. "
             f"Bookings marked COMPLETED: {result['bookings_completed']}."
         ))
+        # Reminders ride on this job so the server's existing daily timer
+        # sends them without any new systemd unit.
+        from django.core.management import call_command
+        call_command('send_reminders', stdout=self.stdout)

@@ -20,5 +20,7 @@ urlpatterns = [
     path('<int:pk>/pause/', views.property_pause, name='pause'),
     path('<int:pk>/save/', views.toggle_saved, name='toggle_saved'),
     path('<int:pk>/photo.jpg', views.share_image, name='share_image'),
+    path('review/<int:tenancy_id>/', views.write_review, name='write_review'),
+    path('review/<int:review_id>/reply/', views.reply_review, name='reply_review'),
 
 ]

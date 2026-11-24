@@ -8,7 +8,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Prefetch, Q, Exists, OuterRef
+from django.db.models import Avg, Count, Prefetch, Q, Exists, OuterRef
 from django.views.decorators.http import require_POST
 from .models import Property, PropertyImage, SavedProperty
 from .forms import PropertyForm, PropertyBasicsForm, PropertyLocationForm, PropertyRentForm
@@ -35,7 +35,10 @@ def property_list(request):
         status__in=_LIVE_TENANCY_STATUSES
     ).order_by('start_date')
 
-    queryset = Property.objects.public().prefetch_related(
+    queryset = Property.objects.public().annotate(
+        review_count=Count('reviews', filter=Q(reviews__is_hidden=False)),
+        review_avg=Avg('reviews__home_rating', filter=Q(reviews__is_hidden=False)),
+    ).prefetch_related(
         'images',
         Prefetch('tenancies', queryset=relevant_tenancies, to_attr='prefetched_tenancies'),
     )
@@ -329,6 +332,8 @@ def property_detail(request, pk):
         'approx_longitude': approx_longitude,
         'landlord_pending': landlord_pending,
         'is_owner': is_owner,
+        'reviews': prop.reviews.filter(is_hidden=False).select_related('tenant'),
+        'review_summary': review_summary(prop),
     })
 
 @login_required
@@ -647,3 +652,65 @@ def saved_properties(request):
     ).order_by('-saved_by__created_at')
 
     return render(request, 'properties/saved.html', {'properties': properties})
+
+# ==========================================
+# ⭐ REVIEWS
+# ==========================================
+
+def review_summary(prop):
+    """Public rating figures for a listing (hidden reviews don't count)."""
+    from django.db.models import Avg, Count
+    from .models import PropertyReview
+    agg = PropertyReview.objects.filter(property=prop, is_hidden=False).aggregate(
+        count=Count('id'), home=Avg('home_rating'), landlord=Avg('landlord_rating'))
+    return agg
+
+
+@login_required
+def write_review(request, tenancy_id):
+    from apps.bookings.models import Tenancy
+    from apps.notifications.models import Notification
+    from .forms import ReviewForm
+    from .models import PropertyReview
+
+    tenancy = get_object_or_404(Tenancy.objects.select_related('property__landlord'), pk=tenancy_id)
+    if hasattr(tenancy, 'review') and tenancy.tenant_id == request.user.id:
+        messages.info(request, "You've already reviewed this home - thank you!")
+        return redirect('properties:detail', pk=tenancy.property_id)
+    if not PropertyReview.can_review(tenancy, request.user):
+        messages.error(request, "You can review a home after your stay there has ended.")
+        return redirect('bookings:my_bookings')
+
+    form = ReviewForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        review = form.save(commit=False)
+        review.tenancy, review.property, review.tenant = tenancy, tenancy.property, request.user
+        review.save()
+        Notification.notify(
+            tenancy.property.landlord, 'new_review',
+            f"{review.reviewer_display} rated '{tenancy.property.title}' {review.home_rating}/5. You can reply publicly.",
+            link=reverse('properties:detail', args=[tenancy.property_id]) + '#reviews')
+        messages.success(request, "⭐ Thanks! Your review is now on the listing.")
+        return redirect(reverse('properties:detail', args=[tenancy.property_id]) + '#reviews')
+
+    return render(request, 'properties/write_review.html', {'tenancy': tenancy, 'form': form})
+
+
+@require_POST
+@login_required
+def reply_review(request, review_id):
+    from django.utils import timezone
+    from .models import PropertyReview
+
+    review = get_object_or_404(PropertyReview.objects.select_related('property'), pk=review_id)
+    if review.property.landlord_id != request.user.id:
+        messages.error(request, "Only the landlord of this home can reply.")
+    elif review.landlord_reply:
+        messages.info(request, "You've already replied to this review.")
+    else:
+        reply = request.POST.get('reply', '').strip()[:1000]
+        if reply:
+            review.landlord_reply, review.replied_at = reply, timezone.now()
+            review.save(update_fields=['landlord_reply', 'replied_at'])
+            messages.success(request, "Your reply is posted.")
+    return redirect(reverse('properties:detail', args=[review.property_id]) + '#reviews')

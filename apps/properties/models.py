@@ -1,3 +1,4 @@
+import builtins
 # apps/properties/models.py
 
 from django.db import models
@@ -164,3 +165,43 @@ class SavedProperty(models.Model):
 
     def __str__(self):
         return f"{self.user.username} saved {self.property.title}"
+
+class PropertyReview(models.Model):
+    """A tenant's rating of a home and its landlord, one per finished
+    tenancy - so every review comes from someone who actually lived there.
+    The landlord may post one public reply."""
+    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
+
+    tenancy = models.OneToOneField('bookings.Tenancy', on_delete=models.CASCADE, related_name='review')
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='reviews')
+    tenant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_written')
+    home_rating = models.PositiveSmallIntegerField(choices=RATING_CHOICES)
+    landlord_rating = models.PositiveSmallIntegerField(choices=RATING_CHOICES)
+    comment = models.TextField(max_length=1000)
+    landlord_reply = models.TextField(max_length=1000, blank=True)
+    replied_at = models.DateTimeField(null=True, blank=True)
+    is_hidden = models.BooleanField(default=False, help_text="Hide an abusive review from the public page")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.home_rating}/5 for {self.property.title} by {self.tenant.username}"
+
+    @builtins.property
+    def reviewer_display(self):
+        """'S***s' - enough to tell reviewers apart without exposing them."""
+        name = self.tenant.first_name or self.tenant.username
+        return name if len(name) <= 2 else f"{name[0]}{'*' * min(len(name) - 2, 3)}{name[-1]}"
+
+    @classmethod
+    def can_review(cls, tenancy, user):
+        """Only the tenant, only once, only after they've moved out (contract
+        over, or ended early) - not for a contract replaced by a renewal,
+        since they're still living there."""
+        if tenancy.tenant_id != user.id or tenancy.status == 'renewed':
+            return False
+        if hasattr(tenancy, 'review'):
+            return False
+        return tenancy.status == 'terminated' or tenancy.end_date < timezone.localdate()

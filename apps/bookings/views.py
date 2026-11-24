@@ -208,6 +208,15 @@ def my_bookings(request):
         tenant=request.user
     ).select_related('property').order_by('-created_at')
     
+    from apps.properties.models import PropertyReview
+    reviewable = {
+        t.booking_id: t.id
+        for t in Tenancy.objects.filter(tenant=request.user, review__isnull=True).exclude(status='renewed')
+        if PropertyReview.can_review(t, request.user)
+    }
+    for b in bookings:
+        b.review_tenancy_id = reviewable.get(b.id)
+
     context = {
         'bookings': bookings,
         'pending_count': bookings.filter(status='PENDING').count(),

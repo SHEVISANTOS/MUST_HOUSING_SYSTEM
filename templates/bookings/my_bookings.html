@@ -78,6 +78,9 @@
                             {% elif booking.status == 'PAID' %}
                                 <span class="badge badge-success" style="display: inline-block;">✅ Booking Active</span>
                             {% endif %}
+                            {% if booking.review_tenancy_id %}
+                                <a href="{% url 'properties:write_review' booking.review_tenancy_id %}" class="btn btn-sm btn-green" style="display: inline-block;">⭐ Rate this home</a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
