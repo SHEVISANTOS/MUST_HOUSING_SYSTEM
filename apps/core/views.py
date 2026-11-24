@@ -40,6 +40,46 @@ def healthz(request):
 # 📊 DASHBOARD & PROFILE
 # ==========================================
 
+def set_language(request):
+    """Django's EN | SW switch, but reading the 'next' address in the
+    language it's written in. Stock set_language resolves /sw/... while
+    English is active (English has no /en/ prefix), fails to match, and so
+    leaves a Swahili reader stuck on /sw/ after choosing English."""
+    from django.utils import translation
+    from django.views.i18n import set_language as django_set_language
+    next_url = request.POST.get('next', request.GET.get('next', ''))
+    with translation.override(translation.get_language_from_path(next_url) or settings.LANGUAGE_CODE):
+        return django_set_language(request)
+
+
+def robots_txt(request):
+    base = settings.SITE_URL or request.build_absolute_uri('/').rstrip('/')
+    return render(request, 'robots.txt', {
+        'robots_prefixes': ['/'] + [f'/{code}/' for code, _n in settings.LANGUAGES if code != settings.LANGUAGE_CODE],
+        'sitemap_url': base + '/sitemap.xml',
+    }, content_type='text/plain')
+
+
+def home(request):
+    """Public home page - what Google and first-time visitors see at '/'
+    (signed-in users get their dashboard at the same address)."""
+    from django.db.models import Prefetch
+    from apps.bookings.models import Tenancy
+    from apps.properties.areas import areas_with_counts
+    from apps.core.seo import ld_json, organization_ld
+
+    live = Tenancy.objects.exclude(status__in=['terminated', 'renewed']).order_by('start_date')
+    latest = (Property.objects.public().order_by('-created_at')
+              .prefetch_related('images', Prefetch('tenancies', queryset=live, to_attr='prefetched_tenancies'))[:8])
+    areas = areas_with_counts()
+    return render(request, 'core/home.html', {
+        'latest': latest,
+        'areas': sorted(areas, key=lambda a: (-a['count'], a['name'])),
+        'listing_count': Property.objects.public().count(),
+        'org_ld': ld_json(organization_ld(request)),
+    })
+
+
 def dashboard(request):
     """
     Role-based dashboard for tenants and landlords. This is the root URL
@@ -47,7 +87,7 @@ def dashboard(request):
     public property listing instead of forcing a login just to browse.
     """
     if not request.user.is_authenticated:
-        return redirect('properties:list')
+        return home(request)
 
     context = {
         'user': request.user,

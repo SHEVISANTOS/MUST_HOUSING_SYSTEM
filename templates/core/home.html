@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load i18n humanize %}
+{% block title %}{% translate "Houses for Rent in Mwanza" %} | VOT House Finding{% endblock %}
+{% block meta_description %}{% blocktranslate count n=listing_count %}{{ n }} house for rent in Mwanza right now - rooms, self contained, apartments and family homes in Nyegezi, Ilemela, Buswelu and more. Verified landlords, real photos, book online.{% plural %}{{ n }} houses for rent in Mwanza right now - rooms, self contained, apartments and family homes in Nyegezi, Ilemela, Buswelu and more. Verified landlords, real photos, book online.{% endblocktranslate %}{% endblock %}
+{% block meta_tags %}
+<meta property="og:type" content="website">
+<meta property="og:title" content="{% translate 'Houses for Rent in Mwanza' %} | VOT House Finding">
+<meta property="og:url" content="{{ canonical_url }}">
+<script type="application/ld+json">{{ org_ld }}</script>
+{% endblock %}
+
+{% block content %}
+<style>
+    .home-hero { background: linear-gradient(135deg, var(--forest) 0%, var(--forest-dark) 100%); color: #fff; border-radius: 18px; padding: 36px 28px; margin-bottom: 28px; }
+    .home-hero h1 { color: #fff; font-size: 2.1rem; margin: 0 0 10px; line-height: 1.2; }
+    .home-hero p { color: var(--mint, #cfe9dc); margin: 0 0 20px; font-size: 1.02rem; max-width: 640px; }
+    .home-search { display: flex; gap: 8px; flex-wrap: wrap; max-width: 640px; }
+    .home-search input { flex: 1; min-width: 200px; border: none; border-radius: 10px; padding: 12px 14px; font-size: 1rem; }
+    .home-search button { border: none; border-radius: 10px; padding: 12px 20px; background: #fff; color: var(--forest); font-weight: 800; }
+    .home-section { margin-bottom: 32px; }
+    .home-section h2 { font-size: 1.35rem; margin: 0 0 14px; }
+    .area-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .area-link { display: block; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); text-decoration: none; font-weight: 700; }
+    .area-link small { display: block; font-weight: 500; color: var(--text-grey); }
+    .area-link:hover { border-color: var(--forest); color: var(--forest); }
+    .area-more { margin: 12px 0 0; font-size: 0.88rem; color: var(--text-grey); line-height: 1.8; }
+    .area-more a { color: var(--forest); font-weight: 600; }
+    .home-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .home-step { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+    .home-step strong { display: block; margin-bottom: 4px; }
+    .home-step p { margin: 0; color: var(--text-grey); font-size: 0.92rem; }
+    @media (max-width: 576px) { .home-hero { padding: 26px 18px; } .home-hero h1 { font-size: 1.6rem; } }
+</style>
+
+<section class="home-hero">
+    <h1>{% translate "Houses for Rent in Mwanza" %}</h1>
+    <p>{% translate "Rooms, self contained units, apartments and family homes across Mwanza - from verified landlords, with real photos. Book online and get a contract you can verify." %}</p>
+    <form class="home-search" method="get" action="{% url 'properties:list' %}" role="search">
+        <input type="search" name="q" placeholder="{% translate 'Area, e.g. Nyegezi, Buswelu, Ilemela' %}" aria-label="{% translate 'Search' %}">
+        <button type="submit">🔍 {% translate "Search" %}</button>
+    </form>
+</section>
+
+{% if latest %}
+<section class="home-section">
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2" style="margin-bottom: 14px;">
+        <h2 style="margin: 0;">{% translate "Latest homes for rent" %}</h2>
+        <a href="{% url 'properties:list' %}" style="font-weight: 700; color: var(--forest);">{% translate "See all houses" %} →</a>
+    </div>
+    <div class="listing-grid">
+        {% for property in latest %}{% include "properties/_listing_card.html" %}{% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="home-section">
+    <h2>{% translate "Find a house by area in Mwanza" %}</h2>
+    <div class="area-grid">
+        {% for a in areas %}{% if a.count %}
+        <a class="area-link" href="{% url 'area' a.slug %}">{{ a.name }}
+            <small>{% blocktranslate count n=a.count %}{{ n }} home{% plural %}{{ n }} homes{% endblocktranslate %}</small>
+        </a>
+        {% endif %}{% endfor %}
+    </div>
+    <p class="area-more">{% translate "More areas:" %}
+        {% for a in areas %}{% if not a.count %}<a href="{% url 'area' a.slug %}">{{ a.name }}</a>{% if not forloop.last %} · {% endif %}{% endif %}{% endfor %}
+    </p>
+</section>
+
+<section class="home-section">
+    <h2>{% translate "How it works" %}</h2>
+    <div class="home-steps">
+        <div class="home-step"><strong>🔍 {% translate "1. Search" %}</strong><p>{% translate "Filter by area, rent and type of house. Every landlord is checked by VOT before their homes appear." %}</p></div>
+        <div class="home-step"><strong>📅 {% translate "2. Book" %}</strong><p>{% translate "Choose your move-in date and how many months. The landlord approves your request on the site." %}</p></div>
+        <div class="home-step"><strong>📄 {% translate "3. Move in" %}</strong><p>{% translate "Pay the landlord directly and get a contract with a QR code anyone can verify." %}</p></div>
+    </div>
+</section>
+
+<section class="home-section">
+    <h2>{% translate "Are you a landlord in Mwanza?" %}</h2>
+    <p style="color: var(--text-grey); max-width: 680px;">{% translate "List your house, room or apartment and reach tenants looking in your area. Manage requests, payments and contracts in one place." %}</p>
+    <a href="{% url 'users:register' %}" class="btn btn-green">{% translate "List your property" %}</a>
+</section>
+{% endblock %}

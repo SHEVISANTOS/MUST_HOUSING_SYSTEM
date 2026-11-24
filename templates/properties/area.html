@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load i18n humanize %}
+{% block title %}{% blocktranslate with area=area.name %}Houses for Rent in {{ area }}, Mwanza{% endblocktranslate %} | VOT House Finding{% endblock %}
+{% block meta_description %}{% if homes %}{% blocktranslate count n=homes|length with area=area.name rent=min_rent|floatformat:0|intcomma %}{{ n }} house for rent in {{ area }}, Mwanza, from TZS {{ rent }} per month. Real photos, verified landlords - book online with VOT House Finding.{% plural %}{{ n }} houses for rent in {{ area }}, Mwanza, from TZS {{ rent }} per month. Real photos, verified landlords - book online with VOT House Finding.{% endblocktranslate %}{% else %}{% blocktranslate with area=area.name %}Looking for a house to rent in {{ area }}, Mwanza? New homes are added regularly on VOT House Finding.{% endblocktranslate %}{% endif %}{% endblock %}
+{% block meta_tags %}
+<meta property="og:type" content="website">
+<meta property="og:title" content="{% blocktranslate with area=area.name %}Houses for Rent in {{ area }}, Mwanza{% endblocktranslate %}">
+<meta property="og:url" content="{{ canonical_url }}">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+  {"@type": "ListItem", "position": 1, "name": "VOT House Finding", "item": "{{ site_base }}{% url 'core:dashboard' %}"},
+  {"@type": "ListItem", "position": 2, "name": "{{ area.name|escapejs }}", "item": "{{ canonical_url }}"}]}</script>
+{% endblock %}
+
+{% block content %}
+<style>
+    .area-links { display: flex; flex-wrap: wrap; gap: 8px; }
+    .area-links a { padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: #fff; color: var(--ink); text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    .area-links a:hover { border-color: var(--forest); color: var(--forest); }
+</style>
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Mwanza</p>
+        <h1>{% blocktranslate with area=area.name %}Houses for Rent in {{ area }}, Mwanza{% endblocktranslate %}</h1>
+        <p class="page-sub">
+            {% if homes %}{% blocktranslate count n=homes|length with area=area.name rent=min_rent|floatformat:0|intcomma %}{{ n }} home available to rent in {{ area }}, from TZS {{ rent }} per month.{% plural %}{{ n }} homes available to rent in {{ area }}, from TZS {{ rent }} per month.{% endblocktranslate %}
+            {% else %}{% blocktranslate with area=area.name %}There are no homes listed in {{ area }} right now. Check nearby areas below, or look again soon.{% endblocktranslate %}{% endif %}
+            {% if area.note %}{% blocktranslate with area=area.name note=area.note %}{{ area }} is {{ note }}.{% endblocktranslate %}{% endif %}
+        </p>
+    </div>
+</div>
+
+{% if homes %}
+<div class="listing-grid" style="margin-bottom: 28px;">
+    {% for property in homes %}{% include "properties/_listing_card.html" %}{% endfor %}
+</div>
+{% endif %}
+
+<div class="card"><div class="card-body">
+    <h2 class="h5" style="font-weight: 700;">{% translate "Other areas in Mwanza" %}</h2>
+    <div class="area-links">
+        {% for a in other_areas %}<a href="{% url 'area' a.slug %}">{{ a.name }}</a>{% endfor %}
+        <a href="{% url 'properties:list' %}">{% translate "All houses in Mwanza" %} →</a>
+    </div>
+</div></div>
+{% endblock %}

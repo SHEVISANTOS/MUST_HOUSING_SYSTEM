@@ -1,10 +1,19 @@
 User-agent: *
 Allow: /
-Disallow: /v/
-Disallow: /verify/
-Disallow: /bookings/
-Disallow: /payments/
-Disallow: /messages/
-Disallow: /notifications/
-Disallow: /profile/
-Disallow: /users/
+{% for prefix in robots_prefixes %}Disallow: {{ prefix }}v/
+Disallow: {{ prefix }}verify/
+Disallow: {{ prefix }}bookings/
+Disallow: {{ prefix }}payments/
+Disallow: {{ prefix }}messages/
+Disallow: {{ prefix }}notifications/
+Disallow: {{ prefix }}profile/
+Disallow: {{ prefix }}users/
+Disallow: {{ prefix }}properties/saved/
+Disallow: {{ prefix }}properties/review/
+Disallow: {{ prefix }}properties/wizard/
+Disallow: {{ prefix }}properties/my-properties/
+{% endfor %}Disallow: /i18n/
+Disallow: /*?*sort=
+Disallow: /*?*page=
+
+Sitemap: {{ sitemap_url }}

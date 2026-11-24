@@ -67,7 +67,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.humanize',  # {% load humanize %} / |intcomma - TZS thousand separators
+    'django.contrib.humanize',
+    'django.contrib.sitemaps',  # {% load humanize %} / |intcomma - TZS thousand separators
 
     # Third party
     'crispy_bootstrap5',
@@ -93,9 +94,11 @@ if importlib.util.find_spec('django_extensions'):
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'apps.core.middleware.CanonicalHostMiddleware',  # www / old addresses -> SITE_URL (one site for Google)
     'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.locale.LocaleMiddleware',  # English / Kiswahili, from the switcher or the phone's language
+    'django.middleware.locale.LocaleMiddleware',  # English at /..., Kiswahili at /sw/...
+    'apps.core.middleware.RememberedLanguageMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -154,6 +157,7 @@ TEMPLATES = [{
             'apps.messaging.context_processors.unread_message_count',
             'apps.notifications.context_processors.unread_notification_count',
             'apps.core.context_processors.breadcrumb',
+            'apps.core.context_processors.seo',
         ],
     },
 }]
@@ -247,6 +251,8 @@ ADMIN_URL = os.getenv('DJANGO_ADMIN_URL', 'admin/').strip('/') + '/'
 # verification QR codes) so they never point at whatever host served the
 # download. Unset = use the requesting host.
 SITE_URL = os.getenv('SITE_URL', '').rstrip('/')
+# Google Search Console "HTML tag" verification: the content="..." value only.
+GOOGLE_SITE_VERIFICATION = os.getenv('GOOGLE_SITE_VERIFICATION', '')
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'core:post_login_redirect' # Ensure 'core' app exists, or change to 'users:dashboard' etc.

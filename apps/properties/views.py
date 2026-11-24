@@ -216,6 +216,33 @@ def share_image(request, pk):
     return response
 
 
+def _listing_ld(request, prop, image_url, page_url, current_tenancy, summary):
+    """schema.org data for a listing: an Offer to rent an Accommodation in
+    Mwanza, so search engines understand the price, place and photo."""
+    from apps.core.seo import ld_json
+    home = {
+        '@type': 'Accommodation', 'name': prop.title,
+        'description': (prop.description or '')[:500],
+        'image': image_url, 'url': page_url,
+        'address': {'@type': 'PostalAddress', 'addressLocality': prop.location[:100],
+                    'addressRegion': 'Mwanza', 'addressCountry': 'TZ'},
+    }
+    if prop.amenities_list:
+        home['amenityFeature'] = [{'@type': 'LocationFeatureSpecification', 'name': a, 'value': True}
+                                  for a in prop.amenities_list[:10]]
+    data = {
+        '@context': 'https://schema.org', '@type': 'Offer', 'url': page_url,
+        'price': f'{prop.monthly_rent:.0f}', 'priceCurrency': 'TZS',
+        'priceSpecification': {'@type': 'UnitPriceSpecification', 'price': f'{prop.monthly_rent:.0f}',
+                               'priceCurrency': 'TZS', 'unitCode': 'MON'},
+        'availability': 'https://schema.org/InStock' if prop.is_available and not current_tenancy
+                        else 'https://schema.org/PreOrder',
+        'itemOffered': home,
+        'seller': {'@type': 'Organization', 'name': 'VOT House Finding'},
+    }
+    return ld_json(data)
+
+
 def property_detail(request, pk):
     """
     Display property details with images & map. Public - no login required
@@ -316,6 +343,7 @@ def property_detail(request, pk):
     approx_latitude = round(float(prop.latitude), 2) if prop.latitude is not None else None
     approx_longitude = round(float(prop.longitude), 2) if prop.longitude is not None else None
 
+    summary = review_summary(prop)
     return render(request, 'properties/detail.html', {
         'property': prop,
         'current_tenancy': current_tenancy,
@@ -334,7 +362,9 @@ def property_detail(request, pk):
         'landlord_pending': landlord_pending,
         'is_owner': is_owner,
         'reviews': prop.reviews.filter(is_hidden=False).select_related('tenant'),
-        'review_summary': review_summary(prop),
+        'review_summary': summary,
+        'listing_ld': _listing_ld(request, prop, og_image_url, og_url, current_tenancy, summary),
+        'noindex': landlord_pending or not prop.is_available,
     })
 
 @login_required
@@ -715,3 +745,28 @@ def reply_review(request, review_id):
             review.save(update_fields=['landlord_reply', 'replied_at'])
             messages.success(request, "Your reply is posted.")
     return redirect(reverse('properties:detail', args=[review.property_id]) + '#reviews')
+
+
+# ==========================================
+# 📍 MWANZA AREA LANDING PAGES (SEO)
+# ==========================================
+
+def area_page(request, slug):
+    from apps.bookings.models import Tenancy
+    from .areas import BY_SLUG, AREAS, area_filter
+    area = BY_SLUG.get(slug)
+    if area is None:
+        raise Http404("Unknown area")
+    live = Tenancy.objects.filter(status__in=_LIVE_TENANCY_STATUSES).order_by('start_date')
+    homes = (Property.objects.public().filter(area_filter(area)).order_by('-created_at')
+             .annotate(review_count=Count('reviews', filter=Q(reviews__is_hidden=False)),
+                       review_avg=Avg('reviews__home_rating', filter=Q(reviews__is_hidden=False)))
+             .prefetch_related('images', Prefetch('tenancies', queryset=live, to_attr='prefetched_tenancies')))
+    homes = list(homes)
+    rents = [h.monthly_rent for h in homes]
+    return render(request, 'properties/area.html', {
+        'area': area, 'homes': homes,
+        'min_rent': min(rents) if rents else None,
+        'other_areas': [a for a in AREAS if a['slug'] != slug],
+        'noindex': not homes,   # an empty page shouldn't be in Google
+    })

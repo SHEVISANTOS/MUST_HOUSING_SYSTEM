@@ -175,6 +175,10 @@ class LegalPagesTests(TestCase):
 
 
 class SwahiliTests(TestCase):
+    def tearDown(self):
+        from django.utils import translation
+        translation.activate('en')   # a /sw/ request leaves Swahili active for reverse() in later tests
+
     def setUp(self):
         landlord = User.objects.create_user(username='sw_landlord', password='pw', role='LANDLORD', is_verified=True)
         self.prop = Property.objects.create(landlord=landlord, title='Nyumba Test', location='Ilemela',
@@ -188,18 +192,26 @@ class SwahiliTests(TestCase):
     def test_switch_to_swahili_and_back_keeps_page(self):
         c = Client()
         detail = reverse('properties:detail', args=[self.prop.pk])
+        sw_detail = f'/sw{detail}'
         response = c.post(reverse('set_language'), {'language': 'sw', 'next': detail})
-        self.assertRedirects(response, detail, fetch_redirect_response=False)
-        body = c.get(detail).content.decode()
+        self.assertRedirects(response, sw_detail, fetch_redirect_response=False)
+        body = c.get(sw_detail).content.decode()
         self.assertIn('<html lang="sw">', body)
         for text in ('Ingia Ili Kupanga', 'Shiriki na marafiki', 'Vyumba 2 vya kulala', 'Taarifa za Kodi'):
             self.assertIn(text, body)
         self.assertIn('Nyumba Test', body)   # landlord's own text is never translated
-        c.post(reverse('set_language'), {'language': 'en', 'next': detail})
+        # the remembered choice follows English links to the Swahili page
+        self.assertRedirects(c.get(detail), sw_detail, fetch_redirect_response=False)
+        response = c.post(reverse('set_language'), {'language': 'en', 'next': sw_detail})
+        self.assertRedirects(response, detail, fetch_redirect_response=False)
         self.assertIn('Sign in to Book', c.get(detail).content.decode())
 
-    def test_phone_set_to_swahili_gets_it_automatically(self):
-        body = Client(HTTP_ACCEPT_LANGUAGE='sw').get(reverse('users:register')).content.decode()
+    def test_phone_set_to_swahili_is_offered_swahili_and_can_open_it(self):
+        en = Client(HTTP_ACCEPT_LANGUAGE='sw').get('/users/register/').content.decode()
+        self.assertIn('Create Account', en)      # same URL always gives Google the same page
+        self.assertIn('Soma ukurasa huu kwa Kiswahili', en)
+        self.assertIn('/sw/users/register/', en)
+        body = Client().get('/sw/users/register/').content.decode()
         self.assertIn('Fungua Akaunti', body)
         self.assertIn('Masharti ya Matumizi', body)
         self.assertIn('id="register-form"', body)
@@ -209,4 +221,89 @@ class SwahiliTests(TestCase):
         from django.conf import settings
         self.assertNotIn(settings.ADMIN_URL, login)   # hidden admin address is not linked publicly
         self.assertNotIn('XXX XXX', login)
-        self.assertEqual(Client(HTTP_ACCEPT_LANGUAGE='sw').get('/verify/').status_code, 200)
+        self.assertEqual(Client().get('/verify/').status_code, 200)
+        self.assertEqual(Client().get('/sw/verify/').status_code, 200)
+
+
+class SeoTests(TestCase):
+    def tearDown(self):
+        from django.utils import translation
+        translation.activate('en')   # a /sw/ request leaves Swahili active for reverse() in later tests
+
+    def setUp(self):
+        landlord = User.objects.create_user(username='seo_landlord', password='pw', role='LANDLORD', is_verified=True)
+        hidden = User.objects.create_user(username='seo_hidden', password='pw', role='LANDLORD')
+        self.prop = Property.objects.create(landlord=landlord, title='Lake View Flat', location='Nyegezi, Mwanza',
+                                            property_type='APARTMENT', monthly_rent=250000, distance_from_center_km=6,
+                                            description='Two rooms near SAUT.')
+        self.hidden = Property.objects.create(landlord=hidden, title='Hidden Flat', location='Buswelu',
+                                              property_type='1BR', monthly_rent=90000, distance_from_center_km=8)
+
+    def test_home_is_a_real_page_for_visitors(self):
+        r = Client().get('/')
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, '<h1>Houses for Rent in Mwanza</h1>', html=False)
+        self.assertContains(r, '"@type": "Organization"')
+        self.assertContains(r, reverse('area', args=['nyegezi']))
+        sw = Client().get('/sw/')
+        self.assertContains(sw, 'Nyumba za Kupanga Mwanza')
+
+    def test_listing_has_seo_title_description_hreflang_and_structured_data(self):
+        body = Client().get(f'/properties/{self.prop.pk}/').content.decode()
+        self.assertIn('<title>Lake View Flat - Apartment/Flat for rent in Nyegezi, Mwanza | VOT House Finding</title>', body)
+        self.assertIn('TZS 250,000 per month', body)
+        self.assertIn(f'hreflang="sw" href="http://testserver/sw/properties/{self.prop.pk}/"', body)
+        self.assertIn('hreflang="x-default"', body)
+        self.assertIn('"priceCurrency": "TZS"', body)
+        self.assertIn('"addressRegion": "Mwanza"', body)
+        sw = Client().get(f'/sw/properties/{self.prop.pk}/').content.decode()
+        self.assertIn('ya kupanga', sw)
+
+    def test_area_pages_in_both_languages_and_empty_ones_are_noindex(self):
+        r = Client().get('/houses-for-rent/nyegezi/')
+        self.assertContains(r, 'Houses for Rent in Nyegezi, Mwanza')
+        self.assertContains(r, 'near St. Augustine University (SAUT)')
+        self.assertNotContains(r, 'noindex')
+        sw = Client().get('/sw/nyumba-za-kupanga/nyegezi/')
+        self.assertContains(sw, 'Nyumba za Kupanga Nyegezi, Mwanza')
+        self.assertContains(sw, 'hreflang="en" href="http://testserver/houses-for-rent/nyegezi/"')
+        empty = Client().get('/houses-for-rent/buswelu/')   # only an unverified landlord's home there
+        self.assertContains(empty, 'noindex')
+        self.assertNotContains(empty, 'Hidden Flat')
+        self.assertEqual(Client().get('/houses-for-rent/atlantis/').status_code, 404)
+
+    def test_sitemap_lists_public_pages_in_both_languages_only(self):
+        body = Client().get('/sitemap.xml').content.decode()
+        self.assertIn(f'/properties/{self.prop.pk}/</loc>', body)
+        self.assertIn(f'/sw/properties/{self.prop.pk}/</loc>', body)
+        self.assertIn('/houses-for-rent/nyegezi/</loc>', body)
+        self.assertIn('/sw/nyumba-za-kupanga/nyegezi/</loc>', body)
+        self.assertNotIn(f'/properties/{self.hidden.pk}/', body)
+        self.assertNotIn('buswelu', body)
+        self.assertIn('hreflang="sw"', body)
+        self.assertIn('/privacy/</loc>', body)
+        self.assertNotIn('/sw/privacy/', body)   # legal text is English-only
+
+    def test_robots_points_to_sitemap_and_blocks_private_swahili_pages(self):
+        body = Client().get('/robots.txt').content.decode()
+        self.assertIn('Sitemap: http://testserver/sitemap.xml', body)
+        self.assertIn('Disallow: /sw/bookings/', body)
+
+    def test_search_console_tag_only_when_configured(self):
+        from django.test import override_settings
+        self.assertNotContains(Client().get('/'), 'google-site-verification')
+        with override_settings(GOOGLE_SITE_VERIFICATION='abc123'):
+            self.assertContains(Client().get('/'), '<meta name="google-site-verification" content="abc123">', html=False)
+
+    def test_other_hostnames_redirect_to_the_one_official_address(self):
+        from django.test import override_settings
+        with override_settings(SITE_URL='https://vothousefinding.com', DEBUG=False,
+                               ALLOWED_HOSTS=['vothousefinding.com', 'www.vothousefinding.com']):
+            from apps.core.middleware import CanonicalHostMiddleware
+            from django.test import RequestFactory
+            mw = CanonicalHostMiddleware(lambda r: None)
+            resp = mw(RequestFactory().get('/properties/?q=x', HTTP_HOST='www.vothousefinding.com'))
+            self.assertEqual(resp.status_code, 301)
+            self.assertEqual(resp['Location'], 'https://vothousefinding.com/properties/?q=x')
+            self.assertIsNone(mw(RequestFactory().get('/healthz', HTTP_HOST='www.vothousefinding.com')))
+            self.assertIsNone(mw(RequestFactory().get('/', HTTP_HOST='vothousefinding.com')))

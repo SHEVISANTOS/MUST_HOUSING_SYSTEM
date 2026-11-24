@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: VOT House Finding\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-24 11:49+0300\n"
+"POT-Creation-Date: 2026-11-24 12:42+0300\n"
 "PO-Revision-Date: 2026-11-24 12:00+0300\n"
 "Last-Translator: VOT House Finding\n"
 "Language-Team: Kiswahili\n"
@@ -38,7 +38,6 @@ msgid "COMPLETED"
 msgstr "IMEKAMILIKA"
 
 #: apps/core/context_processors.py:6 templates/partials/_sidebar.html:104
-#: templates/properties/list.html:5
 msgid "Search Houses"
 msgstr "Tafuta Nyumba"
 
@@ -51,18 +50,18 @@ msgstr "Tafuta Nyumba"
 msgid "Property"
 msgstr "Nyumba"
 
-#: apps/core/context_processors.py:6 templates/base.html:373
+#: apps/core/context_processors.py:6 templates/base.html:381
 msgid "Sign in"
 msgstr "Ingia"
 
-#: apps/core/context_processors.py:6 templates/base.html:374
+#: apps/core/context_processors.py:6 templates/base.html:382
 #: templates/partials/_sidebar.html:27 templates/users/register.html:4
 #: templates/users/register.html:79
 msgid "Register"
 msgstr "Jisajili"
 
 #: apps/core/context_processors.py:7 templates/partials/_sidebar.html:109
-#: templates/properties/detail.html:464 templates/properties/detail.html:640
+#: templates/properties/detail.html:465 templates/properties/detail.html:641
 msgid "Saved"
 msgstr "Zilizohifadhiwa"
 
@@ -103,24 +102,44 @@ msgstr "Wasifu Wangu"
 msgid "Rate your stay"
 msgstr "Toa maoni kuhusu ulivyokaa"
 
-#: apps/core/context_processors.py:9 templates/base.html:399
-#: templates/users/login.html:618
+#: apps/core/context_processors.py:9 templates/base.html:412
+#: templates/users/login.html:619
 msgid "Privacy Policy"
 msgstr "Sera ya Faragha"
 
-#: apps/core/context_processors.py:9 templates/base.html:399
-#: templates/users/login.html:618
+#: apps/core/context_processors.py:9 templates/base.html:412
+#: templates/users/login.html:619
 msgid "Terms of Use"
 msgstr "Masharti ya Matumizi"
 
-#: apps/core/context_processors.py:10 templates/base.html:399
+#: apps/core/context_processors.py:10 templates/base.html:412
 msgid "Verify a contract"
 msgstr "Hakiki mkataba"
 
-#: apps/core/context_processors.py:19 templates/base.html:357
+#: apps/core/context_processors.py:10
+msgid "Area"
+msgstr "Eneo"
+
+#: apps/core/context_processors.py:19 templates/base.html:365
 #: templates/notifications/inbox.html:4 templates/notifications/inbox.html:23
 msgid "Notifications"
 msgstr "Taarifa"
+
+#: apps/properties/areas.py:11
+msgid "central Mwanza city"
+msgstr "katikati ya jiji la Mwanza"
+
+#: apps/properties/areas.py:13
+msgid "near St. Augustine University (SAUT)"
+msgstr "karibu na Chuo Kikuu cha Mtakatifu Augustino (SAUT)"
+
+#: apps/properties/areas.py:14
+msgid "near Bugando Medical Centre and CUHAS"
+msgstr "karibu na Hospitali ya Bugando na CUHAS"
+
+#: apps/properties/areas.py:25
+msgid "on the Lake Victoria shore"
+msgstr "ufukweni mwa Ziwa Victoria"
 
 #: apps/properties/forms.py:92 templates/properties/_reviews.html:8
 msgid "The home"
@@ -222,6 +241,10 @@ msgstr "Msimamizi wa VOT House Finding"
 msgid "Site Administration"
 msgstr "Usimamizi wa tovuti"
 
+#: config/urls.py:43
+msgid "houses-for-rent/<slug:slug>/"
+msgstr "nyumba-za-kupanga/<slug:slug>/"
+
 #: templates/404.html:3
 msgid "Page not found"
 msgstr "Ukurasa haupatikani"
@@ -238,35 +261,39 @@ msgstr "Huenda kiungo ni cha zamani, au tangazo limeondolewa."
 msgid "Browse houses"
 msgstr "Tazama nyumba"
 
-#: templates/base.html:342
+#: templates/base.html:10
+msgid "Find houses, rooms and apartments for rent in Mwanza. Verified landlords, real photos, and contracts you can verify online."
+msgstr "Tafuta nyumba, vyumba na apartment za kupanga Mwanza. Wenye nyumba waliohakikiwa, picha halisi, na mikataba unayoweza kuihakiki mtandaoni."
+
+#: templates/base.html:350
 msgid "Open menu"
 msgstr "Fungua menyu"
 
-#: templates/base.html:346
+#: templates/base.html:354
 msgid "Home"
 msgstr "Mwanzo"
 
-#: templates/base.html:352
+#: templates/base.html:360
 msgid "Language"
 msgstr "Lugha"
 
-#: templates/base.html:367 templates/base.html:369
+#: templates/base.html:375 templates/base.html:377
 msgid "Sign out"
 msgstr "Toka"
 
-#: templates/base.html:386
+#: templates/base.html:399
 msgid "Dismiss"
 msgstr "Funga"
 
-#: templates/base.html:398 templates/users/login.html:616
+#: templates/base.html:411 templates/users/login.html:617
 msgid "Designed and Developed by"
 msgstr "Imebuniwa na kutengenezwa na"
 
-#: templates/base.html:451
+#: templates/base.html:464
 msgid "Link copied - paste it to share with friends"
 msgstr "Kiungo kimenakiliwa - kibandike kuwatumia marafiki"
 
-#: templates/base.html:452
+#: templates/base.html:465
 msgid "Copy this link:"
 msgstr "Nakili kiungo hiki:"
 
@@ -280,7 +307,7 @@ msgid "Ending soon"
 msgstr "Inaisha hivi karibuni"
 
 #: templates/bookings/_availability_timeline.html:29
-#: templates/properties/detail.html:395
+#: templates/properties/detail.html:396
 msgid "Available"
 msgstr "Inapatikana"
 
@@ -431,7 +458,7 @@ msgid "Ref No"
 msgstr "Namba ya kumbukumbu"
 
 #: templates/bookings/my_bookings.html:17
-#: templates/bookings/my_bookings.html:29 templates/properties/list.html:147
+#: templates/bookings/my_bookings.html:29 templates/properties/list.html:148
 msgid "Location"
 msgstr "Mahali"
 
@@ -588,6 +615,94 @@ msgstr "Historia ya Mikataba"
 msgid "Period"
 msgstr "Kipindi"
 
+#: templates/core/home.html:3 templates/core/home.html:7
+#: templates/core/home.html:36
+msgid "Houses for Rent in Mwanza"
+msgstr "Nyumba za Kupanga Mwanza"
+
+#: templates/core/home.html:4
+#, python-format
+msgid "%(n)s house for rent in Mwanza right now - rooms, self contained, apartments and family homes in Nyegezi, Ilemela, Buswelu and more. Verified landlords, real photos, book online."
+msgid_plural "%(n)s houses for rent in Mwanza right now - rooms, self contained, apartments and family homes in Nyegezi, Ilemela, Buswelu and more. Verified landlords, real photos, book online."
+msgstr[0] "Nyumba %(n)s ya kupanga Mwanza sasa hivi - vyumba, self contained, apartment na nyumba za familia Nyegezi, Ilemela, Buswelu na kwingineko. Wenye nyumba waliohakikiwa, picha halisi, panga mtandaoni."
+msgstr[1] "Nyumba %(n)s za kupanga Mwanza sasa hivi - vyumba, self contained, apartment na nyumba za familia Nyegezi, Ilemela, Buswelu na kwingineko. Wenye nyumba waliohakikiwa, picha halisi, panga mtandaoni."
+
+#: templates/core/home.html:37
+msgid "Rooms, self contained units, apartments and family homes across Mwanza - from verified landlords, with real photos. Book online and get a contract you can verify."
+msgstr "Vyumba, self contained, apartment na nyumba za familia kote Mwanza - kutoka kwa wenye nyumba waliohakikiwa, zenye picha halisi. Panga mtandaoni na upate mkataba unaoweza kuuhakiki."
+
+#: templates/core/home.html:39
+msgid "Area, e.g. Nyegezi, Buswelu, Ilemela"
+msgstr "Eneo, mfano Nyegezi, Buswelu, Ilemela"
+
+#: templates/core/home.html:39 templates/core/home.html:40
+#: templates/properties/list.html:52 templates/properties/list.html:60
+msgid "Search"
+msgstr "Tafuta"
+
+#: templates/core/home.html:47
+msgid "Latest homes for rent"
+msgstr "Nyumba mpya za kupanga"
+
+#: templates/core/home.html:48
+msgid "See all houses"
+msgstr "Tazama nyumba zote"
+
+#: templates/core/home.html:57
+msgid "Find a house by area in Mwanza"
+msgstr "Tafuta nyumba kwa eneo, Mwanza"
+
+#: templates/core/home.html:61
+#, python-format
+msgid "%(n)s home"
+msgid_plural "%(n)s homes"
+msgstr[0] "Nyumba %(n)s"
+msgstr[1] "Nyumba %(n)s"
+
+#: templates/core/home.html:65
+msgid "More areas:"
+msgstr "Maeneo zaidi:"
+
+#: templates/core/home.html:71
+msgid "How it works"
+msgstr "Jinsi inavyofanya kazi"
+
+#: templates/core/home.html:73
+msgid "1. Search"
+msgstr "1. Tafuta"
+
+#: templates/core/home.html:73
+msgid "Filter by area, rent and type of house. Every landlord is checked by VOT before their homes appear."
+msgstr "Chuja kwa eneo, kodi na aina ya nyumba. Kila mwenye nyumba hukaguliwa na VOT kabla nyumba zake hazijaonekana."
+
+#: templates/core/home.html:74
+msgid "2. Book"
+msgstr "2. Panga"
+
+#: templates/core/home.html:74
+msgid "Choose your move-in date and how many months. The landlord approves your request on the site."
+msgstr "Chagua tarehe ya kuhamia na idadi ya miezi. Mwenye nyumba anakubali ombi lako kwenye tovuti."
+
+#: templates/core/home.html:75
+msgid "3. Move in"
+msgstr "3. Hamia"
+
+#: templates/core/home.html:75
+msgid "Pay the landlord directly and get a contract with a QR code anyone can verify."
+msgstr "Mlipe mwenye nyumba moja kwa moja na upate mkataba wenye QR code ambayo mtu yeyote anaweza kuihakiki."
+
+#: templates/core/home.html:80
+msgid "Are you a landlord in Mwanza?"
+msgstr "Je, wewe ni mwenye nyumba Mwanza?"
+
+#: templates/core/home.html:81
+msgid "List your house, room or apartment and reach tenants looking in your area. Manage requests, payments and contracts in one place."
+msgstr "Tangaza nyumba, chumba au apartment yako uwafikie wapangaji wanaotafuta katika eneo lako. Simamia maombi, malipo na mikataba sehemu moja."
+
+#: templates/core/home.html:82
+msgid "List your property"
+msgstr "Tangaza nyumba yako"
+
 #: templates/dashboard.html:3 templates/partials/_sidebar.html:59
 #: templates/partials/_sidebar.html:99
 msgid "Dashboard"
@@ -628,7 +743,7 @@ msgstr "Jumla ya Maombi"
 msgid "Pending Approvals"
 msgstr "Yanayosubiri Kukubaliwa"
 
-#: templates/dashboard.html:33 templates/properties/list.html:52
+#: templates/dashboard.html:33 templates/properties/list.html:53
 msgid "Available Houses"
 msgstr "Nyumba Zinazopatikana"
 
@@ -741,7 +856,7 @@ msgstr "Toka"
 msgid "Free from %(d)s"
 msgstr "Wazi kuanzia %(d)s"
 
-#: templates/properties/_listing_card.html:18 templates/properties/list.html:74
+#: templates/properties/_listing_card.html:18 templates/properties/list.html:75
 msgid "Available now"
 msgstr "Inapatikana sasa"
 
@@ -750,7 +865,7 @@ msgid "Share this property"
 msgstr "Shiriki nyumba hii"
 
 #: templates/properties/_listing_card.html:24
-#: templates/properties/detail.html:467
+#: templates/properties/detail.html:468
 msgid "Share"
 msgstr "Shiriki"
 
@@ -759,7 +874,7 @@ msgid "Save property"
 msgstr "Hifadhi nyumba"
 
 #: templates/properties/_listing_card.html:38
-#: templates/properties/detail.html:499
+#: templates/properties/detail.html:500
 #, python-format
 msgid "%(km)s km from city center"
 msgstr "km %(km)s kutoka katikati ya mji"
@@ -801,269 +916,326 @@ msgstr "Tuma jibu"
 msgid "No reviews yet. Tenants can review a home after their stay ends."
 msgstr "Bado hakuna maoni. Wapangaji wanaweza kutoa maoni baada ya kumaliza kukaa."
 
-#: templates/properties/detail.html:306
+#: templates/properties/area.html:3 templates/properties/area.html:7
+#: templates/properties/area.html:23
+#, python-format
+msgid "Houses for Rent in %(area)s, Mwanza"
+msgstr "Nyumba za Kupanga %(area)s, Mwanza"
+
+#: templates/properties/area.html:4
+#, python-format
+msgid "%(n)s house for rent in %(area)s, Mwanza, from TZS %(rent)s per month. Real photos, verified landlords - book online with VOT House Finding."
+msgid_plural "%(n)s houses for rent in %(area)s, Mwanza, from TZS %(rent)s per month. Real photos, verified landlords - book online with VOT House Finding."
+msgstr[0] "Nyumba %(n)s ya kupanga %(area)s, Mwanza, kuanzia TZS %(rent)s kwa mwezi. Picha halisi, wenye nyumba waliohakikiwa - panga mtandaoni na VOT House Finding."
+msgstr[1] "Nyumba %(n)s za kupanga %(area)s, Mwanza, kuanzia TZS %(rent)s kwa mwezi. Picha halisi, wenye nyumba waliohakikiwa - panga mtandaoni na VOT House Finding."
+
+#: templates/properties/area.html:4
+#, python-format
+msgid "Looking for a house to rent in %(area)s, Mwanza? New homes are added regularly on VOT House Finding."
+msgstr "Unatafuta nyumba ya kupanga %(area)s, Mwanza? Nyumba mpya huongezwa mara kwa mara kwenye VOT House Finding."
+
+#: templates/properties/area.html:25
+#, python-format
+msgid "%(n)s home available to rent in %(area)s, from TZS %(rent)s per month."
+msgid_plural "%(n)s homes available to rent in %(area)s, from TZS %(rent)s per month."
+msgstr[0] "Nyumba %(n)s inapatikana kupanga %(area)s, kuanzia TZS %(rent)s kwa mwezi."
+msgstr[1] "Nyumba %(n)s zinapatikana kupanga %(area)s, kuanzia TZS %(rent)s kwa mwezi."
+
+#: templates/properties/area.html:26
+#, python-format
+msgid "There are no homes listed in %(area)s right now. Check nearby areas below, or look again soon."
+msgstr "Kwa sasa hakuna nyumba zilizotangazwa %(area)s. Angalia maeneo ya jirani hapa chini, au rudi tena hivi karibuni."
+
+#: templates/properties/area.html:27
+#, python-format
+msgid "%(area)s is %(note)s."
+msgstr "%(area)s iko %(note)s."
+
+#: templates/properties/area.html:39
+msgid "Other areas in Mwanza"
+msgstr "Maeneo mengine ya Mwanza"
+
+#: templates/properties/area.html:42
+msgid "All houses in Mwanza"
+msgstr "Nyumba zote Mwanza"
+
+#: templates/properties/detail.html:4
+#, python-format
+msgid "%(title)s - %(type)s for rent in %(place)s"
+msgstr "%(title)s - %(type)s ya kupanga %(place)s"
+
+#: templates/properties/detail.html:5
+#, python-format
+msgid "%(type)s for rent in %(place)s - TZS %(rent)s per month."
+msgstr "%(type)s ya kupanga %(place)s - TZS %(rent)s kwa mwezi."
+
+#: templates/properties/detail.html:307
 msgid "photos"
 msgstr "picha"
 
-#: templates/properties/detail.html:312
+#: templates/properties/detail.html:313
 #, python-format
 msgid "View all %(n)s photos"
 msgstr "Tazama picha zote %(n)s"
 
-#: templates/properties/detail.html:316
+#: templates/properties/detail.html:317
 msgid "Close"
 msgstr "Funga"
 
-#: templates/properties/detail.html:318
+#: templates/properties/detail.html:319
 msgid "Previous"
 msgstr "Iliyotangulia"
 
-#: templates/properties/detail.html:322 templates/properties/list.html:113
+#: templates/properties/detail.html:323 templates/properties/list.html:114
 msgid "Next"
 msgstr "Inayofuata"
 
-#: templates/properties/detail.html:368
+#: templates/properties/detail.html:369
 msgid "No photos yet"
 msgstr "Bado hakuna picha"
 
-#: templates/properties/detail.html:380 templates/properties/detail.html:501
+#: templates/properties/detail.html:381 templates/properties/detail.html:502
 msgid "Type"
 msgstr "Aina"
 
-#: templates/properties/detail.html:385
+#: templates/properties/detail.html:386
 msgid "Per month"
 msgstr "Kwa mwezi"
 
-#: templates/properties/detail.html:390
+#: templates/properties/detail.html:391
 msgid "From city center"
 msgstr "Kutoka katikati ya mji"
 
-#: templates/properties/detail.html:394
+#: templates/properties/detail.html:395
 #, python-format
 msgid "From %(d)s"
 msgstr "Kuanzia %(d)s"
 
-#: templates/properties/detail.html:394
+#: templates/properties/detail.html:395
 msgid "Now"
 msgstr "Sasa"
 
-#: templates/properties/detail.html:403
+#: templates/properties/detail.html:404
 msgid "Property Location"
 msgstr "Mahali Nyumba Ilipo"
 
-#: templates/properties/detail.html:403
+#: templates/properties/detail.html:404
 msgid "approximate"
 msgstr "takriban"
 
-#: templates/properties/detail.html:410
+#: templates/properties/detail.html:411
 msgid "This is an approximate area. The exact address is shown once your booking is confirmed."
 msgstr "Hili ni eneo la takriban. Anwani kamili itaonyeshwa ombi lako likithibitishwa."
 
-#: templates/properties/detail.html:454 templates/properties/detail.html:581
+#: templates/properties/detail.html:455 templates/properties/detail.html:582
 msgid "Not Listed"
 msgstr "Haijatangazwa"
 
-#: templates/properties/detail.html:464 templates/properties/detail.html:640
+#: templates/properties/detail.html:465 templates/properties/detail.html:641
 msgid "Save"
 msgstr "Hifadhi"
 
-#: templates/properties/detail.html:470
+#: templates/properties/detail.html:471
 msgid "Share this home"
 msgstr "Shiriki nyumba hii"
 
-#: templates/properties/detail.html:471
+#: templates/properties/detail.html:472
 msgid "Share with friends"
 msgstr "Shiriki na marafiki"
 
-#: templates/properties/detail.html:475 templates/properties/detail.html:491
+#: templates/properties/detail.html:476 templates/properties/detail.html:492
 msgid "Copy link"
 msgstr "Nakili kiungo"
 
-#: templates/properties/detail.html:491
+#: templates/properties/detail.html:492
 msgid "Copied"
 msgstr "Imenakiliwa"
 
-#: templates/properties/detail.html:502
+#: templates/properties/detail.html:503
 msgid "Amenities"
 msgstr "Huduma zilizopo"
 
-#: templates/properties/detail.html:503
+#: templates/properties/detail.html:504
 msgid "Description"
 msgstr "Maelezo"
 
-#: templates/properties/detail.html:506
+#: templates/properties/detail.html:507
 msgid "View on Google Maps"
 msgstr "Tazama kwenye Google Maps"
 
-#: templates/properties/detail.html:521
+#: templates/properties/detail.html:522
 msgid "Rental Details"
 msgstr "Taarifa za Kodi"
 
-#: templates/properties/detail.html:524 templates/properties/detail.html:616
+#: templates/properties/detail.html:525 templates/properties/detail.html:617
 msgid "per month"
 msgstr "kwa mwezi"
 
-#: templates/properties/detail.html:527
+#: templates/properties/detail.html:528
 msgid "Listing Not Active"
 msgstr "Tangazo Halitumiki"
 
-#: templates/properties/detail.html:533 templates/properties/detail.html:619
+#: templates/properties/detail.html:534 templates/properties/detail.html:620
 msgid "Sign in to Book"
 msgstr "Ingia Ili Kupanga"
 
-#: templates/properties/detail.html:535
+#: templates/properties/detail.html:536
 msgid "New here?"
 msgstr "Mgeni hapa?"
 
-#: templates/properties/detail.html:535
+#: templates/properties/detail.html:536
 msgid "Create an account"
 msgstr "Fungua akaunti"
 
-#: templates/properties/detail.html:539 templates/properties/detail.html:622
+#: templates/properties/detail.html:540 templates/properties/detail.html:623
 msgid "Request a Booking"
 msgstr "Omba Kupanga"
 
-#: templates/properties/detail.html:539
+#: templates/properties/detail.html:540
 msgid "Book This Property"
 msgstr "Panga Nyumba Hii"
 
-#: templates/properties/detail.html:542
+#: templates/properties/detail.html:543
 #, python-format
 msgid "Currently occupied - free from %(d)s. You can still request a booking for after that date."
 msgstr "Kwa sasa imepangishwa - itakuwa wazi kuanzia %(d)s. Bado unaweza kuomba kupanga baada ya tarehe hiyo."
 
-#: templates/properties/detail.html:544
+#: templates/properties/detail.html:545
 msgid "Ask a Question"
 msgstr "Uliza Swali"
 
-#: templates/properties/detail.html:546
+#: templates/properties/detail.html:547
 msgid "Booking is only available for tenant accounts."
 msgstr "Kupanga kunawezekana kwa akaunti za wapangaji pekee."
 
-#: templates/properties/detail.html:552
+#: templates/properties/detail.html:553
 msgid "Contact Landlord"
 msgstr "Wasiliana na Mwenye Nyumba"
 
-#: templates/properties/detail.html:556
+#: templates/properties/detail.html:557
 msgid "VOT has reviewed this landlord's account"
 msgstr "VOT imehakiki akaunti ya mwenye nyumba huyu"
 
-#: templates/properties/detail.html:556
+#: templates/properties/detail.html:557
 msgid "Verified landlord"
 msgstr "Mwenye nyumba amehakikiwa"
 
-#: templates/properties/detail.html:565
+#: templates/properties/detail.html:566
 #, python-format
 msgid "Phone shared once your booking is confirmed - <a href=\"%(msg_url)s\">message the landlord</a> in the meantime."
 msgstr "Namba ya simu itaonyeshwa ombi lako likithibitishwa - kwa sasa <a href=\"%(msg_url)s\">mtumie ujumbe mwenye nyumba</a>."
 
-#: templates/properties/detail.html:575
+#: templates/properties/detail.html:576
 #, python-format
 msgid "<a href=\"%(login_url)s?next=%(next)s\">Sign in</a> to see contact details"
 msgstr "<a href=\"%(login_url)s?next=%(next)s\">Ingia</a> ili kuona mawasiliano"
 
-#: templates/properties/detail.html:599
+#: templates/properties/detail.html:600
 msgid "Similar places"
 msgstr "Nyumba zinazofanana"
 
-#: templates/properties/detail.html:622
+#: templates/properties/detail.html:623
 msgid "Book Now"
 msgstr "Panga Sasa"
 
-#: templates/properties/list.html:51 templates/properties/list.html:59
-msgid "Search"
-msgstr "Tafuta"
+#: templates/properties/list.html:5
+msgid "Search Houses for Rent in Mwanza"
+msgstr "Tafuta Nyumba za Kupanga Mwanza"
 
-#: templates/properties/list.html:58
+#: templates/properties/list.html:6
+msgid "Search houses, rooms, self contained units and apartments for rent in Mwanza by area, rent and move-in date. Verified landlords and real photos."
+msgstr "Tafuta nyumba, vyumba, self contained na apartment za kupanga Mwanza kwa eneo, kodi na tarehe ya kuhamia. Wenye nyumba waliohakikiwa na picha halisi."
+
+#: templates/properties/list.html:59
 msgid "Search by title, description or location..."
 msgstr "Tafuta kwa jina, maelezo au mahali..."
 
-#: templates/properties/list.html:60 templates/properties/list.html:127
-#: templates/properties/list.html:129
+#: templates/properties/list.html:61 templates/properties/list.html:128
+#: templates/properties/list.html:130
 msgid "Filters"
 msgstr "Vichujio"
 
-#: templates/properties/list.html:73
+#: templates/properties/list.html:74
 msgid "All houses"
 msgstr "Nyumba zote"
 
-#: templates/properties/list.html:81
+#: templates/properties/list.html:82
 #, python-format
 msgid "%(n)s property found"
 msgid_plural "%(n)s properties found"
 msgstr[0] "Nyumba %(n)s imepatikana"
 msgstr[1] "Nyumba %(n)s zimepatikana"
 
-#: templates/properties/list.html:90
+#: templates/properties/list.html:91
 msgid "Recommended"
 msgstr "Zinazopendekezwa"
 
-#: templates/properties/list.html:91
+#: templates/properties/list.html:92
 msgid "Lowest price"
 msgstr "Bei ya chini kwanza"
 
-#: templates/properties/list.html:92
+#: templates/properties/list.html:93
 msgid "Nearest"
 msgstr "Zilizo karibu zaidi"
 
-#: templates/properties/list.html:93
+#: templates/properties/list.html:94
 msgid "Newest"
 msgstr "Mpya zaidi"
 
-#: templates/properties/list.html:107
+#: templates/properties/list.html:108
 msgid "Search results pages"
 msgstr "Kurasa za matokeo"
 
-#: templates/properties/list.html:109
+#: templates/properties/list.html:110
 msgid "Prev"
 msgstr "Nyuma"
 
-#: templates/properties/list.html:111
+#: templates/properties/list.html:112
 #, python-format
 msgid "Page %(n)s of %(total)s"
 msgstr "Ukurasa %(n)s kati ya %(total)s"
 
-#: templates/properties/list.html:119
+#: templates/properties/list.html:120
 msgid "No properties found"
 msgstr "Hakuna nyumba zilizopatikana"
 
-#: templates/properties/list.html:120
+#: templates/properties/list.html:121
 msgid "Try adjusting your search or filters, or check back later for new listings."
 msgstr "Jaribu kubadilisha utafutaji au vichujio, au rudi baadaye kwa matangazo mapya."
 
-#: templates/properties/list.html:121
+#: templates/properties/list.html:122
 msgid "List a Property"
 msgstr "Tangaza Nyumba"
 
-#: templates/properties/list.html:130
+#: templates/properties/list.html:131
 msgid "Close filters"
 msgstr "Funga vichujio"
 
-#: templates/properties/list.html:138
+#: templates/properties/list.html:139
 msgid "Property type"
 msgstr "Aina ya nyumba"
 
-#: templates/properties/list.html:140
+#: templates/properties/list.html:141
 msgid "All types"
 msgstr "Aina zote"
 
-#: templates/properties/list.html:148
+#: templates/properties/list.html:149
 msgid "e.g., Ilemela"
 msgstr "mfano, Ilemela"
 
-#: templates/properties/list.html:151
+#: templates/properties/list.html:152
 msgid "Max price (TZS)"
 msgstr "Bei ya juu (TZS)"
 
-#: templates/properties/list.html:155
+#: templates/properties/list.html:156
 msgid "Available by"
 msgstr "Ipatikane kufikia"
 
-#: templates/properties/list.html:159
+#: templates/properties/list.html:160
 msgid "Clear"
 msgstr "Futa"
 
-#: templates/properties/list.html:160
+#: templates/properties/list.html:161
 msgid "Show results"
 msgstr "Onyesha matokeo"
 
@@ -1095,151 +1267,151 @@ msgstr "Maoni yako yanaonekana hadharani na yanaonyesha jina lililofupishwa."
 msgid "Post review"
 msgstr "Tuma maoni"
 
-#: templates/users/login.html:7 templates/users/login.html:531
+#: templates/users/login.html:8 templates/users/login.html:532
 msgid "Login"
 msgstr "Ingia"
 
-#: templates/users/login.html:457
+#: templates/users/login.html:458
 msgid "SEASON"
 msgstr "MSIMU"
 
-#: templates/users/login.html:493
+#: templates/users/login.html:494
 msgid "Welcome to VOT House Finding"
 msgstr "Karibu VOT House Finding"
 
-#: templates/users/login.html:494
+#: templates/users/login.html:495
 msgid "The House Finding System facilitates property listings, bookings, and rent payments for tenants and landlords, brought to you by VOT Mwanza Limited."
 msgstr "Mfumo wa Kutafuta Nyumba unarahisisha matangazo ya nyumba, maombi ya kupanga na malipo ya kodi kwa wapangaji na wenye nyumba, kutoka VOT Mwanza Limited."
 
-#: templates/users/login.html:498
+#: templates/users/login.html:499
 msgid "🏠 Tenants"
 msgstr "🏠 Wapangaji"
 
-#: templates/users/login.html:500
+#: templates/users/login.html:501
 msgid "Search available houses nearby"
 msgstr "Tafuta nyumba zinazopatikana karibu nawe"
 
-#: templates/users/login.html:501
+#: templates/users/login.html:502
 msgid "Book properties online"
 msgstr "Panga nyumba mtandaoni"
 
-#: templates/users/login.html:502
+#: templates/users/login.html:503
 msgid "Track payment history"
 msgstr "Fuatilia historia ya malipo"
 
-#: templates/users/login.html:503
+#: templates/users/login.html:504
 msgid "View booking status"
 msgstr "Ona hali ya maombi yako"
 
-#: templates/users/login.html:508
+#: templates/users/login.html:509
 msgid "🔑 Landlords"
 msgstr "🔑 Wenye nyumba"
 
-#: templates/users/login.html:510
+#: templates/users/login.html:511
 msgid "List properties for rent"
 msgstr "Tangaza nyumba za kupangisha"
 
-#: templates/users/login.html:511
+#: templates/users/login.html:512
 msgid "Manage booking requests"
 msgstr "Simamia maombi ya kupanga"
 
-#: templates/users/login.html:512
+#: templates/users/login.html:513
 msgid "Verify tenant payments"
 msgstr "Hakiki malipo ya wapangaji"
 
-#: templates/users/login.html:513
+#: templates/users/login.html:514
 msgid "Track rental income"
 msgstr "Fuatilia mapato ya kodi"
 
-#: templates/users/login.html:518
+#: templates/users/login.html:519
 msgid "⚙️ Administrators"
 msgstr "⚙️ Wasimamizi"
 
-#: templates/users/login.html:520
+#: templates/users/login.html:521
 msgid "Monitor system usage"
 msgstr "Fuatilia matumizi ya mfumo"
 
-#: templates/users/login.html:521
+#: templates/users/login.html:522
 msgid "Manage user accounts"
 msgstr "Simamia akaunti za watumiaji"
 
-#: templates/users/login.html:522
+#: templates/users/login.html:523
 msgid "Generate reports"
 msgstr "Tengeneza ripoti"
 
-#: templates/users/login.html:523
+#: templates/users/login.html:524
 msgid "System configuration"
 msgstr "Mipangilio ya mfumo"
 
-#: templates/users/login.html:545
+#: templates/users/login.html:546
 msgid "Login Failed"
 msgstr "Imeshindikana kuingia"
 
-#: templates/users/login.html:545
+#: templates/users/login.html:546
 msgid "Wrong username or password."
 msgstr "Jina la mtumiaji au nenosiri si sahihi."
 
-#: templates/users/login.html:547 templates/users/login.html:665
+#: templates/users/login.html:548 templates/users/login.html:666
 msgid "Error"
 msgstr "Hitilafu"
 
-#: templates/users/login.html:547 templates/users/login.html:665
+#: templates/users/login.html:548 templates/users/login.html:666
 msgid "Please fill in all required fields."
 msgstr "Tafadhali jaza sehemu zote zinazohitajika."
 
-#: templates/users/login.html:556 templates/users/register.html:32
+#: templates/users/login.html:557 templates/users/register.html:32
 msgid "Username"
 msgstr "Jina la mtumiaji"
 
-#: templates/users/login.html:561
+#: templates/users/login.html:562
 msgid "Enter your username"
 msgstr "Weka jina lako la mtumiaji"
 
-#: templates/users/login.html:570 templates/users/register.html:65
+#: templates/users/login.html:571 templates/users/register.html:65
 msgid "Password"
 msgstr "Nenosiri"
 
-#: templates/users/login.html:575
+#: templates/users/login.html:576
 msgid "Enter your password"
 msgstr "Weka nenosiri lako"
 
-#: templates/users/login.html:578
+#: templates/users/login.html:579
 msgid "Show/Hide Password"
 msgstr "Onyesha/Ficha Nenosiri"
 
-#: templates/users/login.html:587
+#: templates/users/login.html:588
 msgid "Remember me"
 msgstr "Nikumbuke"
 
-#: templates/users/login.html:590
+#: templates/users/login.html:591
 msgid "Forgot password?"
 msgstr "Umesahau nenosiri?"
 
-#: templates/users/login.html:595
+#: templates/users/login.html:596
 msgid "Login to Your Account"
 msgstr "Ingia kwenye Akaunti Yako"
 
-#: templates/users/login.html:600
+#: templates/users/login.html:601
 msgid "OR"
 msgstr "AU"
 
-#: templates/users/login.html:604
+#: templates/users/login.html:605
 msgid "Don't have an account?"
 msgstr "Huna akaunti?"
 
-#: templates/users/login.html:604
+#: templates/users/login.html:605
 msgid "Register here"
 msgstr "Jisajili hapa"
 
-#: templates/users/login.html:631
+#: templates/users/login.html:632
 msgid "Hide Password"
 msgstr "Ficha Nenosiri"
 
-#: templates/users/login.html:635
+#: templates/users/login.html:636
 msgid "Show Password"
 msgstr "Onyesha Nenosiri"
 
-#: templates/users/login.html:704
+#: templates/users/login.html:705
 msgid "Forgot your password? Email info@votmwanza.co.tz from the email address on your account, with your username, and we will reset it for you."
 msgstr "Umesahau nenosiri? Tuma barua pepe kwa info@votmwanza.co.tz ukitumia barua pepe iliyo kwenye akaunti yako, pamoja na jina lako la mtumiaji, nasi tutakuwekea nenosiri jipya."
 
