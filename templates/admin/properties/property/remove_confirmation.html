@@ -1,0 +1,27 @@
+{% extends "admin/delete_confirmation.html" %}
+{% load i18n %}
+{% comment %}
+Deleting a Property in the admin only removes it from the site at first
+(PropertyAdmin.delete_model). The stock text "all related items will be
+deleted" is only true the second time, for an already-removed listing.
+{% endcomment %}
+{% block delete_confirm %}
+{% if object.deleted_at %}
+    <p><strong>This listing was already removed on {{ object.deleted_at|date:"j M Y" }}.</strong>
+       Deleting it now erases it for good, straight away - the landlord loses access to these records:</p>
+    {% include "admin/includes/object_delete_summary.html" %}
+    <h2>{% translate "Objects" %}</h2>
+    <ul id="deleted-objects">{{ deleted_objects|unordered_list }}</ul>
+    {% with button="Yes, erase for good" %}{% include "admin/properties/property/_remove_form.html" %}{% endwith %}
+{% else %}
+    <p>Remove <strong>"{{ object }}"</strong> from the site?</p>
+    <ul>
+        <li>It disappears from search, its page and the sitemap right away, and open booking requests for it are cancelled.</li>
+        <li>Its landlord can still open its bookings, contracts and payments (read-only) for <strong>{{ retention_days }} days</strong>, and is notified of the date.</li>
+        <li>After that, it is erased for good along with the records below. Until then you can bring it back with the "Restore" action in the list.</li>
+    </ul>
+    <h2>Records the landlord keeps for {{ retention_days }} days</h2>
+    {% include "admin/includes/object_delete_summary.html" %}
+    {% with button="Yes, remove from site" %}{% include "admin/properties/property/_remove_form.html" %}{% endwith %}
+{% endif %}
+{% endblock %}

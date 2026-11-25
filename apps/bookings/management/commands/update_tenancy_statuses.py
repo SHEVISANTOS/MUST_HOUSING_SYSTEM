@@ -20,3 +20,4 @@ class Command(BaseCommand):
         # sends them without any new systemd unit.
         from django.core.management import call_command
         call_command('send_reminders', stdout=self.stdout)
+        call_command('purge_removed_properties', stdout=self.stdout)

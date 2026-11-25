@@ -12,6 +12,7 @@ Disallow: {{ prefix }}properties/saved/
 Disallow: {{ prefix }}properties/review/
 Disallow: {{ prefix }}properties/wizard/
 Disallow: {{ prefix }}properties/my-properties/
+Disallow: {{ prefix }}properties/removed/
 {% endfor %}Disallow: /i18n/
 Disallow: /*?*sort=
 Disallow: /*?*page=

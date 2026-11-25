@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% block title %}My Properties{% endblock %}
 
 {% block content %}
@@ -54,4 +55,22 @@
         {% endif %}
     </div>
 </div>
+
+{% if removed %}
+<div class="card mt-4">
+    <div class="card-header">🗄️ {% translate "Removed listings" %}</div>
+    <div class="card-body">
+        <p class="text-muted" style="margin-top: 0;">{% translate "These listings were taken off the site. You can still open their bookings, contracts and payments until the date shown - after that they are deleted for good, so download anything you need to keep." %}</p>
+        {% for prop in removed %}
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 p-3 mb-2 border rounded" style="background: #fff;">
+            <div>
+                <strong>{{ prop.title }}</strong>
+                <div class="text-muted small">📍 {{ prop.location }} · {% blocktranslate with removed=prop.deleted_at|date:"j M Y" until=prop.records_until|date:"j M Y" %}Removed {{ removed }} · records available until <strong>{{ until }}</strong>{% endblocktranslate %}</div>
+            </div>
+            <a href="{% url 'properties:removed_records' prop.pk %}" class="btn btn-sm btn-outline-secondary">{% translate "View records" %}</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -8,11 +8,25 @@ from apps.users.models import User
 from config.uploads import RandomName, validate_image_upload
 
 class PropertyQuerySet(models.QuerySet):
+    def removed(self):
+        return self.filter(deleted_at__isnull=False)
+
     def public(self):
         """Listings renters may see: switched on by the landlord AND the
         landlord's account verified by VOT. New landlords' listings stay
         hidden until an admin approves them in the Verification Queue."""
-        return self.filter(is_available=True, landlord__is_verified=True, landlord__is_active=True)
+        return self.filter(is_available=True, landlord__is_verified=True, landlord__is_active=True,
+                           deleted_at__isnull=True)
+
+
+class CurrentPropertyManager(models.Manager.from_queryset(PropertyQuerySet)):
+    """Property.objects: every listing except ones deleted in the admin.
+    Those wait out DELETED_PROPERTY_RETENTION_DAYS so the landlord can still
+    open their records (Property.all_objects reaches them); bookings,
+    tenancies and payments pointing at them keep working because related
+    lookups use the plain base manager."""
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
 
 
 class Property(models.Model):
@@ -49,7 +63,8 @@ class Property(models.Model):
         ('GUESTHOUSE', _('Guest House')),
     ]
     
-    objects = PropertyQuerySet.as_manager()
+    objects = CurrentPropertyManager()
+    all_objects = PropertyQuerySet.as_manager()
 
     landlord = models.ForeignKey(User, on_delete=models.CASCADE, related_name='properties')
     title = models.CharField(max_length=200)
@@ -75,6 +90,49 @@ class Property(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(null=True, blank=True, editable=False, db_index=True,
+                                      help_text="Set when an admin deletes the listing; erased for good after the retention period")
+
+    @property
+    def is_removed(self):
+        return self.deleted_at is not None
+
+    @property
+    def records_until(self):
+        """Last day the landlord can open this removed listing's records."""
+        from django.conf import settings
+        if not self.deleted_at:
+            return None
+        return timezone.localdate(self.deleted_at) + timezone.timedelta(days=settings.DELETED_PROPERTY_RETENTION_DAYS)
+
+    def remove(self):
+        """Take the listing off the site but keep its records for the
+        retention period. Open booking requests can't go ahead any more, so
+        they're cancelled; the landlord is told how long the records stay."""
+        from django.urls import reverse
+        from apps.notifications.models import Notification
+        if self.deleted_at:
+            return
+        self.deleted_at = timezone.now()
+        self.is_available = False
+        self.save(update_fields=['deleted_at', 'is_available', 'updated_at'])
+        for booking in self.bookings.filter(status='PENDING').select_related('tenant'):
+            booking.status = 'CANCELLED'
+            booking.decline_reason = 'The listing was removed from VOT House Finding.'
+            booking.save(update_fields=['status', 'decline_reason', 'updated_at'])
+            Notification.notify(booking.tenant, 'booking_declined',
+                                f'Your request for "{self.title}" was cancelled because the listing was removed.',
+                                reverse('bookings:my_bookings'))
+        Notification.notify(self.landlord, 'listing_removed',
+                            f'"{self.title}" was removed from the site. Its bookings, contracts and payments '
+                            f'stay available to you until {self.records_until:%d %b %Y}.',
+                            reverse('properties:removed_records', args=[self.pk]))
+
+    def restore(self):
+        """Undo remove(). The listing comes back switched off, so the
+        landlord decides when renters can see it again."""
+        self.deleted_at = None
+        self.save(update_fields=['deleted_at', 'updated_at'])
 
     @property
     def amenities_list(self):

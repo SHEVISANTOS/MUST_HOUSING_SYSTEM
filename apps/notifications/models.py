@@ -35,6 +35,7 @@ class Notification(models.Model):
         ('contract_ending', 'Contract ending soon'),
         ('review_invite', 'Rate your stay'),
         ('new_review', 'New review'),
+        ('listing_removed', 'Listing removed'),
     ]
 
     KIND_ICONS = {
@@ -61,6 +62,7 @@ class Notification(models.Model):
         'contract_ending': '📆',
         'review_invite': '⭐',
         'new_review': '⭐',
+        'listing_removed': '🗄️',
     }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')

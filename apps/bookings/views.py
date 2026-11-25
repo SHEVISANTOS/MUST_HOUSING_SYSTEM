@@ -269,7 +269,8 @@ def approve_booking(request, booking_id):
         messages.error(request, "Unauthorized access.")
         return redirect('core:dashboard')
 
-    booking = get_object_or_404(Booking, id=booking_id, property__landlord=request.user)
+    booking = get_object_or_404(Booking, id=booking_id, property__landlord=request.user,
+                                property__deleted_at__isnull=True)  # not on a removed listing
 
     if booking.status != 'PENDING':
         messages.warning(request, "This booking cannot be approved in its current state.")
@@ -474,7 +475,8 @@ def approve_renewal(request, tenancy_id):
         messages.error(request, "Unauthorized access.")
         return redirect('core:dashboard')
 
-    old_tenancy = get_object_or_404(Tenancy, id=tenancy_id, property__landlord=request.user)
+    old_tenancy = get_object_or_404(Tenancy, id=tenancy_id, property__landlord=request.user,
+                                    property__deleted_at__isnull=True)  # not on a removed listing
 
     if not old_tenancy.renewal_requested:
         messages.warning(request, "No renewal has been requested for this tenancy.")

@@ -254,6 +254,11 @@ SITE_URL = os.getenv('SITE_URL', '').rstrip('/')
 # Google Search Console "HTML tag" verification: the content="..." value only.
 GOOGLE_SITE_VERIFICATION = os.getenv('GOOGLE_SITE_VERIFICATION', '')
 
+# A property deleted in the admin is only hidden at first: its landlord can
+# still open its bookings, contracts and payments for this many days, then the
+# daily job (update_tenancy_statuses) erases it for good.
+DELETED_PROPERTY_RETENTION_DAYS = int(os.getenv('DELETED_PROPERTY_RETENTION_DAYS', '90'))
+
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'core:post_login_redirect' # Ensure 'core' app exists, or change to 'users:dashboard' etc.
 LOGOUT_REDIRECT_URL = 'properties:list'

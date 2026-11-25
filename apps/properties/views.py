@@ -257,8 +257,14 @@ def property_detail(request, pk):
     from django.utils import timezone
     import datetime as dt
 
-    prop = get_object_or_404(Property.objects.select_related('landlord').prefetch_related('images'), pk=pk)
+    prop = get_object_or_404(Property.all_objects.select_related('landlord').prefetch_related('images'), pk=pk)
     is_owner = request.user.is_authenticated and prop.landlord_id == request.user.id
+    if prop.is_removed:
+        # Gone from the site; only its landlord (and VOT) can still reach
+        # its records, until the retention period runs out.
+        if is_owner or (request.user.is_authenticated and (request.user.is_superuser or request.user.role == 'ADMIN')):
+            return redirect('properties:removed_records', pk=prop.pk)
+        raise Http404("No such property")
     landlord_pending = not prop.landlord.is_verified
     if landlord_pending and not is_owner and not _can_see_unverified(request.user, prop):
         # Hidden until VOT verifies the landlord - same answer as a
@@ -452,9 +458,30 @@ def my_properties(request):
     properties = Property.objects.filter(landlord=request.user).prefetch_related('images').order_by('-created_at')
     return render(request, 'properties/my_properties.html', {
         'properties': properties,
+        'removed': Property.all_objects.removed().filter(landlord=request.user).order_by('-deleted_at'),
         'total': properties.count(),
         'available': properties.filter(is_available=True).count()
     })
+
+@login_required
+def removed_records(request, pk):
+    """Read-only history of a listing an admin removed: its bookings,
+    contracts and payments, open to its landlord (and VOT) until
+    DELETED_PROPERTY_RETENTION_DAYS after removal."""
+    from apps.payments.models import Payment
+    prop = get_object_or_404(Property.all_objects.removed().select_related('landlord'), pk=pk)
+    is_admin = request.user.is_superuser or request.user.role == 'ADMIN'
+    if prop.landlord_id != request.user.id and not is_admin:
+        raise Http404("No such property")
+    bookings = (prop.bookings.select_related('tenant', 'tenancy').order_by('-move_in_date'))
+    payments = (Payment.objects.filter(booking__property=prop).select_related('booking__tenant')
+                .order_by('-due_date'))
+    return render(request, 'properties/removed_records.html', {
+        'prop': prop, 'bookings': bookings, 'payments': payments,
+        'paid_total': sum(p.amount for p in payments if p.status == 'COMPLETED'),
+        'noindex': True,
+    })
+
 
 @login_required
 def property_edit(request, pk):

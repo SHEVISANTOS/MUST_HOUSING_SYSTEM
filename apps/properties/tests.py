@@ -761,3 +761,109 @@ class ReviewTests(TestCase):
         detail = Client().get(reverse('properties:detail', args=[self.prop.pk]))
         self.assertNotContains(detail, 'Water every day')
         self.assertContains(detail, 'No reviews yet')
+
+
+@override_settings(STORAGES={'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+                             'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'}})
+class PropertyRemovalTests(TestCase):
+    """Deleting a listing in the admin hides it but leaves its landlord a
+    read-only view of its records until the retention period runs out."""
+
+    def setUp(self):
+        from apps.payments.models import Payment
+        today = timezone.localdate()
+        self.admin = User.objects.create_superuser(username='rm_admin', password='pw', email='a@example.com')
+        self.landlord = User.objects.create_user(username='rm_landlord', password='pw', role='LANDLORD', is_verified=True)
+        self.tenant = User.objects.create_user(username='rm_tenant', password='pw', role='TENANT')
+        self.prop = Property.objects.create(landlord=self.landlord, title='Lakeside Rooms', location='Igoma',
+                                            property_type='SINGLE', monthly_rent=80000, distance_from_center_km=5)
+        self.done = Booking.objects.create(property=self.prop, tenant=self.tenant, status='COMPLETED',
+                                           move_in_date=today - timedelta(days=200), move_out_date=today - timedelta(days=20))
+        self.tenancy = Tenancy.objects.create(booking=self.done, property=self.prop, tenant=self.tenant,
+                                              start_date=self.done.move_in_date, end_date=self.done.move_out_date,
+                                              duration_months=6, status='ended')
+        self.payment = Payment.objects.create(booking=self.done, tenant=self.tenant, amount=480000,
+                                              status='COMPLETED', due_date=self.done.move_in_date)
+        self.pending = Booking.objects.create(property=self.prop, tenant=self.tenant, status='PENDING',
+                                              move_in_date=today + timedelta(days=10), move_out_date=today + timedelta(days=100))
+
+    def _admin_delete(self):
+        c = Client()
+        c.force_login(self.admin)
+        url = reverse('admin:properties_property_delete', args=[self.prop.pk])
+        page = c.get(url)
+        self.assertContains(page, 'Yes, remove from site')
+        return c.post(url, {'post': 'yes'})
+
+    def test_admin_delete_hides_listing_but_keeps_records(self):
+        from apps.payments.models import Payment
+        from apps.notifications.models import Notification
+        self._admin_delete()
+        prop = Property.all_objects.get(pk=self.prop.pk)
+        self.assertIsNotNone(prop.deleted_at)
+        self.assertFalse(Property.objects.filter(pk=prop.pk).exists())
+        self.assertEqual(Tenancy.objects.filter(property=prop).count(), 1)
+        self.assertTrue(Payment.objects.filter(pk=self.payment.pk).exists())
+        self.pending.refresh_from_db()
+        self.assertEqual(self.pending.status, 'CANCELLED')
+        note = Notification.objects.get(user=self.landlord, kind='listing_removed')
+        self.assertIn(f'{prop.records_until:%d %b %Y}', note.body)
+        # Gone for everyone else...
+        self.assertEqual(Client().get(reverse('properties:detail', args=[prop.pk])).status_code, 404)
+        self.assertNotContains(Client().get(reverse('properties:list')), 'Lakeside Rooms')
+
+    def test_landlord_can_open_records_until_retention_ends(self):
+        self.prop.remove()
+        c = Client()
+        c.force_login(self.landlord)
+        self.assertRedirects(c.get(reverse('properties:detail', args=[self.prop.pk])),
+                             reverse('properties:removed_records', args=[self.prop.pk]))
+        mine = c.get(reverse('properties:my_properties'))
+        self.assertContains(mine, 'Removed listings')
+        records = c.get(reverse('properties:removed_records', args=[self.prop.pk]))
+        self.assertContains(records, 'Lakeside Rooms')
+        self.assertContains(records, reverse('bookings:download_contract_pdf', args=[self.tenancy.pk]))
+        self.assertContains(records, 'TZS 480,000 confirmed')
+        # Another landlord, or the tenant, can't open it.
+        other = User.objects.create_user(username='rm_other', password='pw', role='LANDLORD', is_verified=True)
+        for user in (other, self.tenant):
+            c.force_login(user)
+            self.assertEqual(c.get(reverse('properties:removed_records', args=[self.prop.pk])).status_code, 404)
+
+    def test_purge_erases_only_after_retention(self):
+        from django.core.management import call_command
+        from io import StringIO
+        self.prop.remove()
+        call_command('purge_removed_properties', stdout=StringIO())
+        self.assertTrue(Property.all_objects.filter(pk=self.prop.pk).exists())
+        with override_settings(DELETED_PROPERTY_RETENTION_DAYS=0):
+            Property.all_objects.filter(pk=self.prop.pk).update(deleted_at=timezone.now() - timedelta(minutes=1))
+            call_command('purge_removed_properties', stdout=StringIO())
+        self.assertFalse(Property.all_objects.filter(pk=self.prop.pk).exists())
+        self.assertFalse(Tenancy.objects.filter(pk=self.tenancy.pk).exists())
+
+    def test_second_admin_delete_erases_and_restore_brings_back_switched_off(self):
+        self.prop.remove()
+        c = Client()
+        c.force_login(self.admin)
+        c.post(reverse('admin:properties_property_changelist'),
+               {'action': 'restore_selected', '_selected_action': [self.prop.pk]})
+        prop = Property.objects.get(pk=self.prop.pk)
+        self.assertFalse(prop.is_available)
+        prop.remove()
+        url = reverse('admin:properties_property_delete', args=[prop.pk])
+        self.assertContains(c.get(url), 'erase')
+        c.post(url, {'post': 'yes'})
+        self.assertFalse(Property.all_objects.filter(pk=prop.pk).exists())
+
+    def test_no_reminders_or_approvals_on_a_removed_listing(self):
+        from apps.notifications.reminders import send_due_reminders
+        from apps.notifications.models import Notification
+        self.prop.remove()
+        before = Notification.objects.count()
+        send_due_reminders()
+        self.assertEqual(Notification.objects.count(), before)   # no review invite for the ended tenancy
+        Booking.objects.filter(pk=self.pending.pk).update(status='PENDING')
+        c = Client()
+        c.force_login(self.landlord)
+        self.assertEqual(c.post(reverse('bookings:approve_booking', args=[self.pending.pk])).status_code, 404)

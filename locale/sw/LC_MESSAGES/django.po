@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: VOT House Finding\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-24 14:06+0300\n"
+"POT-Creation-Date: 2026-11-25 10:34+0300\n"
 "PO-Revision-Date: 2026-11-24 12:00+0300\n"
 "Last-Translator: VOT House Finding\n"
 "Language-Team: Kiswahili\n"
@@ -86,6 +86,7 @@ msgid "My Contract"
 msgstr "Mkataba Wangu"
 
 #: apps/core/context_processors.py:8 templates/partials/_sidebar.html:119
+#: templates/properties/removed_records.html:44
 msgid "Payments"
 msgstr "Malipo"
 
@@ -268,63 +269,63 @@ msgstr ""
 "Ilikuwaje kuishi hapa? Maji, umeme, usalama, jinsi mwenye nyumba "
 "alivyoshughulikia matatizo..."
 
-#: apps/properties/models.py:35
+#: apps/properties/models.py:49
 msgid "Single Room"
 msgstr "Chumba kimoja"
 
-#: apps/properties/models.py:36
+#: apps/properties/models.py:50
 msgid "Bedsitter"
 msgstr "Chumba na sebule (Bedsitter)"
 
-#: apps/properties/models.py:37
+#: apps/properties/models.py:51
 msgid "Self Contained"
 msgstr "Self Contained (chumba chenye choo ndani)"
 
-#: apps/properties/models.py:38
+#: apps/properties/models.py:52
 msgid "1 Bedroom"
 msgstr "Chumba 1 cha kulala"
 
-#: apps/properties/models.py:39
+#: apps/properties/models.py:53
 msgid "2 Bedroom"
 msgstr "Vyumba 2 vya kulala"
 
-#: apps/properties/models.py:40
+#: apps/properties/models.py:54
 msgid "3 Bedroom"
 msgstr "Vyumba 3 vya kulala"
 
-#: apps/properties/models.py:41
+#: apps/properties/models.py:55
 msgid "4+ Bedroom"
 msgstr "Vyumba 4+ vya kulala"
 
-#: apps/properties/models.py:42
+#: apps/properties/models.py:56
 msgid "Servant Quarter (SQ)"
 msgstr "Nyumba ya nyuma (SQ)"
 
-#: apps/properties/models.py:43
+#: apps/properties/models.py:57
 msgid "Standalone House"
 msgstr "Nyumba nzima (Standalone)"
 
-#: apps/properties/models.py:44
+#: apps/properties/models.py:58
 msgid "Apartment/Flat"
 msgstr "Apartment/Fleti"
 
-#: apps/properties/models.py:45
+#: apps/properties/models.py:59
 msgid "Maisonette"
 msgstr "Maisonette (ghorofa mbili)"
 
-#: apps/properties/models.py:46
+#: apps/properties/models.py:60
 msgid "Shop/Commercial Space"
 msgstr "Fremu ya biashara/Duka"
 
-#: apps/properties/models.py:47
+#: apps/properties/models.py:61
 msgid "Office Space"
 msgstr "Ofisi"
 
-#: apps/properties/models.py:48
+#: apps/properties/models.py:62
 msgid "Godown/Warehouse"
 msgstr "Ghala/Stoo"
 
-#: apps/properties/models.py:49
+#: apps/properties/models.py:63
 msgid "Guest House"
 msgstr "Nyumba ya wageni"
 
@@ -371,6 +372,14 @@ msgstr "Huenda kiungo ni cha zamani, au tangazo limeondolewa."
 #: templates/404.html:9
 msgid "Browse houses"
 msgstr "Tazama nyumba"
+
+#: templates/admin/properties/property/_remove_form.html:7
+msgid "No, take me back"
+msgstr ""
+
+#: templates/admin/properties/property/remove_confirmation.html:13
+msgid "Objects"
+msgstr ""
 
 #: templates/base.html:10
 msgid ""
@@ -567,6 +576,7 @@ msgstr "Tuma Ombi"
 
 #: templates/bookings/create.html:145
 #: templates/properties/_listing_card.html:41
+#: templates/properties/removed_records.html:14
 msgid "month"
 msgstr "mwezi"
 
@@ -600,7 +610,8 @@ msgstr "Tarehe ya Kuhama"
 #: templates/bookings/my_bookings.html:32
 #: templates/bookings/my_contract.html:117
 #: templates/bookings/my_contract.html:125 templates/dashboard.html:87
-#: templates/dashboard.html:98
+#: templates/dashboard.html:98 templates/properties/removed_records.html:23
+#: templates/properties/removed_records.html:50
 msgid "Status"
 msgstr "Hali"
 
@@ -911,11 +922,14 @@ msgstr "Haya ndiyo yanayoendelea kuhusu makazi yako leo."
 
 #: templates/dashboard.html:13 templates/dashboard.html:85
 #: templates/dashboard.html:96 templates/partials/_sidebar.html:11
+#: templates/properties/removed_records.html:23
+#: templates/properties/removed_records.html:50
 #: templates/users/register.html:51
 msgid "Tenant"
 msgstr "Mpangaji"
 
 #: templates/dashboard.html:20 templates/partials/_sidebar.html:69
+#: templates/properties/removed_records.html:71
 msgid "My Properties"
 msgstr "Nyumba Zangu"
 
@@ -971,7 +985,7 @@ msgstr "Tazama Maelezo"
 msgid "Awaiting Approval"
 msgstr "Inasubiri Kukubaliwa"
 
-#: templates/dashboard.html:141
+#: templates/dashboard.html:141 templates/properties/removed_records.html:61
 msgid "Receipt"
 msgstr "Risiti"
 
@@ -1484,6 +1498,94 @@ msgstr "Futa"
 #: templates/properties/list.html:161
 msgid "Show results"
 msgstr "Onyesha matokeo"
+
+#: templates/properties/my_properties.html:61
+msgid "Removed listings"
+msgstr "Matangazo yaliyoondolewa"
+
+#: templates/properties/my_properties.html:63
+msgid ""
+"These listings were taken off the site. You can still open their bookings, "
+"contracts and payments until the date shown - after that they are deleted "
+"for good, so download anything you need to keep."
+msgstr ""
+"Matangazo haya yaliondolewa kwenye tovuti. Bado unaweza kufungua maombi, "
+"mikataba na malipo yake hadi tarehe iliyoonyeshwa - baada ya hapo yanafutwa "
+"kabisa, kwa hiyo pakua chochote unachohitaji kukitunza."
+
+#: templates/properties/my_properties.html:68
+#, python-format
+msgid ""
+"Removed %(removed)s · records available until <strong>%(until)s</strong>"
+msgstr ""
+"Liliondolewa %(removed)s · kumbukumbu zinapatikana hadi "
+"<strong>%(until)s</strong>"
+
+#: templates/properties/my_properties.html:70
+msgid "View records"
+msgstr "Angalia kumbukumbu"
+
+#: templates/properties/removed_records.html:3
+#, python-format
+msgid "Records for %(title)s"
+msgstr "Kumbukumbu za %(title)s"
+
+#: templates/properties/removed_records.html:7
+#, python-format
+msgid ""
+"This listing was removed from the site on %(removed)s. Its records stay "
+"here, read-only, until <strong>%(until)s</strong> and are then deleted for "
+"good. Download any contracts or receipts you need to keep before then."
+msgstr ""
+"Tangazo hili liliondolewa kwenye tovuti tarehe %(removed)s. Kumbukumbu zake "
+"zitabaki hapa, kwa kusoma tu, hadi <strong>%(until)s</strong> kisha "
+"zitafutwa kabisa. Pakua mikataba au risiti unazohitaji kabla ya hapo."
+
+#: templates/properties/removed_records.html:12
+msgid "Removed listing"
+msgstr "Tangazo lililoondolewa"
+
+#: templates/properties/removed_records.html:19
+msgid "Bookings and contracts"
+msgstr "Maombi na mikataba"
+
+#: templates/properties/removed_records.html:23
+msgid "Dates"
+msgstr "Tarehe"
+
+#: templates/properties/removed_records.html:31
+#: templates/properties/removed_records.html:59
+msgid "Details"
+msgstr "Maelezo"
+
+#: templates/properties/removed_records.html:32
+msgid "Contract (PDF)"
+msgstr "Mkataba (PDF)"
+
+#: templates/properties/removed_records.html:38
+msgid "No bookings were made for this listing."
+msgstr "Hakuna maombi yaliyofanywa kwa tangazo hili."
+
+#: templates/properties/removed_records.html:45
+#, python-format
+msgid "TZS %(total)s confirmed"
+msgstr "TZS %(total)s zimethibitishwa"
+
+#: templates/properties/removed_records.html:50
+msgid "Due"
+msgstr "Tarehe ya kulipa"
+
+#: templates/properties/removed_records.html:50
+msgid "Amount"
+msgstr "Kiasi"
+
+#: templates/properties/removed_records.html:60
+msgid "Invoice"
+msgstr "Ankara"
+
+#: templates/properties/removed_records.html:67
+msgid "No payments were recorded for this listing."
+msgstr "Hakuna malipo yaliyorekodiwa kwa tangazo hili."
 
 #: templates/properties/saved.html:4 templates/properties/saved.html:10
 msgid "Saved Properties"

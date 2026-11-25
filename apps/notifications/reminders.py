@@ -43,6 +43,7 @@ def _rent_reminders(today, counts):
     unpaid = (Payment.objects.filter(status__in=['PENDING', 'OVERDUE'])
               .exclude(booking__status__in=['CANCELLED', 'COMPLETED'])
               .filter(due_date__gte=today - timezone.timedelta(days=OVERDUE_STOP_DAYS))
+              .filter(booking__property__deleted_at__isnull=True)   # listing removed: no more nudges
               .select_related('booking__property__landlord', 'booking__tenant'))
     for p in unpaid:
         prop, tenant = p.booking.property, p.booking.tenant
@@ -77,6 +78,7 @@ def _contract_reminders(today, counts):
 
     live = (Tenancy.objects.exclude(status__in=['terminated', 'renewed'])
             .filter(end_date__gte=today, start_date__lte=today, renewal_requested=False)
+            .filter(property__deleted_at__isnull=True)
             .select_related('property', 'tenant'))
     for t in live:
         days_left = (t.end_date - today).days
@@ -97,7 +99,7 @@ def _review_invites(today, counts):
     finished = (Tenancy.objects.filter(end_date__lt=today,
                                        end_date__gte=today - timezone.timedelta(days=REVIEW_INVITE_WINDOW))
                 .exclude(status='renewed')
-                .filter(review__isnull=True)
+                .filter(review__isnull=True, property__deleted_at__isnull=True)
                 .select_related('property', 'tenant'))
     for t in finished:
         counts['review'] += _send_once(

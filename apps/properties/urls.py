@@ -9,6 +9,7 @@ urlpatterns = [
     path('create/', views.property_create, name='create'),
     path('my-properties/', views.my_properties, name='my_properties'),
     path('saved/', views.saved_properties, name='saved'),
+    path('removed/<int:pk>/', views.removed_records, name='removed_records'),
 
     # 🧙 5-step add/edit wizard
     path('wizard/new/', views.property_wizard_start, name='wizard_start'),
