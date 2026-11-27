@@ -1,7 +1,7 @@
 from django.db import models
 from apps.bookings.models import Booking
 from apps.users.models import User
-from config.uploads import RandomName, validate_image_upload
+from config.uploads import RandomName, private_storage, validate_image_upload
 from django.utils import timezone
 import uuid
 
@@ -27,7 +27,8 @@ class Payment(models.Model):
     tenant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tenant_payments', null=True, blank=True)
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, blank=True, null=True)
     payment_reference = models.CharField(max_length=100, blank=True, null=True, help_text="M-Pesa code, Bank Ref, etc.")
-    payment_proof = models.ImageField(blank=True, null=True, upload_to=RandomName('payment_proofs/%Y/%m'), validators=[validate_image_upload])
+    payment_proof = models.ImageField(blank=True, null=True, upload_to=RandomName('payment_proofs/%Y/%m'), storage=private_storage,
+                                      validators=[validate_image_upload])  # private: see payments.views.payment_proof
     payment_notes = models.TextField(blank=True, null=True)
     
     tenant_paid_at = models.DateTimeField(null=True, blank=True)

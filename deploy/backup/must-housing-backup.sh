@@ -9,6 +9,8 @@
 #   APP_DIR=/srv/must_housing deploy/backup/must-housing-backup.sh
 # Optional off-site copy: BACKUP_S3_URI=s3://bucket/must_housing (uses the
 # aws CLI with AWS_* credentials and AWS_S3_ENDPOINT_URL for Cloudflare R2).
+# (On the server, /usr/local/bin/offsite-backup already copies the DB dumps
+# and media folders to the encrypted Backblaze remote; it isn't in this repo.)
 # Never prints the database URL.
 set -euo pipefail
 
@@ -30,12 +32,18 @@ pg_restore --list "$DB_FILE" > /dev/null   # the archive is readable
 sha256sum "$DB_FILE" > "$DB_FILE.sha256"
 echo "DB backup written: $DB_FILE ($(du -h "$DB_FILE" | cut -f1))"
 
-if [ -d "$APP_DIR/media" ] && [ -n "$(ls -A "$APP_DIR/media" 2>/dev/null)" ]; then
-  tar -czf "$MEDIA_FILE" -C "$APP_DIR" media
+# media/ = public uploads (photos); media_private/ = payment proofs, kept
+# out of nginx's reach (PRIVATE_MEDIA_ROOT). Both go in the same archive.
+MEDIA_DIRS=()
+for d in media media_private; do
+  if [ -d "$APP_DIR/$d" ] && [ -n "$(ls -A "$APP_DIR/$d" 2>/dev/null)" ]; then MEDIA_DIRS+=("$d"); fi
+done
+if [ ${#MEDIA_DIRS[@]} -gt 0 ]; then
+  tar -czf "$MEDIA_FILE" -C "$APP_DIR" "${MEDIA_DIRS[@]}"
   sha256sum "$MEDIA_FILE" > "$MEDIA_FILE.sha256"
   echo "Media backup written: $MEDIA_FILE ($(du -h "$MEDIA_FILE" | cut -f1))"
 else
-  echo "No local media/ directory to back up (missing or empty)."
+  echo "No local media/ or media_private/ to back up (missing or empty)."
 fi
 
 if [ -n "${BACKUP_S3_URI:-}" ]; then

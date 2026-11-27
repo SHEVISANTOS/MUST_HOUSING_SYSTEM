@@ -337,3 +337,110 @@ class SeoTests(TestCase):
             self.assertEqual(resp['Location'], 'https://vothousefinding.com/properties/?q=x')
             self.assertIsNone(mw(RequestFactory().get('/healthz', HTTP_HOST='www.vothousefinding.com')))
             self.assertIsNone(mw(RequestFactory().get('/', HTTP_HOST='vothousefinding.com')))
+
+
+from django.test import override_settings as _override_settings
+
+
+@_override_settings(RATE_LIMITS_ENABLED=True)
+class SecurityHardeningTests(TestCase):
+    """Fixes from the pre-deploy security review."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.landlord = User.objects.create_user(username='sec_landlord', password='pw', role='LANDLORD', is_verified=True)
+        self.tenant = User.objects.create_user(username='sec_tenant', password='pw', role='TENANT')
+        self.prop = Property.objects.create(landlord=self.landlord, title='Safe Home', location='Igoma',
+                                            property_type='SINGLE', monthly_rent=50000, distance_from_center_km=3)
+
+    def _register(self, client, username, password):
+        return client.post(reverse('users:register'), {
+            'username': username, 'email': f'{username}@example.com', 'phone': '0700000000',
+            'role': 'TENANT', 'password1': password, 'password2': password})
+
+    def test_weak_passwords_are_refused(self):
+        for weak in ('1', '12345678', 'password', 'sec_newbie1'):
+            r = self._register(Client(), 'sec_newbie', weak)
+            self.assertEqual(r.status_code, 200, weak)
+            self.assertIn('password2', r.context['form'].errors, weak)
+        self.assertFalse(User.objects.filter(username='sec_newbie').exists())
+        self.assertEqual(self._register(Client(), 'sec_newbie', 'Mwanza-Lake-2026').status_code, 302)
+
+    def test_sign_ups_are_rate_limited_per_ip(self):
+        c = Client()
+        for i in range(5):
+            self.assertNotEqual(self._register(c, f'bot{i}', 'x').status_code, 429)
+        r = self._register(c, 'bot6', 'x')
+        self.assertEqual(r.status_code, 429)
+        self.assertContains(r, 'Please slow down', status_code=429)
+        self.assertEqual(Client().get(reverse('users:register')).status_code, 200)   # viewing isn't limited
+        self.assertNotEqual(self._register(Client(REMOTE_ADDR='10.0.0.9'), 'human', 'x').status_code, 429)
+
+    def test_messages_are_rate_limited_per_user(self):
+        c = Client()
+        c.force_login(self.tenant)
+        conv = Conversation.get_or_create_for(self.prop, self.tenant)
+        url = reverse('messaging:thread', args=[conv.pk])
+        codes = [c.post(url, {'body': f'hello {i}'}).status_code for i in range(31)]
+        self.assertNotIn(429, codes[:30])
+        self.assertEqual(codes[30], 429)
+        self.assertEqual(Message.objects.filter(conversation=conv).count(), 30)
+        self.assertEqual(c.get(url).status_code, 200)   # reading the thread still works
+
+    def test_save_button_never_redirects_to_another_site(self):
+        c = Client()
+        c.force_login(self.tenant)
+        url = reverse('properties:toggle_saved', args=[self.prop.pk])
+        r = c.post(url, {'next': 'https://evil.example.com/'})
+        self.assertRedirects(r, reverse('properties:detail', args=[self.prop.pk]), fetch_redirect_response=False)
+        r = c.post(url, {'next': reverse('properties:list')})
+        self.assertRedirects(r, reverse('properties:list'), fetch_redirect_response=False)
+
+
+class PrivatePaymentProofTests(TestCase):
+    def setUp(self):
+        import tempfile
+        from django.test import override_settings
+        tmp = tempfile.mkdtemp()
+        self.settings_ctx = override_settings(MEDIA_ROOT=f'{tmp}/public', PRIVATE_MEDIA_ROOT=f'{tmp}/private')
+        self.settings_ctx.enable()
+        self.addCleanup(self.settings_ctx.disable)
+        self.tmp = tmp
+        landlord = User.objects.create_user(username='pp_landlord', password='pw', role='LANDLORD', is_verified=True)
+        self.tenant = User.objects.create_user(username='pp_tenant', password='pw', role='TENANT')
+        self.landlord = landlord
+        prop = Property.objects.create(landlord=landlord, title='Proof Home', location='Igoma',
+                                       property_type='SINGLE', monthly_rent=50000, distance_from_center_km=3)
+        booking = Booking.objects.create(property=prop, tenant=self.tenant, status='CONFIRMED',
+                                         move_in_date=date.today(), move_out_date=date.today() + timedelta(days=30))
+        from django.core.files.base import ContentFile
+        self.payment = Payment.objects.create(booking=booking, tenant=self.tenant, amount=50000,
+                                              status='TENANT_PAID', due_date=date.today())
+        self.payment.payment_proof.save('receipt.jpg', ContentFile(b'\xff\xd8\xff fake jpeg'), save=True)
+
+    def test_proof_is_stored_outside_public_media(self):
+        import os
+        path = self.payment.payment_proof.path
+        self.assertTrue(path.startswith(f'{self.tmp}/private'))
+        self.assertTrue(os.path.isfile(path))
+        self.assertFalse(os.path.exists(f'{self.tmp}/public'))
+
+    def test_only_tenant_landlord_and_staff_can_open_it(self):
+        url = reverse('payments:payment_proof', args=[self.payment.pk])
+        stranger = User.objects.create_user(username='pp_stranger', password='pw', role='LANDLORD')
+        admin = User.objects.create_superuser(username='pp_admin', password='pw', email='x@example.com')
+        for user, code in ((self.tenant, 200), (self.landlord, 200), (admin, 200), (stranger, 404)):
+            c = Client()
+            c.force_login(user)
+            r = c.get(url)
+            self.assertEqual(r.status_code, code, user.username)
+            if code == 200:
+                self.assertEqual(r['Content-Type'], 'image/jpeg')
+                self.assertIn('no-store', r['Cache-Control'])
+        self.assertEqual(Client().get(url).status_code, 302)   # signed out -> login
+        c = Client()
+        c.force_login(self.landlord)
+        page = c.get(reverse('payments:verify', args=[self.payment.pk]))
+        self.assertContains(page, url)
+        self.assertNotContains(page, '/media/payment_proofs/')

@@ -32,3 +32,28 @@ class RandomName:
 
     def __eq__(self, other):
         return isinstance(other, RandomName) and self.folder == other.folder
+
+
+from django.core.files.storage import FileSystemStorage  # noqa: E402
+
+
+class PrivateStorage(FileSystemStorage):
+    """Files under PRIVATE_MEDIA_ROOT - outside MEDIA_ROOT, so the web server
+    never serves them directly. They have no public URL: a view checks who
+    is asking and streams the file (e.g. apps.payments.views.payment_proof)."""
+
+    @property
+    def base_location(self):
+        from django.conf import settings
+        return settings.PRIVATE_MEDIA_ROOT
+
+    @property
+    def location(self):
+        return os.path.abspath(self.base_location)
+
+    def url(self, name):
+        return ''
+
+
+def private_storage():
+    return PrivateStorage()

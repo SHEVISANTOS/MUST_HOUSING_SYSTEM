@@ -12,6 +12,7 @@ from django.utils.formats import date_format
 from .models import Booking, Tenancy
 from apps.properties.models import Property
 from apps.notifications.models import Notification
+from apps.core.ratelimit import rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,7 @@ def _occupant_before(property_id, start_date, exclude_tenant_id):
 
 
 @login_required
+@rate_limit('booking', limit=10, window=3600, by='user')
 def create_booking(request, property_id):
     """
     Tenant view to submit a booking request for a specific property.

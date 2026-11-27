@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
 from .models import Conversation, Message
+from apps.core.ratelimit import rate_limit
 from apps.properties.models import Property
 
 # A short set of canned replies shown as one-tap buttons in a thread -
@@ -41,6 +42,7 @@ def inbox(request):
 
 
 @login_required
+@rate_limit('message', limit=30, window=600, by='user')
 def thread(request, conversation_id):
     conversation = get_object_or_404(
         Conversation.objects.select_related('property', 'tenant', 'landlord'),

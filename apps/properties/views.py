@@ -695,7 +695,12 @@ def toggle_saved(request, pk):
         return JsonResponse({'saved': is_saved})
 
     messages.success(request, f"{'Saved' if is_saved else 'Removed from saved'}: {prop.title}")
-    return redirect(request.POST.get('next') or 'properties:detail', pk=pk)
+    from django.utils.http import url_has_allowed_host_and_scheme
+    next_url = request.POST.get('next', '')
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()},
+                                                    require_https=request.is_secure()):
+        return redirect(next_url)
+    return redirect('properties:detail', pk=pk)   # never bounce to another site
 
 
 @login_required

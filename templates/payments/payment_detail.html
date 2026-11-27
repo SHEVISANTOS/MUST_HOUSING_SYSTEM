@@ -62,7 +62,7 @@
                     <p class="text-muted mb-1 small text-uppercase">Proof of Payment</p>
                     {% if payment.payment_proof %}
                         <!-- This button opens the image in a new tab -->
-                        <a href="{{ payment.payment_proof.url }}" target="_blank" class="btn btn-sm btn-green mt-1">
+                        <a href="{% url 'payments:payment_proof' payment.id %}" target="_blank" class="btn btn-sm btn-green mt-1">
                             🖼️ View Proof
                         </a>
                     {% else %}

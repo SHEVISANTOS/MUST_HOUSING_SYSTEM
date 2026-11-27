@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% block title %}{% translate "Too many requests" %} | VOT House Finding{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 560px; margin: 40px auto;"><div class="card-body text-center" style="padding: 32px;">
+    <div style="font-size: 2.6rem;">⏳</div>
+    <h1 class="h4" style="margin: 10px 0;">{% translate "Please slow down" %}</h1>
+    <p class="text-muted">{% blocktranslate count minutes=minutes %}You've done this too many times in a short while. Please wait a minute and try again.{% plural %}You've done this too many times in a short while. Please wait up to {{ minutes }} minutes and try again.{% endblocktranslate %}</p>
+    <a href="javascript:history.back()" class="btn btn-green">{% translate "Go back" %}</a>
+</div></div>
+{% endblock %}

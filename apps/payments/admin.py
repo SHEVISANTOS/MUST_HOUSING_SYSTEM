@@ -15,11 +15,19 @@ class PaymentAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Payment Details', {'fields': ('booking', 'amount', 'due_date', 'paid_date')}),
         ('Status & Fees', {'fields': ('status', 'late_fee', 'payment_method', 'payment_reference')}),
-        ('Proof & Notes', {'fields': ('payment_proof', 'payment_notes'), 'classes': ('collapse',)}),
+        ('Proof & Notes', {'fields': ('proof_link', 'payment_notes'), 'classes': ('collapse',)}),
         ('Timestamps', {'fields': ('created_at', 'updated_at', 'tenant_paid_at', 'landlord_confirmed_at'), 'classes': ('collapse',)}),
     )
     
-    readonly_fields = ('created_at', 'updated_at', 'tenant_paid_at', 'landlord_confirmed_at')
+    readonly_fields = ('created_at', 'updated_at', 'tenant_paid_at', 'landlord_confirmed_at', 'proof_link')
+
+    @admin.display(description='Payment proof')
+    def proof_link(self, obj):
+        # Private file - opened through the access-checked view, not /media/.
+        if not obj.payment_proof:
+            return '-'
+        from django.urls import reverse
+        return format_html('<a href="{}" target="_blank" rel="noopener">View proof</a>', reverse('payments:payment_proof', args=[obj.pk]))
     
     def short_id(self, obj):
         return f"#{str(obj.id)[:8]}"

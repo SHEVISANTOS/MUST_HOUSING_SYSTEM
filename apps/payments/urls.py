@@ -23,6 +23,7 @@ urlpatterns = [
     path('booking/<int:booking_id>/pay/', views.mark_payment_made, name='mark_payment'),
     path('payment/<uuid:payment_id>/', views.payment_detail, name='payment_detail'),
     path('payment/<uuid:payment_id>/cancel/', views.cancel_payment, name='cancel_payment'),
+    path('payment/<uuid:payment_id>/proof/', views.payment_proof, name='payment_proof'),
     
     # ==================== LANDLORD URLs ====================
     

@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.urls import resolve, Resolver404
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
+from apps.core.ratelimit import rate_limit
 from .forms import CustomUserCreationForm
 # Import models for counting stats
 from apps.properties.models import Property
@@ -44,6 +45,7 @@ def _safe_next(request):
     return ''
 
 
+@rate_limit('register', limit=5, window=3600, by='ip')
 def register(request):
     """
     Handle user registration and auto-login after successful signup.

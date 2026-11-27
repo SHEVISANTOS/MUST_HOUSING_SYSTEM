@@ -129,6 +129,30 @@ def _client_ip(request):
 
 AXES_CLIENT_IP_CALLABLE = _client_ip
 
+# Password rules for new accounts and password changes (existing passwords
+# keep working). Min 8 characters, not a common password, not all digits,
+# not too close to the username/email.
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+# Shared between gunicorn workers so rate limits (apps.core.ratelimit) count
+# every request, not one worker's share. Nothing else uses the cache.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': BASE_DIR / 'var' / 'cache',
+    }
+}
+
+# Uploads only the people involved may see (payment proofs). Outside
+# MEDIA_ROOT, so nginx never serves them; apps.payments.views.payment_proof
+# checks access first. Included in the nightly backup.
+PRIVATE_MEDIA_ROOT = BASE_DIR / 'media_private'
+
 # Messages configuration
 from django.contrib.messages import constants as messages
 
@@ -236,6 +260,8 @@ if len(sys.argv) > 1 and sys.argv[1] == 'test':
     # Test client logins don't pass a request, which axes requires; the
     # lockout itself is covered by tests that re-enable it explicitly.
     AXES_ENABLED = False
+    CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
+    RATE_LIMITS_ENABLED = False   # counts would leak between tests; SecurityHardeningTests turns them on
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"

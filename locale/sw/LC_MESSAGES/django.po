@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: VOT House Finding\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-25 10:34+0300\n"
+"POT-Creation-Date: 2026-11-27 13:50+0300\n"
 "PO-Revision-Date: 2026-11-24 12:00+0300\n"
 "Last-Translator: VOT House Finding\n"
 "Language-Team: Kiswahili\n"
@@ -56,7 +56,7 @@ msgstr "Ingia"
 
 #: apps/core/context_processors.py:6 templates/base.html:382
 #: templates/partials/_sidebar.html:27 templates/users/register.html:4
-#: templates/users/register.html:79
+#: templates/users/register.html:80
 msgid "Register"
 msgstr "Jisajili"
 
@@ -372,6 +372,33 @@ msgstr "Huenda kiungo ni cha zamani, au tangazo limeondolewa."
 #: templates/404.html:9
 msgid "Browse houses"
 msgstr "Tazama nyumba"
+
+#: templates/429.html:3
+msgid "Too many requests"
+msgstr "Maombi mengi mno"
+
+#: templates/429.html:7
+msgid "Please slow down"
+msgstr "Tafadhali punguza kasi"
+
+#: templates/429.html:8
+#, python-format
+msgid ""
+"You've done this too many times in a short while. Please wait a minute and "
+"try again."
+msgid_plural ""
+"You've done this too many times in a short while. Please wait up to "
+"%(minutes)s minutes and try again."
+msgstr[0] ""
+"Umefanya hivi mara nyingi mno kwa muda mfupi. Tafadhali subiri dakika moja "
+"kisha ujaribu tena."
+msgstr[1] ""
+"Umefanya hivi mara nyingi mno kwa muda mfupi. Tafadhali subiri hadi dakika "
+"%(minutes)s kisha ujaribu tena."
+
+#: templates/429.html:9
+msgid "Go back"
+msgstr "Rudi nyuma"
 
 #: templates/admin/properties/property/_remove_form.html:7
 msgid "No, take me back"
@@ -1796,11 +1823,16 @@ msgstr "Natafuta nyumba ya kupanga"
 msgid "Listing properties to rent out"
 msgstr "Natangaza nyumba za kupangisha"
 
-#: templates/users/register.html:69
+#: templates/users/register.html:67
+msgid "At least 8 characters, not only numbers, and not a common password."
+msgstr ""
+"Angalau herufi 8, isiwe namba tu, na isiwe nenosiri linalotumiwa na wengi."
+
+#: templates/users/register.html:70
 msgid "Confirm Password"
 msgstr "Thibitisha Nenosiri"
 
-#: templates/users/register.html:74
+#: templates/users/register.html:75
 #, python-format
 msgid ""
 "By creating an account you confirm you are 18 or older and agree to our <a "
@@ -1816,14 +1848,14 @@ msgstr ""
 "Faragha</a> yetu. Matangazo ya wenye nyumba hukaguliwa na VOT kabla ya "
 "kuonekana hadharani."
 
-#: templates/users/register.html:98
+#: templates/users/register.html:99
 msgid "Already have an account?"
 msgstr "Tayari una akaunti?"
 
-#: templates/users/register.html:98
+#: templates/users/register.html:99
 msgid "Login here"
 msgstr "Ingia hapa"
 
-#: templates/users/register.html:116
+#: templates/users/register.html:117
 msgid "Please choose whether you are a Tenant or a Landlord."
 msgstr "Tafadhali chagua kama wewe ni Mpangaji au Mwenye nyumba."

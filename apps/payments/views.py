@@ -536,3 +536,26 @@ def verify_document(request, token):
         'confirmation_withdrawn': payload['s'] == 'COMPLETED' and payment.status != 'COMPLETED',
         'tenant_masked': _mask_name(tenant.get_full_name() or tenant.username),
     })
+
+
+@login_required
+def payment_proof(request, payment_id):
+    """The tenant's uploaded proof of payment. Stored outside the public
+    media folder, so this is the only way to open it: the tenant, the
+    property's landlord, or VOT staff."""
+    import mimetypes
+    from django.http import FileResponse, Http404
+    payment = get_object_or_404(Payment.objects.select_related('booking__property'), id=payment_id)
+    user = request.user
+    allowed = (user.id in (payment.booking.tenant_id, payment.booking.property.landlord_id)
+               or user.is_superuser or getattr(user, 'role', None) == 'ADMIN')
+    if not allowed or not payment.payment_proof:
+        raise Http404("No such file")
+    try:
+        f = payment.payment_proof.open('rb')
+    except FileNotFoundError:
+        raise Http404("No such file")
+    content_type = mimetypes.guess_type(payment.payment_proof.name)[0] or 'application/octet-stream'
+    response = FileResponse(f, content_type=content_type)
+    response['Cache-Control'] = 'private, no-store'
+    return response
